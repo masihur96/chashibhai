@@ -8,6 +8,7 @@ import 'screens/farmer/farmer_dashboard.dart';
 import 'widgets/wallet_screen.dart';
 import 'screens/buyer/post_demand_screen.dart';
 import 'screens/buyer/product_details.dart';
+import 'screens/auth/login_screen.dart';
 
 void main() {
   runApp(
@@ -62,8 +63,23 @@ class MyApp extends ConsumerWidget {
           ),
         ),
       ),
-      home: const RoleWrapper(),
+      home: const AuthWrapper(),
     );
+  }
+}
+
+class AuthWrapper extends ConsumerWidget {
+  const AuthWrapper({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authStateProvider);
+    
+    if (user == null) {
+      return const LoginScreen();
+    }
+
+    return const RoleWrapper();
   }
 }
 
@@ -72,12 +88,12 @@ class RoleWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final user = ref.watch(authStateProvider);
     final role = ref.watch(userRoleProvider);
 
     return Scaffold(
       drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
           children: [
             DrawerHeader(
               decoration: const BoxDecoration(
@@ -93,31 +109,20 @@ class RoleWrapper extends ConsumerWidget {
                   ),
                   const SizedBox(height: 10),
                   Text(
-                    'Masihur Rahman',
+                    user?.name ?? 'Anonymous User',
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  const Text(
-                    'Level 4 Trader',
-                    style: TextStyle(color: Colors.white70, fontSize: 14),
+                  Text(
+                    '${user?.role.name.toUpperCase()} | ${user?.isVerified == true ? "Verified" : "Unverified"}',
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.swap_horiz),
-              title: const Text('Switch Role'),
-              subtitle: Text('Current: ${role.name.toUpperCase()}'),
-              onTap: () {
-                ref.read(userRoleProvider.notifier).state =
-                    role == UserRole.buyer ? UserRole.farmer : UserRole.buyer;
-                Navigator.pop(context);
-              },
-            ),
-            const Divider(),
             ListTile(
               leading: const Icon(Icons.account_balance_wallet),
               title: const Text('Wallet'),
@@ -139,8 +144,11 @@ class RoleWrapper extends ConsumerWidget {
             ListTile(
               leading: const Icon(Icons.logout, color: Colors.red),
               title: const Text('Logout', style: TextStyle(color: Colors.red)),
-              onTap: () {},
+              onTap: () {
+                ref.read(authStateProvider.notifier).state = null;
+              },
             ),
+            const SizedBox(height: 20),
           ],
         ),
       ),
