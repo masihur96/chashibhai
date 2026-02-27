@@ -41,7 +41,7 @@ class ProductCard extends StatelessWidget {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
-                      product.tradeType.name.toUpperCase(),
+                      product.tradeType.toString().split('.').last.toUpperCase(),
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 10,

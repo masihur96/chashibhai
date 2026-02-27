@@ -117,7 +117,7 @@ class RoleWrapper extends ConsumerWidget {
                     ),
                   ),
                   Text(
-                    '${user?.role.name.toUpperCase()} | ${user?.isVerified == true ? "Verified" : "Unverified"}',
+                    '${user?.role.toString().split('.').last.toUpperCase()} | ${user?.isVerified == true ? "Verified" : "Unverified"}',
                     style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],

@@ -52,7 +52,7 @@ class WalletScreen extends ConsumerWidget {
                     child: Icon(_getTransactionIcon(tx.type), color: _getTransactionColor(tx.type)),
                   ),
                   title: Text(
-                    tx.type.name.toUpperCase(),
+                    tx.type.toString().split('.').last.toUpperCase(),
                     style: const TextStyle(fontWeight: FontWeight.bold),
                   ),
                   subtitle: Text(DateFormat('dd MMM, yyyy').format(tx.createdAt)),

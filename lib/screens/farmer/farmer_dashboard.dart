@@ -201,7 +201,7 @@ class FarmerDashboard extends ConsumerWidget {
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
-                    product.tradeType.name.toUpperCase(),
+                    product.tradeType.toString().split('.').last.toUpperCase(),
                     style: TextStyle(
                       fontSize: 10,
                       fontWeight: FontWeight.bold,
