@@ -13,6 +13,7 @@ class BuyerHomeScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final products = ref.watch(productsProvider);
 
+
     return Scaffold(
         backgroundColor: Colors.transparent,
         body: Column(
