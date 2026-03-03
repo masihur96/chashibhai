@@ -49,7 +49,7 @@ class BuyerHomeScreen extends ConsumerWidget {
                     physics: const NeverScrollableScrollPhysics(),
                     gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                       crossAxisCount: 2,
-                      childAspectRatio: 0.75,
+                      childAspectRatio: 0.65,
                       crossAxisSpacing: 12,
                       mainAxisSpacing: 12,
                     ),

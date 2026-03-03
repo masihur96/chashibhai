@@ -149,10 +149,7 @@ class ProductDetailsScreen extends ConsumerWidget {
               ],
             ),
           ),
-          OutlinedButton(
-            onPressed: () {},
-            child: const Text('View Profile'),
-          ),
+
         ],
       ),
     );

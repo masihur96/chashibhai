@@ -93,66 +93,198 @@ class RoleWrapper extends ConsumerWidget {
 
     return Scaffold(
       drawer: Drawer(
+        width: MediaQuery.of(context).size.width * 0.8,
+        shape: const RoundedRectangleBorder(
+          borderRadius: BorderRadius.only(
+            topRight: Radius.circular(20),
+            bottomRight: Radius.circular(20),
+          ),
+        ),
         child: Column(
           children: [
-            DrawerHeader(
+            // Refined Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.fromLTRB(20, 60, 20, 24),
               decoration: const BoxDecoration(
                 color: Color(0xFF2E7D32),
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF2E7D32), Color(0xFF1B5E20)],
+                ),
               ),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  const CircleAvatar(
-                    radius: 30,
-                    backgroundColor: Colors.white,
-                    child: Icon(Icons.person, size: 40, color: Color(0xFF2E7D32)),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(3),
+                        decoration: const BoxDecoration(
+                          color: Colors.white24,
+                          shape: BoxShape.circle,
+                        ),
+                        child: const CircleAvatar(
+                          radius: 35,
+                          backgroundColor: Colors.white,
+                          child: Icon(Icons.person, size: 45, color: Color(0xFF2E7D32)),
+                        ),
+                      ),
+                      if (user?.isVerified == true)
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(color: Colors.white54),
+                          ),
+                          child: Row(
+                            children: const [
+                              Icon(Icons.verified, color: Colors.white, size: 14),
+                              SizedBox(width: 4),
+                              Text(
+                                'Verified',
+                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                              ),
+                            ],
+                          ),
+                        ),
+                    ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 16),
                   Text(
                     user?.name ?? 'Anonymous User',
                     style: GoogleFonts.outfit(
                       color: Colors.white,
-                      fontSize: 18,
+                      fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   Text(
-                    '${user?.role.toString().split('.').last.toUpperCase()} | ${user?.isVerified == true ? "Verified" : "Unverified"}',
-                    style: const TextStyle(color: Colors.white70, fontSize: 13),
+                    user?.role.toString().split('.').last.toUpperCase() ?? 'USER',
+                    style: TextStyle(
+                      color: Colors.white.withOpacity(0.8),
+                      fontSize: 12,
+                      letterSpacing: 1.2,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: Colors.black.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.account_balance_wallet, color: Colors.white70, size: 16),
+                        const SizedBox(width: 8),
+                        Text(
+                          'Balance: ৳${user?.walletBalance.toStringAsFixed(2) ?? "0.00"}',
+                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                        ),
+                      ],
+                    ),
                   ),
                 ],
               ),
             ),
-            ListTile(
-              leading: const Icon(Icons.account_balance_wallet),
-              title: const Text('Wallet'),
-              onTap: () {
-                Navigator.push(context, MaterialPageRoute(builder: (context) => const WalletScreen()));
-              },
+            
+            // Menu Items
+            Expanded(
+              child: ListView(
+                padding: const EdgeInsets.symmetric(vertical: 10),
+                children: [
+                   _buildDrawerItem(
+                    icon: Icons.account_balance_wallet_outlined,
+                    title: 'My Wallet',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const WalletScreen()));
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.history_rounded,
+                    title: 'Transactions',
+                    onTap: () {},
+                  ),
+                  const Divider(indent: 20, endIndent: 20, height: 30),
+                  _buildDrawerItem(
+                    icon: Icons.person_outline_rounded,
+                    title: 'Account Profile',
+                    onTap: () {},
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.settings_outlined,
+                    title: 'Settings',
+                    onTap: () {},
+                  ),
+                  const Divider(indent: 20, endIndent: 20, height: 30),
+                  _buildDrawerItem(
+                    icon: Icons.help_outline_rounded,
+                    title: 'Help & Support',
+                    onTap: () {},
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.info_outline_rounded,
+                    title: 'About ChashiBhai',
+                    onTap: () {},
+                  ),
+                ],
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.history),
-              title: const Text('Transactions'),
-              onTap: () {},
+
+            // Footer / Logout
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: ListTile(
+                onTap: () {
+                  ref.read(authStateProvider.notifier).state = null;
+                },
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Colors.red.withOpacity(0.2)),
+                ),
+                tileColor: Colors.red.withOpacity(0.05),
+                leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
+                title: const Text(
+                  'Sign Out',
+                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                ),
+              ),
             ),
-            ListTile(
-              leading: const Icon(Icons.settings),
-              title: const Text('Settings'),
-              onTap: () {},
-            ),
-            const Spacer(),
-            ListTile(
-              leading: const Icon(Icons.logout, color: Colors.red),
-              title: const Text('Logout', style: TextStyle(color: Colors.red)),
-              onTap: () {
-                ref.read(authStateProvider.notifier).state = null;
-              },
-            ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 10),
           ],
         ),
-      ),
+
+    ),
       body: role == UserRole.buyer ? const BuyerHomeScreen() : const FarmerDashboard(),
+    );
+  }
+
+  Widget _buildDrawerItem({
+    required IconData icon,
+    required String title,
+    required VoidCallback onTap,
+  }) {
+    return ListTile(
+      leading: Icon(icon, color: const Color(0xFF2E7D32), size: 24),
+      title: Text(
+        title,
+        style: const TextStyle(
+          fontSize: 16,
+          fontWeight: FontWeight.w500,
+          color: Colors.black87,
+        ),
+      ),
+      trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey, size: 20),
+      onTap: onTap,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 4),
+      visualDensity: VisualDensity.compact,
     );
   }
 }
