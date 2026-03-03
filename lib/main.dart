@@ -9,6 +9,11 @@ import 'widgets/wallet_screen.dart';
 import 'screens/buyer/post_demand_screen.dart';
 import 'screens/buyer/product_details.dart';
 import 'screens/auth/login_screen.dart';
+import 'screens/account/transactions_screen.dart';
+import 'screens/account/profile_screen.dart';
+import 'screens/account/settings_screen.dart';
+import 'screens/account/support_screen.dart';
+import 'screens/account/about_screen.dart';
 
 void main() {
   runApp(
@@ -210,29 +215,44 @@ class RoleWrapper extends ConsumerWidget {
                   _buildDrawerItem(
                     icon: Icons.history_rounded,
                     title: 'Transactions',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionsScreen()));
+                    },
                   ),
                   const Divider(indent: 20, endIndent: 20, height: 30),
                   _buildDrawerItem(
                     icon: Icons.person_outline_rounded,
                     title: 'Account Profile',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
+                    },
                   ),
                   _buildDrawerItem(
                     icon: Icons.settings_outlined,
                     title: 'Settings',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
+                    },
                   ),
                   const Divider(indent: 20, endIndent: 20, height: 30),
                   _buildDrawerItem(
                     icon: Icons.help_outline_rounded,
                     title: 'Help & Support',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const SupportScreen()));
+                    },
                   ),
                   _buildDrawerItem(
                     icon: Icons.info_outline_rounded,
                     title: 'About ChashiBhai',
-                    onTap: () {},
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen()));
+                    },
                   ),
                 ],
               ),
