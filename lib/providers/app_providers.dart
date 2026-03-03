@@ -23,3 +23,19 @@ final walletBalanceProvider = StateProvider<double>((ref) {
 });
 
 final demandsProvider = StateProvider<List<DemandPost>>((ref) => MockData.demoDemands);
+
+final searchQueryProvider = StateProvider<String>((ref) => '');
+
+final selectedCategoryProvider = StateProvider<String>((ref) => 'All');
+
+final filteredProductsProvider = Provider<List<Product>>((ref) {
+  final products = ref.watch(productsProvider);
+  final searchQuery = ref.watch(searchQueryProvider).toLowerCase();
+  final selectedCategory = ref.watch(selectedCategoryProvider);
+
+  return products.where((product) {
+    final matchesSearch = product.productName.toLowerCase().contains(searchQuery);
+    final matchesCategory = selectedCategory == 'All' || product.category == selectedCategory;
+    return matchesSearch && matchesCategory;
+  }).toList();
+});

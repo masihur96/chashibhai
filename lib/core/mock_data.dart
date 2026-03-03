@@ -33,6 +33,7 @@ class MockData {
       tradeType: TradeType.both,
       startTime: DateTime.now(),
       endTime: DateTime.now().add(const Duration(days: 2)),
+      category: 'Vegetables',
     ),
     Product(
       id: 'p2',
@@ -45,6 +46,7 @@ class MockData {
       tradeType: TradeType.auction,
       startTime: DateTime.now(),
       endTime: DateTime.now().add(const Duration(hours: 12)),
+      category: 'Vegetables',
     ),
     Product(
       id: 'p3',
@@ -57,6 +59,20 @@ class MockData {
       tradeType: TradeType.negotiation,
       startTime: DateTime.now(),
       endTime: DateTime.now().add(const Duration(days: 1)),
+      category: 'Vegetables',
+    ),
+    Product(
+      id: 'p4',
+      farmerId: 'f1',
+      productName: 'Fresh Basmati Rice',
+      imageUrl: 'assets/images/rice.png',
+      quantity: 1000,
+      unit: 'KG',
+      minimumPrice: 120.0,
+      tradeType: TradeType.negotiation,
+      startTime: DateTime.now(),
+      endTime: DateTime.now().add(const Duration(days: 10)),
+      category: 'Grains',
     ),
   ];
 

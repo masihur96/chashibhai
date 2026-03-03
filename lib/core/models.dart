@@ -41,6 +41,7 @@ class Product {
   final TradeType tradeType;
   final DateTime startTime;
   final DateTime endTime;
+  final String category;
   final String status;
 
   Product({
@@ -54,6 +55,7 @@ class Product {
     required this.tradeType,
     required this.startTime,
     required this.endTime,
+    required this.category,
     this.status = 'active',
   });
 }

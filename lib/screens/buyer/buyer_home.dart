@@ -11,8 +11,8 @@ class BuyerHomeScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final products = ref.watch(productsProvider);
-
+    final products = ref.watch(filteredProductsProvider);
+    final selectedCategory = ref.watch(selectedCategoryProvider);
 
     return Scaffold(
         backgroundColor: Colors.transparent,
@@ -23,9 +23,9 @@ class BuyerHomeScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                  _buildSearchBar(),
+                   _buildSearchBar(ref),
                   const SizedBox(height: 20),
-                  _buildCategories(),
+                  _buildCategories(ref, selectedCategory),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -44,30 +44,47 @@ class BuyerHomeScreen extends ConsumerWidget {
                     ],
                   ),
                   const SizedBox(height: 12),
-                  GridView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                      crossAxisCount: 2,
-                      childAspectRatio: 0.65,
-                      crossAxisSpacing: 12,
-                      mainAxisSpacing: 12,
-                    ),
-                    itemCount: products.length,
-                    itemBuilder: (context, index) {
-                      return ProductCard(
-                        product: products[index],
-                        onTap: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => ProductDetailsScreen(product: products[index]),
+                  if (products.isEmpty)
+                    Center(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 40),
+                        child: Column(
+                          children: [
+                            Icon(Icons.search_off, size: 60, color: Colors.grey[400]),
+                            const SizedBox(height: 16),
+                            Text(
+                              'No products found',
+                              style: TextStyle(color: Colors.grey[600], fontSize: 16),
                             ),
-                          );
-                        },
-                      );
-                    },
-                  ),
+                          ],
+                        ),
+                      ),
+                    )
+                  else
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        childAspectRatio: 0.65,
+                        crossAxisSpacing: 12,
+                        mainAxisSpacing: 12,
+                      ),
+                      itemCount: products.length,
+                      itemBuilder: (context, index) {
+                        return ProductCard(
+                          product: products[index],
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => ProductDetailsScreen(product: products[index]),
+                              ),
+                            );
+                          },
+                        );
+                      },
+                    ),
                 ],
               ),
             ),
@@ -148,7 +165,7 @@ class BuyerHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSearchBar() {
+  Widget _buildSearchBar(WidgetRef ref) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -162,8 +179,11 @@ class BuyerHomeScreen extends ConsumerWidget {
           ),
         ],
       ),
-      child: const TextField(
-        decoration: InputDecoration(
+      child: TextField(
+        onChanged: (value) {
+          ref.read(searchQueryProvider.notifier).state = value;
+        },
+        decoration: const InputDecoration(
           hintText: 'Search products (Potato, Onion...)',
           border: InputBorder.none,
           icon: Icon(Icons.search, color: Colors.grey),
@@ -172,7 +192,7 @@ class BuyerHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategories() {
+  Widget _buildCategories(WidgetRef ref, String selectedCategory) {
     final categories = ['All', 'Vegetables', 'Fruits', 'Grains', 'Spices'];
     return SizedBox(
       height: 40,
@@ -180,21 +200,28 @@ class BuyerHomeScreen extends ConsumerWidget {
         scrollDirection: Axis.horizontal,
         itemCount: categories.length,
         itemBuilder: (context, index) {
-          return Container(
-            margin: const EdgeInsets.only(right: 10),
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-            decoration: BoxDecoration(
-              color: index == 0 ? const Color(0xFF2E7D32) : Colors.white,
-              borderRadius: BorderRadius.circular(20),
-              border: Border.all(
-                color: index == 0 ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+          final category = categories[index];
+          final isSelected = category == selectedCategory;
+          return GestureDetector(
+            onTap: () {
+              ref.read(selectedCategoryProvider.notifier).state = category;
+            },
+            child: Container(
+              margin: const EdgeInsets.only(right: 10),
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+              decoration: BoxDecoration(
+                color: isSelected ? const Color(0xFF2E7D32) : Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(
+                  color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[300]!,
+                ),
               ),
-            ),
-            child: Text(
-              categories[index],
-              style: TextStyle(
-                color: index == 0 ? Colors.white : Colors.black87,
-                fontWeight: index == 0 ? FontWeight.bold : FontWeight.normal,
+              child: Text(
+                category,
+                style: TextStyle(
+                  color: isSelected ? Colors.white : Colors.black87,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                ),
               ),
             ),
           );
