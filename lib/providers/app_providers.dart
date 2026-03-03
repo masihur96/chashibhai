@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:local_auth/local_auth.dart';
 import '../core/models.dart';
 import '../core/mock_data.dart';
 
@@ -49,3 +50,31 @@ final productsByCategoryProvider = Provider.family<List<Product>, String>((ref, 
 final notificationsProvider = StateProvider<List<AppNotification>>((ref) => MockData.demoNotifications);
 
 final appLocaleProvider = StateProvider<String>((ref) => 'en');
+
+final biometricEnabledProvider = StateProvider<bool>((ref) => false);
+
+final biometricServiceProvider = Provider((ref) => LocalAuthentication());
+
+final biometricAuthenticateProvider = FutureProvider.autoDispose<bool>((ref) async {
+  final authDesc = ref.watch(appLocaleProvider) == 'bn' 
+    ? 'বায়োমেট্রিক ব্যবহার করে লগইন করুন' 
+    : 'Login using biometrics';
+    
+  try {
+    final localAuth = ref.read(biometricServiceProvider);
+    final canAuthenticateWithBiometrics = await localAuth.canCheckBiometrics;
+    final canAuthenticate = canAuthenticateWithBiometrics || await localAuth.isDeviceSupported();
+    
+    if (!canAuthenticate) return false;
+
+    return await localAuth.authenticate(
+      localizedReason: authDesc,
+      options: const AuthenticationOptions(
+        stickyAuth: true,
+        biometricOnly: true,
+      ),
+    );
+  } catch (e) {
+    return false;
+  }
+});

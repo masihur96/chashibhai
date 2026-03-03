@@ -3,6 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'registration_screen.dart';
 import 'otp_screen.dart';
+import '../../providers/app_providers.dart';
+import '../../core/models.dart';
+import '../../core/mock_data.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -98,6 +101,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 child: const Text('Send OTP', style: TextStyle(fontSize: 18)),
               ),
             ),
+            const SizedBox(height: 10),
+            if (ref.watch(biometricEnabledProvider)) ...[
+              const Center(child: Text('OR', style: TextStyle(color: Colors.grey, fontSize: 12))),
+              const SizedBox(height: 10),
+              SizedBox(
+                width: double.infinity,
+                height: 55,
+                child: OutlinedButton.icon(
+                  onPressed: () async {
+                    final authenticated = await ref.read(biometricAuthenticateProvider.future);
+                    if (authenticated) {
+                      // Login as dummy user (Buyer)
+                      ref.read(authStateProvider.notifier).state = MockData.currentUser;
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Login successful via biometric!'),
+                          backgroundColor: Color(0xFF2E7D32),
+                        ),
+                      );
+                    }
+                  },
+                  icon: const Icon(Icons.fingerprint_rounded),
+                  label: const Text('Login with Biometric', style: TextStyle(fontSize: 16)),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: const Color(0xFF2E7D32),
+                    side: const BorderSide(color: Color(0xFF2E7D32)),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+                  ),
+                ),
+              ),
+            ],
             const SizedBox(height: 20),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,

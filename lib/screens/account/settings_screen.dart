@@ -18,6 +18,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   @override
   Widget build(BuildContext context) {
     final languageCode = ref.watch(appLocaleProvider);
+    final biometricEnabled = ref.watch(biometricEnabledProvider);
     final isBangla = languageCode == 'bn';
 
     return Scaffold(
@@ -49,8 +50,25 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             Icons.fingerprint_rounded,
             'biometric'.tr(languageCode),
             'Use fingerprint or face recognition',
-            _biometricEnabled,
-            (v) => setState(() => _biometricEnabled = v),
+            biometricEnabled,
+            (v) async {
+              if (v) {
+                // Verify biometric before enabling
+                final authenticated = await ref.read(biometricAuthenticateProvider.future);
+                if (authenticated) {
+                  ref.read(biometricEnabledProvider.notifier).state = true;
+                } else {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    SnackBar(
+                      content: Text(isBangla ? 'বায়োমেট্রিক যাচাইকরণ ব্যর্থ হয়েছে' : 'Biometric verification failed'),
+                      backgroundColor: Colors.redAccent,
+                    ),
+                  );
+                }
+              } else {
+                ref.read(biometricEnabledProvider.notifier).state = false;
+              }
+            },
           ),
           _buildActionTile(Icons.lock_outline_rounded, 'Change Password', 'Update your account password'),
           
