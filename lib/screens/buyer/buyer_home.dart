@@ -7,12 +7,14 @@ import 'product_details.dart';
 import 'post_demand_screen.dart';
 import 'category_products_screen.dart';
 import 'notification_screen.dart';
+import '../../core/localization.dart';
 
 class BuyerHomeScreen extends ConsumerWidget {
   const BuyerHomeScreen({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final languageCode = ref.watch(appLocaleProvider);
     final products = ref.watch(filteredProductsProvider);
     final selectedCategory = ref.watch(selectedCategoryProvider);
 
@@ -25,15 +27,15 @@ class BuyerHomeScreen extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.all(16),
                 children: [
-                   _buildSearchBar(ref),
+                   _buildSearchBar(ref, languageCode),
                   const SizedBox(height: 20),
-                  _buildCategories(ref, selectedCategory),
+                  _buildCategories(ref, selectedCategory, languageCode),
                   const SizedBox(height: 24),
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       Text(
-                        'Available Supplies',
+                        'available_supplies'.tr(languageCode),
                         style: GoogleFonts.outfit(
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
@@ -48,7 +50,7 @@ class BuyerHomeScreen extends ConsumerWidget {
                             ),
                           );
                         },
-                        child: const Text('View All'),
+                        child: Text('view_all'.tr(languageCode)),
                       ),
                     ],
                   ),
@@ -62,7 +64,7 @@ class BuyerHomeScreen extends ConsumerWidget {
                             Icon(Icons.search_off, size: 60, color: Colors.grey[400]),
                             const SizedBox(height: 16),
                             Text(
-                              'No products found',
+                              'no_products'.tr(languageCode),
                               style: TextStyle(color: Colors.grey[600], fontSize: 16),
                             ),
                           ],
@@ -180,7 +182,7 @@ class BuyerHomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSearchBar(WidgetRef ref) {
+  Widget _buildSearchBar(WidgetRef ref, String languageCode) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -198,17 +200,25 @@ class BuyerHomeScreen extends ConsumerWidget {
         onChanged: (value) {
           ref.read(searchQueryProvider.notifier).state = value;
         },
-        decoration: const InputDecoration(
-          hintText: 'Search products (Potato, Onion...)',
+        decoration: InputDecoration(
+          hintText: 'search_placeholder'.tr(languageCode),
           border: InputBorder.none,
-          icon: Icon(Icons.search, color: Colors.grey),
+          icon: const Icon(Icons.search, color: Colors.grey),
         ),
       ),
     );
   }
 
-  Widget _buildCategories(WidgetRef ref, String selectedCategory) {
+  Widget _buildCategories(WidgetRef ref, String selectedCategory, String languageCode) {
     final categories = ['All', 'Vegetables', 'Fruits', 'Grains', 'Spices'];
+    final categoryKeys = {
+      'All': 'cat_all',
+      'Vegetables': 'cat_veg',
+      'Fruits': 'cat_fruits',
+      'Grains': 'cat_grains',
+      'Spices': 'cat_spices',
+    };
+
     return SizedBox(
       height: 40,
       child: ListView.builder(
@@ -232,7 +242,7 @@ class BuyerHomeScreen extends ConsumerWidget {
                 ),
               ),
               child: Text(
-                category,
+                (categoryKeys[category] ?? category).tr(languageCode),
                 style: TextStyle(
                   color: isSelected ? Colors.white : Colors.black87,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,

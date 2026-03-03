@@ -1,25 +1,30 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
+import '../../providers/app_providers.dart';
+import '../../core/localization.dart';
 
-class SettingsScreen extends StatefulWidget {
+class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  State<SettingsScreen> createState() => _SettingsScreenState();
+  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends State<SettingsScreen> {
+class _SettingsScreenState extends ConsumerState<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _biometricEnabled = false;
-  String _selectedLanguage = 'English';
 
   @override
   Widget build(BuildContext context) {
+    final languageCode = ref.watch(appLocaleProvider);
+    final isBangla = languageCode == 'bn';
+
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Text(
-          'Settings',
+          'settings'.tr(languageCode),
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
         ),
         backgroundColor: const Color(0xFF2E7D32),
@@ -28,21 +33,21 @@ class _SettingsScreenState extends State<SettingsScreen> {
       body: ListView(
         padding: const EdgeInsets.symmetric(vertical: 20),
         children: [
-          _buildSectionHeader('General'),
+          _buildSectionHeader('General'.toUpperCase()),
           _buildSwitchTile(
             Icons.notifications_active_outlined,
-            'Push Notifications',
+            'push_notifications'.tr(languageCode),
             'Receive alerts about your orders',
             _notificationsEnabled,
             (v) => setState(() => _notificationsEnabled = v),
           ),
-          _buildLanguageTile(),
+          _buildLanguageTile(languageCode),
           
           const Divider(height: 40),
-          _buildSectionHeader('Security'),
+          _buildSectionHeader('Security'.toUpperCase()),
           _buildSwitchTile(
             Icons.fingerprint_rounded,
-            'Biometric Login',
+            'biometric'.tr(languageCode),
             'Use fingerprint or face recognition',
             _biometricEnabled,
             (v) => setState(() => _biometricEnabled = v),
@@ -50,7 +55,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _buildActionTile(Icons.lock_outline_rounded, 'Change Password', 'Update your account password'),
           
           const Divider(height: 40),
-          _buildSectionHeader('Other'),
+          _buildSectionHeader('Other'.toUpperCase()),
           _buildActionTile(Icons.privacy_tip_outlined, 'Privacy Policy', 'Review our privacy terms'),
           _buildActionTile(Icons.description_outlined, 'Terms of Service', 'Read our user agreement'),
         ],
@@ -62,7 +67,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 0, 20, 10),
       child: Text(
-        title.toUpperCase(),
+        title,
         style: TextStyle(
           color: Colors.grey[600],
           fontSize: 12,
@@ -100,18 +105,56 @@ class _SettingsScreenState extends State<SettingsScreen> {
     );
   }
 
-  Widget _buildLanguageTile() {
+  Widget _buildLanguageTile(String languageCode) {
+    final languageName = languageCode == 'en' ? 'English' : 'বাংলা (Bangla)';
+
     return Container(
       color: Colors.white,
       child: ListTile(
         leading: const Icon(Icons.language_rounded, color: Color(0xFF2E7D32)),
-        title: const Text('App Language', style: TextStyle(fontWeight: FontWeight.w500)),
-        subtitle: Text(_selectedLanguage, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+        title: Text('language'.tr(languageCode), style: const TextStyle(fontWeight: FontWeight.w500)),
+        subtitle: Text(languageName, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
         trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-        onTap: () {
-          // Show language picker
-        },
+        onTap: () => _showLanguagePicker(context, ref, languageCode),
       ),
+    );
+  }
+
+  void _showLanguagePicker(BuildContext context, WidgetRef ref, String currentLocale) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.symmetric(vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                'Select Language',
+                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 20),
+              _buildLanguageOption(context, ref, 'English', 'en', currentLocale == 'en'),
+              _buildLanguageOption(context, ref, 'বাংলা (Bangla)', 'bn', currentLocale == 'bn'),
+              const SizedBox(height: 20),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildLanguageOption(BuildContext context, WidgetRef ref, String name, String code, bool isSelected) {
+    return ListTile(
+      title: Text(name),
+      trailing: isSelected ? const Icon(Icons.check_circle, color: Color(0xFF2E7D32)) : null,
+      onTap: () {
+        ref.read(appLocaleProvider.notifier).state = code;
+        Navigator.pop(context);
+      },
     );
   }
 }

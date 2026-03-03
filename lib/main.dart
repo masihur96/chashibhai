@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'providers/app_providers.dart';
@@ -14,6 +15,7 @@ import 'screens/account/profile_screen.dart';
 import 'screens/account/settings_screen.dart';
 import 'screens/account/support_screen.dart';
 import 'screens/account/about_screen.dart';
+import 'core/localization.dart';
 
 void main() {
   runApp(
@@ -28,9 +30,21 @@ class MyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final languageCode = ref.watch(appLocaleProvider);
+
     return MaterialApp(
       title: 'ChashiBhai',
       debugShowCheckedModeBanner: false,
+      locale: Locale(languageCode),
+      supportedLocales: const [
+        Locale('en'),
+        Locale('bn'),
+      ],
+      localizationsDelegates: [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
@@ -93,6 +107,7 @@ class RoleWrapper extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final languageCode = ref.watch(appLocaleProvider);
     final user = ref.watch(authStateProvider);
     final role = ref.watch(userRoleProvider);
 
@@ -204,9 +219,9 @@ class RoleWrapper extends ConsumerWidget {
               child: ListView(
                 padding: const EdgeInsets.symmetric(vertical: 10),
                 children: [
-                   _buildDrawerItem(
+                    _buildDrawerItem(
                     icon: Icons.account_balance_wallet_outlined,
-                    title: 'My Wallet',
+                    title: 'wallet'.tr(languageCode),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const WalletScreen()));
@@ -214,7 +229,7 @@ class RoleWrapper extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     icon: Icons.history_rounded,
-                    title: 'Transactions',
+                    title: 'transactions'.tr(languageCode),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionsScreen()));
@@ -223,7 +238,7 @@ class RoleWrapper extends ConsumerWidget {
                   const Divider(indent: 20, endIndent: 20, height: 30),
                   _buildDrawerItem(
                     icon: Icons.person_outline_rounded,
-                    title: 'Account Profile',
+                    title: 'profile'.tr(languageCode),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const ProfileScreen()));
@@ -231,7 +246,7 @@ class RoleWrapper extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     icon: Icons.settings_outlined,
-                    title: 'Settings',
+                    title: 'settings'.tr(languageCode),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const SettingsScreen()));
@@ -240,7 +255,7 @@ class RoleWrapper extends ConsumerWidget {
                   const Divider(indent: 20, endIndent: 20, height: 30),
                   _buildDrawerItem(
                     icon: Icons.help_outline_rounded,
-                    title: 'Help & Support',
+                    title: 'help_support'.tr(languageCode),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const SupportScreen()));
@@ -248,7 +263,7 @@ class RoleWrapper extends ConsumerWidget {
                   ),
                   _buildDrawerItem(
                     icon: Icons.info_outline_rounded,
-                    title: 'About ChashiBhai',
+                    title: 'about'.tr(languageCode),
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen()));
@@ -271,9 +286,9 @@ class RoleWrapper extends ConsumerWidget {
                 ),
                 tileColor: Colors.red.withOpacity(0.05),
                 leading: const Icon(Icons.logout_rounded, color: Colors.redAccent),
-                title: const Text(
-                  'Sign Out',
-                  style: TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
+                title: Text(
+                  'sign_out'.tr(languageCode),
+                  style: const TextStyle(color: Colors.redAccent, fontWeight: FontWeight.bold),
                 ),
               ),
             ),

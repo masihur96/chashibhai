@@ -47,3 +47,5 @@ final productsByCategoryProvider = Provider.family<List<Product>, String>((ref, 
 });
 
 final notificationsProvider = StateProvider<List<AppNotification>>((ref) => MockData.demoNotifications);
+
+final appLocaleProvider = StateProvider<String>((ref) => 'en');
