@@ -128,6 +128,7 @@ class BuyerHomeScreen extends ConsumerWidget {
                 'Current City',
                 style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12),
               ),
+
               Row(
                 children: const [
                   Icon(Icons.location_on, color: Colors.white, size: 14),
