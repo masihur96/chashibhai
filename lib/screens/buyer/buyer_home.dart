@@ -5,6 +5,7 @@ import '../../widgets/product_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'product_details.dart';
 import 'post_demand_screen.dart';
+import 'category_products_screen.dart';
 
 class BuyerHomeScreen extends ConsumerWidget {
   const BuyerHomeScreen({super.key});
@@ -38,7 +39,14 @@ class BuyerHomeScreen extends ConsumerWidget {
                         ),
                       ),
                       TextButton(
-                        onPressed: () {},
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => CategoryProductsScreen(category: selectedCategory),
+                            ),
+                          );
+                        },
                         child: const Text('View All'),
                       ),
                     ],

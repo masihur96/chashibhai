@@ -39,3 +39,9 @@ final filteredProductsProvider = Provider<List<Product>>((ref) {
     return matchesSearch && matchesCategory;
   }).toList();
 });
+
+final productsByCategoryProvider = Provider.family<List<Product>, String>((ref, category) {
+  final products = ref.watch(productsProvider);
+  if (category == 'All') return products;
+  return products.where((p) => p.category == category).toList();
+});
