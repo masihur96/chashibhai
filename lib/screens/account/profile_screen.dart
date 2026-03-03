@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/app_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'edit_profile_screen.dart';
 
 class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({super.key});
@@ -76,21 +77,25 @@ class ProfileScreen extends ConsumerWidget {
                   _buildProfileTile(Icons.star_outline_rounded, 'User Rating', '${user?.rating ?? 0.0} / 5.0'),
                   const SizedBox(height: 30),
                   ElevatedButton.icon(
-                    onPressed: () {},
+                    onPressed: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(builder: (context) => const EditProfileScreen()),
+                      );
+                    },
                     icon: const Icon(Icons.edit_outlined),
                     label: const Text('Edit Profile'),
                     style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
                       minimumSize: const Size(double.infinity, 50),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                   ),
                   const SizedBox(height: 20),
-                  TextButton(
-                    onPressed: () {
-                       ref.read(authStateProvider.notifier).state = null;
-                       Navigator.pop(context);
-                    },
-                    child: const Text('Logout', style: TextStyle(color: Colors.red)),
-                  ),
+
                 ],
               ),
             ),
