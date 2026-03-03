@@ -6,6 +6,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'product_details.dart';
 import 'post_demand_screen.dart';
 import 'category_products_screen.dart';
+import 'notification_screen.dart';
 
 class BuyerHomeScreen extends ConsumerWidget {
   const BuyerHomeScreen({super.key});
@@ -153,7 +154,12 @@ class BuyerHomeScreen extends ConsumerWidget {
             children: [
               IconButton(
                 icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                onPressed: () {},
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const NotificationScreen()),
+                  );
+                },
               ),
               Positioned(
                 right: 12,

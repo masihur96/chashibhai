@@ -45,3 +45,5 @@ final productsByCategoryProvider = Provider.family<List<Product>, String>((ref, 
   if (category == 'All') return products;
   return products.where((p) => p.category == category).toList();
 });
+
+final notificationsProvider = StateProvider<List<AppNotification>>((ref) => MockData.demoNotifications);

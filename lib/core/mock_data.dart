@@ -135,4 +135,37 @@ class MockData {
       createdAt: DateTime.now().subtract(const Duration(days: 2)),
     ),
   ];
+
+  static final demoNotifications = [
+    AppNotification(
+      id: 'n1',
+      title: 'Order Delivered',
+      message: 'Your order for 100KG Organic Potatoes has been delivered successfully.',
+      createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+      type: NotificationType.order,
+    ),
+    AppNotification(
+      id: 'n2',
+      title: 'Payment Received',
+      message: 'You have received ৳3,500.00 in your wallet from Farmer Abdul.',
+      createdAt: DateTime.now().subtract(const Duration(days: 1)),
+      type: NotificationType.payment,
+    ),
+    AppNotification(
+      id: 'n3',
+      title: 'Price Alert',
+      message: 'The price of Red Onions has dropped by 10% in your area.',
+      createdAt: DateTime.now().subtract(const Duration(days: 2)),
+      type: NotificationType.alert,
+      isRead: true,
+    ),
+    AppNotification(
+      id: 'n4',
+      title: 'Welcome to ChashiBhai!',
+      message: 'Start exploring the best agri-deals in Bangladesh today.',
+      createdAt: DateTime.now().subtract(const Duration(days: 5)),
+      type: NotificationType.promo,
+      isRead: true,
+    ),
+  ];
 }

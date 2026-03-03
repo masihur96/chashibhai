@@ -185,3 +185,23 @@ class Transaction {
     required this.createdAt,
   });
 }
+
+enum NotificationType { order, payment, alert, promo }
+
+class AppNotification {
+  final String id;
+  final String title;
+  final String message;
+  final DateTime createdAt;
+  final NotificationType type;
+  final bool isRead;
+
+  AppNotification({
+    required this.id,
+    required this.title,
+    required this.message,
+    required this.createdAt,
+    required this.type,
+    this.isRead = false,
+  });
+}
