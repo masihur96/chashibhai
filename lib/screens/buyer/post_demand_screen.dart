@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models.dart';
+import '../../providers/app_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 class PostDemandScreen extends ConsumerStatefulWidget {
@@ -16,9 +17,19 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
   double _quantity = 0;
   double _callingPrice = 0;
   String _location = '';
+  String? _selectedBuyerId;
 
   @override
   Widget build(BuildContext context) {
+    final user = ref.watch(authStateProvider);
+    _selectedBuyerId ??= user?.id ?? 'u1';
+
+    final List<Map<String, String>> buyers = [
+      if (user != null) {'id': user.id, 'name': '${user.name} (You)'} else {'id': 'u1', 'name': 'Guest User'},
+      {'id': 'u2', 'name': 'Karim (Wholesaler)'},
+      {'id': 'u3', 'name': 'Rahim (Retailer)'},
+    ];
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Post Buying Demand'),
@@ -35,6 +46,28 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
               Text(
                 'Demand Specifications',
                 style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 16),
+              DropdownButtonFormField<String>(
+                value: _selectedBuyerId,
+                decoration: InputDecoration(
+                  labelText: 'Select Buyer',
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  prefixIcon: const Icon(Icons.person_outline),
+                ),
+                items: buyers.map((b) {
+                  return DropdownMenuItem<String>(
+                    value: b['id'],
+                    child: Text(b['name']!),
+                  );
+                }).toList(),
+                onChanged: (v) {
+                  if (v != null) {
+                    setState(() {
+                      _selectedBuyerId = v;
+                    });
+                  }
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(
