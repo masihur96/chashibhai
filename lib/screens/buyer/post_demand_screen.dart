@@ -18,7 +18,8 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
   double _quantity = 0;
   double _callingPrice = 0;
   String _location = '';
-  String? _selectedBuyerId;
+  List<String> _selectedBuyerIds = [];
+  bool _isInit = false;
   late DateTime _expiryDate;
 
   @override
@@ -30,7 +31,11 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
   @override
   Widget build(BuildContext context) {
     final user = ref.watch(authStateProvider);
-    _selectedBuyerId ??= user?.id ?? 'u1';
+    
+    if (!_isInit) {
+      _selectedBuyerIds = [user?.id ?? 'u1'];
+      _isInit = true;
+    }
 
     final List<Map<String, String>> buyers = [
       if (user != null)
@@ -60,28 +65,38 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
                 ),
               ),
               const SizedBox(height: 16),
-              DropdownButtonFormField<String>(
-                value: _selectedBuyerId,
-                decoration: InputDecoration(
-                  labelText: 'Select Buyer',
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
+              InkWell(
+                onTap: () => _showMultiSelectDialog(context, buyers),
+                borderRadius: BorderRadius.circular(12),
+                child: InputDecorator(
+                  decoration: InputDecoration(
+                    labelText: 'Select Buyers',
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    prefixIcon: const Icon(Icons.group_add_outlined),
                   ),
-                  prefixIcon: const Icon(Icons.person_outline),
+                  isEmpty: _selectedBuyerIds.isEmpty,
+                  child: _selectedBuyerIds.isEmpty 
+                    ? const Text('Tap to select buyers...', style: TextStyle(color: Colors.grey, fontSize: 16))
+                    : Wrap(
+                        spacing: 8,
+                        runSpacing: 4,
+                        children: _selectedBuyerIds.map((id) {
+                          final b = buyers.firstWhere((b) => b['id'] == id, orElse: () => {'name': 'Unknown'});
+                          return Chip(
+                            label: Text(b['name']!, style: const TextStyle(fontSize: 12)),
+                            backgroundColor: const Color(0xFF2E7D32).withOpacity(0.1),
+                            deleteIcon: const Icon(Icons.close, size: 16),
+                            onDeleted: () {
+                              setState(() {
+                                _selectedBuyerIds.remove(id);
+                              });
+                            },
+                          );
+                        }).toList(),
+                      ),
                 ),
-                items: buyers.map((b) {
-                  return DropdownMenuItem<String>(
-                    value: b['id'],
-                    child: Text(b['name']!),
-                  );
-                }).toList(),
-                onChanged: (v) {
-                  if (v != null) {
-                    setState(() {
-                      _selectedBuyerId = v;
-                    });
-                  }
-                },
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -212,6 +227,74 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
           ),
         ),
       ),
+    );
+  }
+
+  void _showMultiSelectDialog(BuildContext context, List<Map<String, String>> buyers) {
+    List<String> tempSelected = List.from(_selectedBuyerIds);
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (BuildContext ctx) {
+        return StatefulBuilder(
+          builder: (BuildContext context, StateSetter setModalState) {
+            return Padding(
+              padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text('Select Buyers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                  const SizedBox(height: 16),
+                  ListView.builder(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    itemCount: buyers.length,
+                    itemBuilder: (context, index) {
+                      final buyer = buyers[index];
+                      final isSelected = tempSelected.contains(buyer['id']);
+                      return CheckboxListTile(
+                        contentPadding: EdgeInsets.zero,
+                        controlAffinity: ListTileControlAffinity.leading,
+                        title: Text(buyer['name']!),
+                        value: isSelected,
+                        activeColor: const Color(0xFF2E7D32),
+                        onChanged: (bool? value) {
+                          setModalState(() {
+                            if (value == true) {
+                              tempSelected.add(buyer['id']!);
+                            } else {
+                              tempSelected.remove(buyer['id']);
+                            }
+                          });
+                        },
+                      );
+                    },
+                  ),
+                  const SizedBox(height: 24),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 50,
+                    child: ElevatedButton(
+                      onPressed: () {
+                        setState(() {
+                          _selectedBuyerIds = tempSelected;
+                        });
+                        Navigator.pop(ctx);
+                      },
+                      child: const Text('Confirm', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 
