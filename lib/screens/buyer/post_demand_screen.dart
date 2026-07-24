@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../core/models.dart';
-import '../../providers/app_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+
+import '../../providers/app_providers.dart';
 
 class PostDemandScreen extends ConsumerStatefulWidget {
   const PostDemandScreen({super.key});
@@ -33,15 +33,16 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
     _selectedBuyerId ??= user?.id ?? 'u1';
 
     final List<Map<String, String>> buyers = [
-      if (user != null) {'id': user.id, 'name': '${user.name} (You)'} else {'id': 'u1', 'name': 'Guest User'},
+      if (user != null)
+        {'id': user.id, 'name': '${user.name} (You)'}
+      else
+        {'id': 'u1', 'name': 'Guest User'},
       {'id': 'u2', 'name': 'Karim (Wholesaler)'},
       {'id': 'u3', 'name': 'Rahim (Retailer)'},
     ];
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Post Buying Demand'),
-      ),
+      appBar: AppBar(title: const Text('Post Buying Demand')),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -53,14 +54,19 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
               const SizedBox(height: 24),
               Text(
                 'Demand Specifications',
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
               DropdownButtonFormField<String>(
                 value: _selectedBuyerId,
                 decoration: InputDecoration(
                   labelText: 'Select Buyer',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   prefixIcon: const Icon(Icons.person_outline),
                 ),
                 items: buyers.map((b) {
@@ -82,7 +88,9 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
                 decoration: InputDecoration(
                   labelText: 'What product do you need?',
                   hintText: 'e.g., Winter Potatoes',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   prefixIcon: const Icon(Icons.search),
                 ),
                 onChanged: (v) => _productName = v,
@@ -95,7 +103,9 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
                     child: TextFormField(
                       decoration: InputDecoration(
                         labelText: 'Quantity Needed',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                         suffixText: 'KG',
                       ),
                       keyboardType: TextInputType.number,
@@ -108,7 +118,9 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
                       decoration: InputDecoration(
                         labelText: 'Calling Price',
                         prefixText: '৳ ',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
                       ),
                       keyboardType: TextInputType.number,
                       onChanged: (v) => _callingPrice = double.tryParse(v) ?? 0,
@@ -121,7 +133,9 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
                 decoration: InputDecoration(
                   labelText: 'Delivery Location',
                   hintText: 'e.g., Kawran Bazar, Dhaka',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                   prefixIcon: const Icon(Icons.location_on_outlined),
                 ),
                 onChanged: (v) => _location = v,
@@ -129,15 +143,25 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
               const SizedBox(height: 24),
               Text(
                 'Timeline',
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               ListTile(
                 tileColor: Colors.grey[100],
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                leading: const Icon(Icons.calendar_today, color: Color(0xFF2E7D32)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                leading: const Icon(
+                  Icons.calendar_today,
+                  color: Color(0xFF2E7D32),
+                ),
                 title: const Text('Demand Expiry'),
-                subtitle: Text('Expires on ${DateFormat('MMM dd, yyyy').format(_expiryDate)}'),
+                subtitle: Text(
+                  'Expires on ${DateFormat('MMM dd, yyyy').format(_expiryDate)}',
+                ),
                 trailing: const Icon(Icons.arrow_drop_down),
                 onTap: () async {
                   final selectedDate = await showDatePicker(
@@ -161,12 +185,19 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
                   onPressed: () {
                     if (_formKey.currentState!.validate()) {
                       ScaffoldMessenger.of(context).showSnackBar(
-                        const SnackBar(content: Text('Demand posted! Farmers will now see your request.')),
+                        const SnackBar(
+                          content: Text(
+                            'Demand posted! Farmers will now see your request.',
+                          ),
+                        ),
                       );
                       Navigator.pop(context);
                     }
                   },
-                  child: const Text('Publish Demand', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                  child: const Text(
+                    'Publish Demand',
+                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
                 ),
               ),
               const SizedBox(height: 16),
