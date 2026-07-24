@@ -232,6 +232,7 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
 
   void _showMultiSelectDialog(BuildContext context, List<Map<String, String>> buyers) {
     List<String> tempSelected = List.from(_selectedBuyerIds);
+    String searchQuery = '';
 
     showModalBottomSheet(
       context: context,
@@ -242,21 +243,44 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
       builder: (BuildContext ctx) {
         return StatefulBuilder(
           builder: (BuildContext context, StateSetter setModalState) {
+            final filteredBuyers = buyers.where((b) => 
+                b['name']!.toLowerCase().contains(searchQuery.toLowerCase())).toList();
+
             return Padding(
-              padding: const EdgeInsets.fromLTRB(20, 20, 20, 40),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text('Select Buyers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 16),
-                  ListView.builder(
-                    shrinkWrap: true,
-                    physics: const NeverScrollableScrollPhysics(),
-                    itemCount: buyers.length,
-                    itemBuilder: (context, index) {
-                      final buyer = buyers[index];
-                      final isSelected = tempSelected.contains(buyer['id']);
+              padding: EdgeInsets.fromLTRB(20, 20, 20, MediaQuery.of(ctx).viewInsets.bottom + 20),
+              child: ConstrainedBox(
+                constraints: BoxConstraints(
+                  maxHeight: MediaQuery.of(context).size.height * 0.7,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text('Select Buyers', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const SizedBox(height: 16),
+                    TextField(
+                      decoration: InputDecoration(
+                        hintText: 'Search buyers...',
+                        prefixIcon: const Icon(Icons.search),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                      ),
+                      onChanged: (val) {
+                        setModalState(() {
+                          searchQuery = val;
+                        });
+                      },
+                    ),
+                    const SizedBox(height: 16),
+                    Flexible(
+                      child: ListView.builder(
+                        shrinkWrap: true,
+                        itemCount: filteredBuyers.length,
+                        itemBuilder: (context, index) {
+                          final buyer = filteredBuyers[index];
+                          final isSelected = tempSelected.contains(buyer['id']);
                       return CheckboxListTile(
                         contentPadding: EdgeInsets.zero,
                         controlAffinity: ListTileControlAffinity.leading,
@@ -275,6 +299,7 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
                       );
                     },
                   ),
+                  ),
                   const SizedBox(height: 24),
                   SizedBox(
                     width: double.infinity,
@@ -290,6 +315,7 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
                     ),
                   ),
                 ],
+              ),
               ),
             );
           },
