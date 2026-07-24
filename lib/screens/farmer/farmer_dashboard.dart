@@ -51,6 +51,25 @@ class FarmerDashboard extends ConsumerWidget {
           ],
         ),
       ),
+      bottomNavigationBar: BottomNavigationBar(
+        selectedItemColor: const Color(0xFF2E7D32),
+        unselectedItemColor: Colors.grey,
+        currentIndex: 0,
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: 'Home',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.analytics),
+            label: 'Analytics',
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: 'Profile',
+          ),
+        ],
+      ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () {
           Navigator.push(

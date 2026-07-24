@@ -101,6 +101,25 @@ class BuyerHomeScreen extends ConsumerWidget {
             ),
           ],
         ),
+        bottomNavigationBar: BottomNavigationBar(
+          selectedItemColor: const Color(0xFF2E7D32),
+          unselectedItemColor: Colors.grey,
+          currentIndex: 0,
+          items: [
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.home),
+              label: 'home'.tr(languageCode),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.list_alt),
+              label: 'orders'.tr(languageCode),
+            ),
+            BottomNavigationBarItem(
+              icon: const Icon(Icons.person),
+              label: 'profile'.tr(languageCode),
+            ),
+          ],
+        ),
         floatingActionButton: FloatingActionButton.extended(
           onPressed: () {
             Navigator.push(
