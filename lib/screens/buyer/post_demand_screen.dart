@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/models.dart';
 import '../../providers/app_providers.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class PostDemandScreen extends ConsumerStatefulWidget {
   const PostDemandScreen({super.key});
@@ -18,6 +19,13 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
   double _callingPrice = 0;
   String _location = '';
   String? _selectedBuyerId;
+  late DateTime _expiryDate;
+
+  @override
+  void initState() {
+    super.initState();
+    _expiryDate = DateTime.now().add(const Duration(days: 3));
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -129,9 +137,21 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
                 shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                 leading: const Icon(Icons.calendar_today, color: Color(0xFF2E7D32)),
                 title: const Text('Demand Expiry'),
-                subtitle: const Text('Expires in 3 days (Auto)'),
+                subtitle: Text('Expires on ${DateFormat('MMM dd, yyyy').format(_expiryDate)}'),
                 trailing: const Icon(Icons.arrow_drop_down),
-                onTap: () {},
+                onTap: () async {
+                  final selectedDate = await showDatePicker(
+                    context: context,
+                    initialDate: _expiryDate,
+                    firstDate: DateTime.now(),
+                    lastDate: DateTime.now().add(const Duration(days: 365)),
+                  );
+                  if (selectedDate != null) {
+                    setState(() {
+                      _expiryDate = selectedDate;
+                    });
+                  }
+                },
               ),
               const SizedBox(height: 32),
               SizedBox(
