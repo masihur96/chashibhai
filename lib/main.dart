@@ -3,27 +3,27 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'providers/auth_provider.dart';
-import 'providers/product_provider.dart';
-import 'providers/group_provider.dart';
-import 'providers/demand_provider.dart';
-import 'providers/order_provider.dart';
-import 'providers/app_state_provider.dart';
+import './features/auth/presentation/state/auth_provider.dart';
+import './features/buyer/presentation/state/product_provider.dart';
+import './features/group/presentation/state/group_provider.dart';
+import './features/buyer/presentation/state/demand_provider.dart';
+import './features/wallet/presentation/state/order_provider.dart';
+import './features/account/presentation/state/app_state_provider.dart';
 
-import 'core/models.dart';
-import 'screens/buyer/buyer_home.dart';
-import 'screens/farmer/farmer_dashboard.dart';
-import 'widgets/wallet_screen.dart';
-import 'screens/buyer/post_demand_screen.dart';
-import 'screens/buyer/product_details.dart';
-import 'screens/auth/login_screen.dart';
-import 'screens/account/transactions_screen.dart';
-import 'screens/account/profile_screen.dart';
-import 'screens/account/settings_screen.dart';
-import 'screens/account/support_screen.dart';
-import 'screens/account/about_screen.dart';
-import 'screens/buyer/groups/groups_list_screen.dart';
-import 'core/localization.dart';
+import './core/models/models.dart';
+import './features/buyer/presentation/views/buyer_home.dart';
+import './features/farmer/presentation/views/farmer_dashboard.dart';
+import './features/wallet/presentation/views/wallet_screen.dart';
+import './features/buyer/presentation/views/post_demand_screen.dart';
+import './features/buyer/presentation/views/product_details.dart';
+import './features/auth/presentation/views/login_screen.dart';
+import './features/wallet/presentation/views/transactions_screen.dart';
+import './features/account/presentation/views/profile_screen.dart';
+import './features/account/presentation/views/settings_screen.dart';
+import './features/account/presentation/views/support_screen.dart';
+import './features/account/presentation/views/about_screen.dart';
+import './features/group/presentation/views/groups_list_screen.dart';
+import './core/utils/localization.dart';
 
 
 void main() {
