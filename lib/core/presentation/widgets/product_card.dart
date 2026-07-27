@@ -30,27 +30,28 @@ class ProductCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Stack(
-              children: [
-                Semantics(
-                  image: true,
-                  label: 'Image of ${product.productName}',
-                  child: Image.asset(
-                    product.imageUrl,
-                    height: 160,
-                    width: double.infinity,
-                    fit: BoxFit.cover,
+            Expanded(
+              child: Stack(
+                children: [
+                  Semantics(
+                    image: true,
+                    label: 'Image of ${product.productName}',
+                    child: Image.asset(
+                      product.imageUrl,
+                      width: double.infinity,
+                      fit: BoxFit.cover,
+                    ),
                   ),
-                ),
-                Positioned(
-                  top: 12,
-                  right: 12,
-                  child: StatusBadge(
-                    label: product.tradeType.toString().split('.').last.toUpperCase(),
-                    variant: product.tradeType == TradeType.auction ? BadgeVariant.warning : BadgeVariant.info,
+                  Positioned(
+                    top: 12,
+                    right: 12,
+                    child: StatusBadge(
+                      label: product.tradeType.toString().split('.').last.toUpperCase(),
+                      variant: product.tradeType == TradeType.auction ? BadgeVariant.warning : BadgeVariant.info,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
             Padding(
               padding: const EdgeInsets.all(16),
