@@ -6,7 +6,7 @@ import '../../../group/presentation/state/group_provider.dart';
 import '../state/demand_provider.dart';
 import '../../../wallet/presentation/state/order_provider.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
-import '../widgets/product_card.dart';
+import '../../../../core/presentation/widgets/product_card.dart';
 import './product_details.dart';
 import 'package:google_fonts/google_fonts.dart';
 

@@ -18,9 +18,13 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Card(
+    return Semantics(
+      label: 'Product: ${product.productName}, Price: ${currencyFormat.format(product.minimumPrice)} per ${product.unit}',
+      button: true,
+      onTapHint: 'View product details',
+      child: GestureDetector(
+        onTap: onTap,
+        child: Card(
         margin: const EdgeInsets.only(bottom: 16),
         clipBehavior: Clip.antiAlias,
         child: Column(
@@ -28,11 +32,15 @@ class ProductCard extends StatelessWidget {
           children: [
             Stack(
               children: [
-                Image.asset(
-                  product.imageUrl,
-                  height: 160,
-                  width: double.infinity,
-                  fit: BoxFit.cover,
+                Semantics(
+                  image: true,
+                  label: 'Image of ${product.productName}',
+                  child: Image.asset(
+                    product.imageUrl,
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
                 ),
                 Positioned(
                   top: 12,
@@ -99,6 +107,8 @@ class ProductCard extends StatelessWidget {
               ),
             ),
           ],
+        ),
+      ),
         ),
       ),
     );

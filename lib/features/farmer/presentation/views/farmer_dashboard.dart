@@ -25,32 +25,37 @@ class FarmerDashboard extends StatelessWidget {
         child: Column(
           children: [
             _buildFarmerHeader(context),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _buildStatsGrid(currencyFormat),
-                  const SizedBox(height: 32),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        'Your Active Listings',
-                        style: GoogleFonts.outfit(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                        ),
+                      _buildStatsGrid(currencyFormat),
+                      const SizedBox(height: 32),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'Your Active Listings',
+                            style: GoogleFonts.outfit(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          TextButton(
+                            onPressed: () {},
+                            child: const Text('View All'),
+                          ),
+                        ],
                       ),
-                      TextButton(
-                        onPressed: () {},
-                        child: const Text('View All'),
-                      ),
+                      const SizedBox(height: 12),
+                      _buildListingList(products, currencyFormat),
                     ],
                   ),
-                  const SizedBox(height: 12),
-                  _buildListingList(products, currencyFormat),
-                ],
+                ),
               ),
             ),
           ],
@@ -76,67 +81,73 @@ class FarmerDashboard extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddProductScreen()),
-          );
-        },
-        backgroundColor: const Color(0xFF2E7D32),
-        label: const Text('Add Product', style: TextStyle(color: Colors.white)),
-        icon: const Icon(Icons.add, color: Colors.white),
+      floatingActionButton: Semantics(
+        label: 'Add New Product',
+        child: FloatingActionButton.extended(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const AddProductScreen()),
+            );
+          },
+          backgroundColor: Theme.of(context).colorScheme.primary,
+          label: const Text('Add Product', style: TextStyle(color: Colors.white)),
+          icon: const Icon(Icons.add, color: Colors.white),
+        ),
       ),
     );
   }
 
   Widget _buildFarmerHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(20, 60, 20, 40),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
+    return Semantics(
+      label: 'Farmer Dashboard Header',
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(20, 60, 20, 40),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
         ),
-      ),
-      child: Column(
-        children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              IconButton(
-                icon: Icon(Icons.menu, color: Theme.of(context).colorScheme.onPrimary),
-                onPressed: () => Scaffold.of(context).openDrawer(),
-              ),
-              Text(
-                'Farmer Dashboard',
-                style: GoogleFonts.outfit(
-                  color: Theme.of(context).colorScheme.onPrimary,
-                  fontSize: 20,
-                  fontWeight: FontWeight.bold,
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                IconButton(
+                  icon: Icon(Icons.menu, color: Theme.of(context).colorScheme.onPrimary),
+                  onPressed: () => Scaffold.of(context).openDrawer(),
                 ),
-              ),
-              CircleAvatar(
-                backgroundColor: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
-                child: Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary),
-              ),
-            ],
-          ),
-          const SizedBox(height: 30),
-          Text(
-            'Total Earnings',
-            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8), fontSize: 16),
-          ),
-          Text(
-            '৳ 84,250.00',
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onPrimary,
-              fontSize: 36,
-              fontWeight: FontWeight.bold,
+                Text(
+                  'Farmer Dashboard',
+                  style: GoogleFonts.outfit(
+                    color: Theme.of(context).colorScheme.onPrimary,
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                CircleAvatar(
+                  backgroundColor: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
+                  child: Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary),
+                ),
+              ],
             ),
-          ),
-        ],
+            const SizedBox(height: 30),
+            Text(
+              'Total Earnings',
+              style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8), fontSize: 16),
+            ),
+            Text(
+              '৳ 84,250.00',
+              style: TextStyle(
+                color: Theme.of(context).colorScheme.onPrimary,
+                fontSize: 36,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -199,56 +210,63 @@ class FarmerDashboard extends StatelessWidget {
       itemCount: products.length,
       itemBuilder: (context, index) {
         final product = products[index];
-        return Card(
-          margin: const EdgeInsets.only(bottom: 12),
-          child: ListTile(
-            contentPadding: const EdgeInsets.all(12),
-            leading: ClipRRect(
-              borderRadius: BorderRadius.circular(8),
-              child: Image.asset(
-                product.imageUrl,
-                width: 60,
-                height: 60,
-                fit: BoxFit.cover,
-              ),
-            ),
-            title: Text(
-              product.productName,
-              style: const TextStyle(fontWeight: FontWeight.bold),
-            ),
-            subtitle: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const SizedBox(height: 4),
-                Text('${product.quantity} ${product.unit} listed'),
-                const SizedBox(height: 4),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                  decoration: BoxDecoration(
-                    color: product.tradeType == TradeType.auction ? Colors.orange[50] : Colors.blue[50],
-                    borderRadius: BorderRadius.circular(4),
+        return Semantics(
+          label: 'Listing Card for ${product.productName}',
+          child: Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            child: ListTile(
+              contentPadding: const EdgeInsets.all(12),
+              leading: ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: Semantics(
+                  image: true,
+                  label: 'Product Image',
+                  child: Image.asset(
+                    product.imageUrl,
+                    width: 60,
+                    height: 60,
+                    fit: BoxFit.cover,
                   ),
-                  child: Text(
-                    product.tradeType.toString().split('.').last.toUpperCase(),
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.bold,
-                      color: product.tradeType == TradeType.auction ? Colors.orange[800] : Colors.blue[800],
+                ),
+              ),
+              title: Text(
+                product.productName,
+                style: const TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const SizedBox(height: 4),
+                  Text('${product.quantity} ${product.unit} listed'),
+                  const SizedBox(height: 4),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: product.tradeType == TradeType.auction ? Colors.orange.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      product.tradeType.toString().split('.').last.toUpperCase(),
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: product.tradeType == TradeType.auction ? Colors.orange.shade800 : Colors.blue.shade800,
+                      ),
                     ),
                   ),
-                ),
-              ],
-            ),
-            trailing: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: [
-                Text(
-                  currencyFormat.format(product.minimumPrice),
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2E7D32)),
-                ),
-                const Icon(Icons.arrow_forward_ios, size: 14),
-              ],
+                ],
+              ),
+              trailing: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Text(
+                    currencyFormat.format(product.minimumPrice),
+                    style: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+                  ),
+                  const Icon(Icons.arrow_forward_ios, size: 14),
+                ],
+              ),
             ),
           ),
         );

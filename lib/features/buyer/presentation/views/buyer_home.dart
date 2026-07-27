@@ -74,17 +74,20 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
         ],
       ),
       floatingActionButton: _currentIndex == 0
-          ? FloatingActionButton.extended(
-              heroTag: null,
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const PostDemandScreen()),
-                );
-              },
-              backgroundColor: const Color(0xFF2E7D32),
-              label: const Text('Call Price (Demand)', style: TextStyle(color: Colors.white)),
-              icon: const Icon(Icons.campaign, color: Colors.white),
+          ? Semantics(
+              label: 'Post a New Demand',
+              child: FloatingActionButton.extended(
+                heroTag: null,
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const PostDemandScreen()),
+                  );
+                },
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                label: const Text('Call Price (Demand)', style: TextStyle(color: Colors.white)),
+                icon: const Icon(Icons.campaign, color: Colors.white),
+              ),
             )
           : null,
     );
@@ -105,9 +108,12 @@ class _HomeTab extends StatelessWidget {
       children: [
         _buildHeader(context),
         Expanded(
-          child: ListView(
-            padding: const EdgeInsets.all(16),
-            children: [
+          child: Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: ListView(
+                padding: const EdgeInsets.all(16),
+                children: [
               CustomSearchBar(
                 hintText: 'search_placeholder'.tr(languageCode),
                 onChanged: (value) => context.read<ProductProvider>().setSearchQuery(value),
@@ -226,6 +232,7 @@ class _HomeTab extends StatelessWidget {
             ],
           ),
         ),
+        ),
       ],
     );
   }
@@ -308,15 +315,17 @@ class _HomeTab extends StatelessWidget {
   }
 
   Widget _buildHeader(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(16, 60, 16, 20),
-      decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary,
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
+    return Semantics(
+      label: 'Buyer Header',
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(16, 60, 16, 20),
+        decoration: BoxDecoration(
+          color: Theme.of(context).colorScheme.primary,
+          borderRadius: const BorderRadius.only(
+            bottomLeft: Radius.circular(30),
+            bottomRight: Radius.circular(30),
+          ),
         ),
-      ),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
