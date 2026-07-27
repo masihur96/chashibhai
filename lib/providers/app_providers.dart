@@ -51,6 +51,26 @@ final notificationsProvider = StateProvider<List<AppNotification>>((ref) => Mock
 
 final appLocaleProvider = StateProvider<String>((ref) => 'en');
 
+final groupsProvider = StateProvider<List<BuyingGroup>>((ref) => MockData.demoGroups);
+
+final groupByIdProvider = Provider.family<BuyingGroup?, String>((ref, id) {
+  final groups = ref.watch(groupsProvider);
+  try {
+    return groups.firstWhere((g) => g.id == id);
+  } catch (_) {
+    return null;
+  }
+});
+
+final myGroupsProvider = Provider<List<BuyingGroup>>((ref) {
+  final groups = ref.watch(groupsProvider);
+  final user = ref.watch(authStateProvider);
+  if (user == null) return [];
+  return groups.where((g) => g.members.any((m) => m.userId == user.id)).toList();
+});
+
+
+
 final biometricEnabledProvider = StateProvider<bool>((ref) => false);
 
 final biometricServiceProvider = Provider((ref) => LocalAuthentication());

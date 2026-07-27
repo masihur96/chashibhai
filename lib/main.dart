@@ -15,7 +15,9 @@ import 'screens/account/profile_screen.dart';
 import 'screens/account/settings_screen.dart';
 import 'screens/account/support_screen.dart';
 import 'screens/account/about_screen.dart';
+import 'screens/buyer/groups/groups_list_screen.dart';
 import 'core/localization.dart';
+
 
 void main() {
   runApp(
@@ -233,6 +235,14 @@ class RoleWrapper extends ConsumerWidget {
                     onTap: () {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const TransactionsScreen()));
+                    },
+                  ),
+                  _buildDrawerItem(
+                    icon: Icons.groups_outlined,
+                    title: 'Buying Groups',
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const GroupsListScreen()));
                     },
                   ),
                   const Divider(indent: 20, endIndent: 20, height: 30),

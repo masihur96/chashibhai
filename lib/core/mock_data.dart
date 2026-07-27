@@ -1,6 +1,76 @@
 import 'models.dart';
 
 class MockData {
+  static final demoGroups = [
+    BuyingGroup(
+      id: 'g1',
+      name: 'Dhaka Potato Buyers',
+      productName: 'Organic Potatoes',
+      category: 'Vegetables',
+      targetQuantity: 500,
+      filledQuantity: 320,
+      pricePerKg: 35.0,
+      deliveryLocation: 'Kawran Bazar, Dhaka',
+      createdBy: 'u1',
+      expiryDate: DateTime.now().add(const Duration(days: 4)),
+      status: GroupBuyStatus.open,
+      members: [
+        GroupMember(userId: 'u1', name: 'Masihur Rahman', contributionQuantity: 150, isPaid: true, phone: '01700000000'),
+        GroupMember(userId: 'u2', name: 'Karim (Wholesaler)', contributionQuantity: 100, isPaid: false, phone: '01711111111'),
+        GroupMember(userId: 'u3', name: 'Rahim (Retailer)', contributionQuantity: 70, isPaid: true, phone: '01722222222'),
+      ],
+      messages: [
+        GroupMessage(id: 'm1', groupId: 'g1', senderId: 'u1', senderName: 'Masihur Rahman', message: 'আমি এই গ্রুপ তৈরি করেছি। আসুন একসাথে আলু কিনি! 🥔', createdAt: DateTime.now().subtract(const Duration(hours: 5))),
+        GroupMessage(id: 'm2', groupId: 'g1', senderId: 'u2', senderName: 'Karim', message: 'দারুণ আইডিয়া ভাই! আমি ১০০ কেজি নেব।', createdAt: DateTime.now().subtract(const Duration(hours: 4))),
+        GroupMessage(id: 'm3', groupId: 'g1', senderId: 'u3', senderName: 'Rahim', message: 'আমিও আছি। ৭০ কেজি কনফার্ম করলাম।', createdAt: DateTime.now().subtract(const Duration(hours: 3))),
+        GroupMessage(id: 'm4', groupId: 'g1', senderId: 'u1', senderName: 'Masihur Rahman', message: 'কৃষক আব্দুল সাহেবের সাথে কথা হয়েছে। দাম ৩৫ টাকা/কেজি পাওয়া যাবে।', createdAt: DateTime.now().subtract(const Duration(hours: 1))),
+      ],
+    ),
+    BuyingGroup(
+      id: 'g2',
+      name: 'BD Rice Collective',
+      productName: 'Fresh Basmati Rice',
+      category: 'Grains',
+      targetQuantity: 1000,
+      filledQuantity: 450,
+      pricePerKg: 118.0,
+      deliveryLocation: 'Sadarghat, Dhaka',
+      createdBy: 'u2',
+      expiryDate: DateTime.now().add(const Duration(days: 7)),
+      status: GroupBuyStatus.open,
+      members: [
+        GroupMember(userId: 'u2', name: 'Karim (Wholesaler)', contributionQuantity: 300, isPaid: true, phone: '01711111111'),
+        GroupMember(userId: 'u3', name: 'Rahim (Retailer)', contributionQuantity: 150, isPaid: false, phone: '01722222222'),
+      ],
+      messages: [
+        GroupMessage(id: 'm5', groupId: 'g2', senderId: 'u2', senderName: 'Karim', message: 'Basmati rice group started! We need 1000 KG for bulk discount.', createdAt: DateTime.now().subtract(const Duration(days: 1))),
+        GroupMessage(id: 'm6', groupId: 'g2', senderId: 'u3', senderName: 'Rahim', message: 'Joined! I can take 150 KG.', createdAt: DateTime.now().subtract(const Duration(hours: 10))),
+      ],
+    ),
+    BuyingGroup(
+      id: 'g3',
+      name: 'Chittagong Onion Group',
+      productName: 'Red Onions',
+      category: 'Vegetables',
+      targetQuantity: 300,
+      filledQuantity: 300,
+      pricePerKg: 62.0,
+      deliveryLocation: 'Reazuddin Bazar, Chittagong',
+      createdBy: 'u3',
+      expiryDate: DateTime.now().add(const Duration(days: 1)),
+      status: GroupBuyStatus.active,
+      members: [
+        GroupMember(userId: 'u3', name: 'Rahim (Retailer)', contributionQuantity: 180, isPaid: true, phone: '01722222222'),
+        GroupMember(userId: 'u2', name: 'Karim (Wholesaler)', contributionQuantity: 120, isPaid: true, phone: '01711111111'),
+      ],
+      messages: [
+        GroupMessage(id: 'm7', groupId: 'g3', senderId: 'u3', senderName: 'Rahim', message: 'Group is FULL! 🎉 All 300 KG committed. Waiting for farmer confirmation.', createdAt: DateTime.now().subtract(const Duration(hours: 2))),
+        GroupMessage(id: 'm8', groupId: 'g3', senderId: 'u2', senderName: 'Karim', message: 'Payment করে দিলাম। দ্রুত ডেলিভারি পাবো আশা করি।', createdAt: DateTime.now().subtract(const Duration(hours: 1))),
+      ],
+    ),
+  ];
+
+
   static final currentUser = AppUser(
     id: 'u1',
     name: 'Masihur Rahman',

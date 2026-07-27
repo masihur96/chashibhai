@@ -186,6 +186,8 @@ class Transaction {
   });
 }
 
+enum GroupBuyStatus { open, active, fulfilled, cancelled }
+
 enum NotificationType { order, payment, alert, promo }
 
 class AppNotification {
@@ -204,4 +206,97 @@ class AppNotification {
     required this.type,
     this.isRead = false,
   });
+}
+
+class GroupMessage {
+  final String id;
+  final String groupId;
+  final String senderId;
+  final String senderName;
+  final String message;
+  final DateTime createdAt;
+
+  GroupMessage({
+    required this.id,
+    required this.groupId,
+    required this.senderId,
+    required this.senderName,
+    required this.message,
+    required this.createdAt,
+  });
+}
+
+class GroupMember {
+  final String userId;
+  final String name;
+  final double contributionQuantity;
+  final bool isPaid;
+  final String phone;
+
+  GroupMember({
+    required this.userId,
+    required this.name,
+    required this.contributionQuantity,
+    this.isPaid = false,
+    this.phone = '',
+  });
+}
+
+class BuyingGroup {
+  final String id;
+  final String name;
+  final String productName;
+  final String category;
+  final double targetQuantity;
+  final double filledQuantity;
+  final double pricePerKg;
+  final String deliveryLocation;
+  final String createdBy;
+  final List<GroupMember> members;
+  final List<GroupMessage> messages;
+  final DateTime expiryDate;
+  final GroupBuyStatus status;
+  final String? linkedDemandId;
+
+  BuyingGroup({
+    required this.id,
+    required this.name,
+    required this.productName,
+    required this.category,
+    required this.targetQuantity,
+    required this.filledQuantity,
+    required this.pricePerKg,
+    required this.deliveryLocation,
+    required this.createdBy,
+    required this.members,
+    required this.messages,
+    required this.expiryDate,
+    this.status = GroupBuyStatus.open,
+    this.linkedDemandId,
+  });
+
+  BuyingGroup copyWith({
+    List<GroupMember>? members,
+    List<GroupMessage>? messages,
+    double? filledQuantity,
+    GroupBuyStatus? status,
+    String? linkedDemandId,
+  }) {
+    return BuyingGroup(
+      id: id,
+      name: name,
+      productName: productName,
+      category: category,
+      targetQuantity: targetQuantity,
+      filledQuantity: filledQuantity ?? this.filledQuantity,
+      pricePerKg: pricePerKg,
+      deliveryLocation: deliveryLocation,
+      createdBy: createdBy,
+      members: members ?? this.members,
+      messages: messages ?? this.messages,
+      expiryDate: expiryDate,
+      status: status ?? this.status,
+      linkedDemandId: linkedDemandId ?? this.linkedDemandId,
+    );
+  }
 }
