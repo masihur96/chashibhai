@@ -24,6 +24,7 @@ import './features/account/presentation/views/support_screen.dart';
 import './features/account/presentation/views/about_screen.dart';
 import './features/group/presentation/views/groups_list_screen.dart';
 import './core/utils/localization.dart';
+import './features/admin/presentation/views/admin_shell.dart';
 
 
 void main() {
@@ -384,7 +385,11 @@ class RoleWrapper extends StatelessWidget {
         ),
 
     ),
-      body: role == UserRole.buyer ? const BuyerHomeScreen() : const FarmerDashboard(),
+      body: role == UserRole.admin
+          ? const AdminShell()
+          : role == UserRole.buyer 
+              ? const BuyerHomeScreen() 
+              : const FarmerDashboard(),
     );
   }
 

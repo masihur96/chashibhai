@@ -106,6 +106,41 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: const Text('Send OTP', style: TextStyle(fontSize: 18)),
               ),
             ),
+            const SizedBox(height: 20),
+            
+            // Temporary Login Buttons
+            const Center(child: Text('--- DEVELOPMENT SHORTCUTS ---', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold))),
+            const SizedBox(height: 10),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.blue, padding: const EdgeInsets.symmetric(horizontal: 16)),
+                  onPressed: () {
+                    final user = MockData.currentUser.copyWith(role: UserRole.admin);
+                    context.read<AuthProvider>().setCurrentUser(user);
+                  },
+                  child: const Text('Admin Login'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(horizontal: 16)),
+                  onPressed: () {
+                    final user = MockData.currentUser.copyWith(role: UserRole.buyer);
+                    context.read<AuthProvider>().setCurrentUser(user);
+                  },
+                  child: const Text('Buyer Login'),
+                ),
+                ElevatedButton(
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, padding: const EdgeInsets.symmetric(horizontal: 16)),
+                  onPressed: () {
+                    final user = MockData.currentUser.copyWith(role: UserRole.farmer);
+                    context.read<AuthProvider>().setCurrentUser(user);
+                  },
+                  child: const Text('Farmer Login'),
+                ),
+              ],
+            ),
+            
             const SizedBox(height: 10),
             if (context.watch<AuthProvider>().biometricEnabled) ...[
               const Center(child: Text('OR', style: TextStyle(color: Colors.grey, fontSize: 12))),
