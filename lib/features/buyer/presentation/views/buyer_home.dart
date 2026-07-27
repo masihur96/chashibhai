@@ -6,8 +6,11 @@ import '../../../group/presentation/state/group_provider.dart';
 import '../state/demand_provider.dart';
 import '../../../wallet/presentation/state/order_provider.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
-import '../widgets/product_card.dart';
+import '../../../../core/presentation/widgets/product_card.dart';
+import '../../../../core/presentation/widgets/custom_search_bar.dart';
+import '../../../../core/presentation/widgets/filter_chips_list.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 import './product_details.dart';
 import './post_demand_screen.dart';
 import './category_products_screen.dart';
@@ -105,9 +108,24 @@ class _HomeTab extends StatelessWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildSearchBar(context, languageCode),
+              CustomSearchBar(
+                hintText: 'search_placeholder'.tr(languageCode),
+                onChanged: (value) => context.read<ProductProvider>().setSearchQuery(value),
+              ),
               const SizedBox(height: 20),
-              _buildCategories(context, selectedCategory, languageCode),
+              FilterChipsList(
+                categories: const ['All', 'Vegetables', 'Fruits', 'Grains', 'Spices'],
+                selectedCategory: selectedCategory,
+                onSelected: (category) => context.read<ProductProvider>().setSelectedCategory(category),
+                languageCode: languageCode,
+                categoryTranslationKeys: const {
+                  'All': 'cat_all',
+                  'Vegetables': 'cat_veg',
+                  'Fruits': 'cat_fruits',
+                  'Grains': 'cat_grains',
+                  'Spices': 'cat_spices',
+                },
+              ),
               const SizedBox(height: 20),
 
               // My Groups strip
@@ -193,6 +211,7 @@ class _HomeTab extends StatelessWidget {
                   itemBuilder: (context, index) {
                     return ProductCard(
                       product: products[index],
+                      currencyFormat: NumberFormat.currency(symbol: '৳', decimalDigits: 0),
                       onTap: () {
                         Navigator.push(
                           context,
@@ -341,61 +360,5 @@ class _HomeTab extends StatelessWidget {
     );
   }
 
-  Widget _buildSearchBar(BuildContext context, String languageCode) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      child: SearchBar(
-        hintText: 'search_placeholder'.tr(languageCode),
-        leading: const Padding(
-          padding: EdgeInsets.only(left: 8.0),
-          child: Icon(Icons.search, color: Colors.grey),
-        ),
-        onChanged: (value) => context.read<ProductProvider>().setSearchQuery(value),
-        elevation: WidgetStateProperty.all(1),
-        backgroundColor: WidgetStateProperty.all(Colors.white),
-      ),
-    );
-  }
-
-  Widget _buildCategories(BuildContext context, String selectedCategory, String languageCode) {
-    final categories = ['All', 'Vegetables', 'Fruits', 'Grains', 'Spices'];
-    final categoryKeys = {
-      'All': 'cat_all',
-      'Vegetables': 'cat_veg',
-      'Fruits': 'cat_fruits',
-      'Grains': 'cat_grains',
-      'Spices': 'cat_spices',
-    };
-
-    return SizedBox(
-      height: 40,
-      child: ListView.builder(
-        scrollDirection: Axis.horizontal,
-        itemCount: categories.length,
-        itemBuilder: (context, index) {
-          final category = categories[index];
-          final isSelected = category == selectedCategory;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8.0),
-            child: ChoiceChip(
-              label: Text((categoryKeys[category] ?? category).tr(languageCode)),
-              selected: isSelected,
-              onSelected: (selected) {
-                if (selected) {
-                  context.read<ProductProvider>().setSelectedCategory(category);
-                }
-              },
-              labelStyle: TextStyle(
-                color: isSelected ? Theme.of(context).colorScheme.onPrimary : Colors.black87,
-                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-              ),
-              selectedColor: Theme.of(context).colorScheme.primary,
-              backgroundColor: Theme.of(context).colorScheme.surface,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            ),
-          );
-        },
-      ),
-    );
-  }
+  // Removed _buildSearchBar and _buildCategories as they use reusable core widgets
 }
