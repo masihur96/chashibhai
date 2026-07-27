@@ -6,6 +6,7 @@ import '../../../../core/presentation/widgets/demand_card.dart';
 import '../../../../core/presentation/widgets/custom_search_bar.dart';
 import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import '../../../buyer/presentation/state/demand_provider.dart';
+import 'package:intl/intl.dart';
 
 class DemandMarketplaceScreen extends StatelessWidget {
   const DemandMarketplaceScreen({super.key});
@@ -13,6 +14,7 @@ class DemandMarketplaceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final demands = context.watch<DemandProvider>().demands;
+    final currencyFormat = NumberFormat.currency(symbol: '৳', decimalDigits: 0);
 
     return Scaffold(
       appBar: AppBar(
@@ -25,7 +27,10 @@ class DemandMarketplaceScreen extends StatelessWidget {
             padding: const EdgeInsets.all(16.0),
             child: Semantics(
               label: 'Search Demands',
-              child: const CustomSearchBar(hintText: 'Search by crop or location...'),
+              child: CustomSearchBar(
+                hintText: 'Search by crop or location...',
+                onChanged: (value) {},
+              ),
             ),
           ),
           Expanded(
@@ -41,7 +46,11 @@ class DemandMarketplaceScreen extends StatelessWidget {
                     itemBuilder: (context, index) {
                       return Semantics(
                         label: 'Demand Card ${index + 1}',
-                        child: DemandCard(demand: demands[index]),
+                        child: DemandCard(
+                          demand: demands[index],
+                          currencyFormat: currencyFormat,
+                          onTap: () {},
+                        ),
                       );
                     },
                   ),

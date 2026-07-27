@@ -232,7 +232,7 @@ class _HomeTab extends StatelessWidget {
             ],
           ),
         ),
-        ),
+        ),)
       ],
     );
   }
@@ -365,7 +365,7 @@ class _HomeTab extends StatelessWidget {
             ],
           ),
         ],
-      ),
+      ),)
     );
   }
 

@@ -13,7 +13,7 @@ class NegotiationsListScreen extends StatelessWidget {
         title: Text('My Negotiations', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         backgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      body: const Center(
+      body:  Center(
         child: Semantics(
           label: 'Empty Negotiations State',
           child: EmptyStateWidget(

@@ -9,6 +9,7 @@ import '../../../account/presentation/state/app_state_provider.dart';
 import '../../../../core/presentation/widgets/product_card.dart';
 import './product_details.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:intl/intl.dart';
 
 class CategoryProductsScreen extends StatelessWidget {
   final String category;
@@ -18,6 +19,7 @@ class CategoryProductsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final products = context.watch<ProductProvider>().getProductsByCategory(category);
+    final currencyFormat = NumberFormat.currency(symbol: '৳', decimalDigits: 0);
 
     return Scaffold(
       appBar: AppBar(
@@ -54,6 +56,7 @@ class CategoryProductsScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 return ProductCard(
                   product: products[index],
+                  currencyFormat: currencyFormat,
                   onTap: () {
                     Navigator.push(
                       context,

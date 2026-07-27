@@ -16,10 +16,10 @@ class DemandOffersScreen extends StatelessWidget {
         title: Text('Offers for ${demand.productName}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
         backgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      body: const Center(
+      body: Center(
         child: Semantics(
           label: 'Empty Offers State',
-          child: EmptyStateWidget(
+          child: const EmptyStateWidget(
             icon: Icons.local_offer_outlined,
             title: 'No Offers Yet',
             subtitle: 'Farmers have not responded to this demand.',

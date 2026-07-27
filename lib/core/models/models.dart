@@ -28,6 +28,26 @@ class AppUser {
     this.walletBalance = 0.0,
     this.isVerified = false,
   });
+
+  AppUser copyWith({
+    String? id,
+    String? name,
+    UserRole? role,
+    String? phone,
+    double? rating,
+    double? walletBalance,
+    bool? isVerified,
+  }) {
+    return AppUser(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      role: role ?? this.role,
+      phone: phone ?? this.phone,
+      rating: rating ?? this.rating,
+      walletBalance: walletBalance ?? this.walletBalance,
+      isVerified: isVerified ?? this.isVerified,
+    );
+  }
 }
 
 class Product {
