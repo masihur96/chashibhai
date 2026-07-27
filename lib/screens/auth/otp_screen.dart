@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../providers/app_providers.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/demand_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/app_state_provider.dart';
 import '../../core/models.dart';
 import '../../core/mock_data.dart';
 
-class OTPScreen extends ConsumerStatefulWidget {
+class OTPScreen extends StatefulWidget {
   final String phoneNumber;
   const OTPScreen({super.key, required this.phoneNumber});
 
   @override
-  ConsumerState<OTPScreen> createState() => _OTPScreenState();
+  State<OTPScreen> createState() => _OTPScreenState();
 }
 
-class _OTPScreenState extends ConsumerState<OTPScreen> {
+class _OTPScreenState extends State<OTPScreen> {
   final List<TextEditingController> _controllers = List.generate(4, (_) => TextEditingController());
   final List<FocusNode> _focusNodes = List.generate(4, (_) => FocusNode());
 
@@ -95,9 +100,9 @@ class _OTPScreenState extends ConsumerState<OTPScreen> {
     if (otp.length == 4) {
       // Logic for demo: if phone is current user's, login as that user
       if (widget.phoneNumber.contains('017')) {
-         ref.read(authStateProvider.notifier).state = MockData.currentUser;
+         context.read<AuthProvider>().setCurrentUser(MockData.currentUser);
       } else {
-         ref.read(authStateProvider.notifier).state = MockData.farmerUser;
+         context.read<AuthProvider>().setCurrentUser(MockData.farmerUser);
       }
       
       Navigator.of(context).popUntil((route) => route.isFirst);

@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import '../../../core/models.dart';
-import '../../../providers/app_providers.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/product_provider.dart';
+import '../../../providers/group_provider.dart';
+import '../../../providers/demand_provider.dart';
+import '../../../providers/order_provider.dart';
+import '../../../providers/app_state_provider.dart';
 import 'group_detail_screen.dart';
 
-class GroupsListScreen extends ConsumerStatefulWidget {
+class GroupsListScreen extends StatefulWidget {
   const GroupsListScreen({super.key});
 
   @override
-  ConsumerState<GroupsListScreen> createState() => _GroupsListScreenState();
+  State<GroupsListScreen> createState() => _GroupsListScreenState();
 }
 
-class _GroupsListScreenState extends ConsumerState<GroupsListScreen>
+class _GroupsListScreenState extends State<GroupsListScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _selectedCategory = 'All';
@@ -32,9 +37,9 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen>
 
   @override
   Widget build(BuildContext context) {
-    final groups = ref.watch(groupsProvider);
-    final myGroups = ref.watch(myGroupsProvider);
-    final user = ref.watch(authStateProvider);
+    final groups = context.watch<GroupProvider>().groups;
+    final myGroups = context.watch<GroupProvider>().getMyGroups(context.watch<AuthProvider>().currentUser?.id);
+    final user = context.watch<AuthProvider>().currentUser;
 
     final openGroups = groups.where((g) {
       final matchesCat = _selectedCategory == 'All' || g.category == _selectedCategory;
@@ -243,7 +248,7 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen>
                   child: ElevatedButton(
                     onPressed: () {
                       if (formKey.currentState!.validate()) {
-                        final user = ref.read(authStateProvider);
+                        final user = context.read<AuthProvider>().currentUser;
                         final newGroup = BuyingGroup(
                           id: 'g${DateTime.now().millisecondsSinceEpoch}',
                           name: name,
@@ -265,10 +270,10 @@ class _GroupsListScreenState extends ConsumerState<GroupsListScreen>
                           messages: [],
                           expiryDate: DateTime.now().add(Duration(days: days)),
                         );
-                        ref.read(groupsProvider.notifier).state = [
-                          ...ref.read(groupsProvider),
+                        context.read<GroupProvider>().setGroups([
+                          ...context.read<GroupProvider>().groups,
                           newGroup,
-                        ];
+                        ]);
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

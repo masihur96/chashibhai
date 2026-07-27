@@ -1,20 +1,25 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'registration_screen.dart';
 import 'otp_screen.dart';
-import '../../providers/app_providers.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/demand_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/app_state_provider.dart';
 import '../../core/models.dart';
 import '../../core/mock_data.dart';
 
-class LoginScreen extends ConsumerStatefulWidget {
+class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  State<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _LoginScreenState extends State<LoginScreen> {
   final _phoneController = TextEditingController();
 
   @override
@@ -102,7 +107,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               ),
             ),
             const SizedBox(height: 10),
-            if (ref.watch(biometricEnabledProvider)) ...[
+            if (context.watch<AuthProvider>().biometricEnabled) ...[
               const Center(child: Text('OR', style: TextStyle(color: Colors.grey, fontSize: 12))),
               const SizedBox(height: 10),
               SizedBox(
@@ -110,10 +115,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                 height: 55,
                 child: OutlinedButton.icon(
                   onPressed: () async {
-                    final authenticated = await ref.read(biometricAuthenticateProvider.future);
+                    final authenticated = await context.read<AuthProvider>().authenticateWithBiometrics(context.read<AppStateProvider>().appLocale);
                     if (authenticated) {
                       // Login as dummy user (Buyer)
-                      ref.read(authStateProvider.notifier).state = MockData.currentUser;
+                      context.read<AuthProvider>().setCurrentUser(MockData.currentUser);
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(
                           content: Text('Login successful via biometric!'),

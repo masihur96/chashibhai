@@ -1,17 +1,22 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../providers/app_providers.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/demand_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/app_state_provider.dart';
 import '../../core/models.dart';
 
-class EditProfileScreen extends ConsumerStatefulWidget {
+class EditProfileScreen extends StatefulWidget {
   const EditProfileScreen({super.key});
 
   @override
-  ConsumerState<EditProfileScreen> createState() => _EditProfileScreenState();
+  State<EditProfileScreen> createState() => _EditProfileScreenState();
 }
 
-class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
+class _EditProfileScreenState extends State<EditProfileScreen> {
   final _formKey = GlobalKey<FormState>();
   late TextEditingController _nameController;
   late TextEditingController _phoneController;
@@ -20,7 +25,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
   @override
   void initState() {
     super.initState();
-    final user = ref.read(authStateProvider);
+    final user = context.read<AuthProvider>().currentUser;
     _nameController = TextEditingController(text: user?.name);
     _phoneController = TextEditingController(text: user?.phone);
     _emailController = TextEditingController(text: 'user@example.com'); // Placeholder for now
@@ -203,7 +208,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
 
   void _saveProfile() {
     if (_formKey.currentState!.validate()) {
-      final currentUser = ref.read(authStateProvider);
+      final currentUser = context.read<AuthProvider>().currentUser;
       if (currentUser != null) {
         // Logic to update user state
         final updatedUser = AppUser(
@@ -215,7 +220,7 @@ class _EditProfileScreenState extends ConsumerState<EditProfileScreen> {
           walletBalance: currentUser.walletBalance,
           rating: currentUser.rating,
         );
-        ref.read(authStateProvider.notifier).state = updatedUser;
+        context.read<AuthProvider>().setCurrentUser(updatedUser);
         
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import '../../core/models.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../providers/app_providers.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/demand_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/app_state_provider.dart';
 
-class KYCScreen extends ConsumerStatefulWidget {
+class KYCScreen extends StatefulWidget {
   final String name;
   final String phone;
   final UserRole role;
@@ -17,10 +22,10 @@ class KYCScreen extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<KYCScreen> createState() => _KYCScreenState();
+  State<KYCScreen> createState() => _KYCScreenState();
 }
 
-class _KYCScreenState extends ConsumerState<KYCScreen> {
+class _KYCScreenState extends State<KYCScreen> {
   bool _isUploading = false;
 
   @override
@@ -99,7 +104,7 @@ class _KYCScreenState extends ConsumerState<KYCScreen> {
       isVerified: true,
     );
 
-    ref.read(authStateProvider.notifier).state = newUser;
+    context.read<AuthProvider>().setCurrentUser(newUser);
     
     if (mounted) {
       Navigator.of(context).popUntil((route) => route.isFirst);

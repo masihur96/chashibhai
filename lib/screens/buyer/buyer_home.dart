@@ -1,6 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/app_providers.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/demand_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/app_state_provider.dart';
 import '../../widgets/product_card.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'product_details.dart';
@@ -12,19 +17,19 @@ import 'groups/group_detail_screen.dart';
 import '../../core/localization.dart';
 import '../../core/models.dart';
 
-class BuyerHomeScreen extends ConsumerStatefulWidget {
+class BuyerHomeScreen extends StatefulWidget {
   const BuyerHomeScreen({super.key});
 
   @override
-  ConsumerState<BuyerHomeScreen> createState() => _BuyerHomeScreenState();
+  State<BuyerHomeScreen> createState() => _BuyerHomeScreenState();
 }
 
-class _BuyerHomeScreenState extends ConsumerState<BuyerHomeScreen> {
+class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
-    final languageCode = ref.watch(appLocaleProvider);
+    final languageCode = context.watch<AppStateProvider>().appLocale;
 
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -79,13 +84,13 @@ class _BuyerHomeScreenState extends ConsumerState<BuyerHomeScreen> {
 
 // ─── Home Tab ────────────────────────────────────────────────────────────────
 
-class _HomeTab extends ConsumerWidget {
+class _HomeTab extends StatelessWidget {
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final languageCode = ref.watch(appLocaleProvider);
-    final products = ref.watch(filteredProductsProvider);
-    final selectedCategory = ref.watch(selectedCategoryProvider);
-    final myGroups = ref.watch(myGroupsProvider);
+  Widget build(BuildContext context) {
+    final languageCode = context.watch<AppStateProvider>().appLocale;
+    final products = context.watch<ProductProvider>().filteredProducts;
+    final selectedCategory = context.watch<ProductProvider>().selectedCategory;
+    final myGroups = context.watch<GroupProvider>().getMyGroups(context.watch<AuthProvider>().currentUser?.id);
 
     return Column(
       children: [
@@ -94,9 +99,9 @@ class _HomeTab extends ConsumerWidget {
           child: ListView(
             padding: const EdgeInsets.all(16),
             children: [
-              _buildSearchBar(ref, languageCode),
+              _buildSearchBar(context, languageCode),
               const SizedBox(height: 20),
-              _buildCategories(ref, selectedCategory, languageCode),
+              _buildCategories(context, selectedCategory, languageCode),
               const SizedBox(height: 20),
 
               // My Groups strip
@@ -338,7 +343,7 @@ class _HomeTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildSearchBar(WidgetRef ref, String languageCode) {
+  Widget _buildSearchBar(BuildContext context, String languageCode) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       decoration: BoxDecoration(
@@ -347,7 +352,7 @@ class _HomeTab extends ConsumerWidget {
         boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 2, blurRadius: 10)],
       ),
       child: TextField(
-        onChanged: (value) => ref.read(searchQueryProvider.notifier).state = value,
+        onChanged: (value) => context.read<ProductProvider>().setSearchQuery(value),
         decoration: InputDecoration(
           hintText: 'search_placeholder'.tr(languageCode),
           border: InputBorder.none,
@@ -357,7 +362,7 @@ class _HomeTab extends ConsumerWidget {
     );
   }
 
-  Widget _buildCategories(WidgetRef ref, String selectedCategory, String languageCode) {
+  Widget _buildCategories(BuildContext context, String selectedCategory, String languageCode) {
     final categories = ['All', 'Vegetables', 'Fruits', 'Grains', 'Spices'];
     final categoryKeys = {
       'All': 'cat_all',
@@ -376,7 +381,7 @@ class _HomeTab extends ConsumerWidget {
           final category = categories[index];
           final isSelected = category == selectedCategory;
           return GestureDetector(
-            onTap: () => ref.read(selectedCategoryProvider.notifier).state = category,
+            onTap: () => context.read<ProductProvider>().setSelectedCategory(category),
             child: Container(
               margin: const EdgeInsets.only(right: 10),
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),

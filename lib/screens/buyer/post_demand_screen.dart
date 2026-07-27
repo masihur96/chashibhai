@@ -1,21 +1,26 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-import '../../providers/app_providers.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/demand_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/app_state_provider.dart';
 import '../../core/models.dart';
 import 'groups/groups_list_screen.dart';
 
 
-class PostDemandScreen extends ConsumerStatefulWidget {
+class PostDemandScreen extends StatefulWidget {
   const PostDemandScreen({super.key});
 
   @override
-  ConsumerState<PostDemandScreen> createState() => _PostDemandScreenState();
+  State<PostDemandScreen> createState() => _PostDemandScreenState();
 }
 
-class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
+class _PostDemandScreenState extends State<PostDemandScreen> {
   final _formKey = GlobalKey<FormState>();
   String _productName = '';
   double _quantity = 0;
@@ -37,9 +42,9 @@ class _PostDemandScreenState extends ConsumerState<PostDemandScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authStateProvider);
-    final myGroups = ref.watch(myGroupsProvider);
-    final allGroups = ref.watch(groupsProvider);
+    final user = context.watch<AuthProvider>().currentUser;
+    final myGroups = context.watch<GroupProvider>().getMyGroups(context.watch<AuthProvider>().currentUser?.id);
+    final allGroups = context.watch<GroupProvider>().groups;
     final openGroups = allGroups.where((g) => g.status == GroupBuyStatus.open).toList();
 
     if (!_isInit) {

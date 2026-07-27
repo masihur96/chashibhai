@@ -1,8 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'providers/app_providers.dart';
+
+import 'providers/auth_provider.dart';
+import 'providers/product_provider.dart';
+import 'providers/group_provider.dart';
+import 'providers/demand_provider.dart';
+import 'providers/order_provider.dart';
+import 'providers/app_state_provider.dart';
+
 import 'core/models.dart';
 import 'screens/buyer/buyer_home.dart';
 import 'screens/farmer/farmer_dashboard.dart';
@@ -21,18 +28,26 @@ import 'core/localization.dart';
 
 void main() {
   runApp(
-    const ProviderScope(
-      child: MyApp(),
+    MultiProvider(
+      providers: [
+        ChangeNotifierProvider(create: (_) => AuthProvider()),
+        ChangeNotifierProvider(create: (_) => ProductProvider()),
+        ChangeNotifierProvider(create: (_) => GroupProvider()),
+        ChangeNotifierProvider(create: (_) => DemandProvider()),
+        ChangeNotifierProvider(create: (_) => OrderProvider()),
+        ChangeNotifierProvider(create: (_) => AppStateProvider()),
+      ],
+      child: const MyApp(),
     ),
   );
 }
 
-class MyApp extends ConsumerWidget {
+class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final languageCode = ref.watch(appLocaleProvider);
+  Widget build(BuildContext context) {
+    final languageCode = context.watch<AppStateProvider>().appLocale;
 
     return MaterialApp(
       title: 'ChashiBhai',
@@ -89,12 +104,12 @@ class MyApp extends ConsumerWidget {
   }
 }
 
-class AuthWrapper extends ConsumerWidget {
+class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final user = ref.watch(authStateProvider);
+  Widget build(BuildContext context) {
+    final user = context.watch<AuthProvider>().currentUser;
     
     if (user == null) {
       return const LoginScreen();
@@ -104,14 +119,15 @@ class AuthWrapper extends ConsumerWidget {
   }
 }
 
-class RoleWrapper extends ConsumerWidget {
+class RoleWrapper extends StatelessWidget {
   const RoleWrapper({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final languageCode = ref.watch(appLocaleProvider);
-    final user = ref.watch(authStateProvider);
-    final role = ref.watch(userRoleProvider);
+  Widget build(BuildContext context) {
+    final languageCode = context.watch<AppStateProvider>().appLocale;
+    final authProvider = context.watch<AuthProvider>();
+    final user = authProvider.currentUser;
+    final role = authProvider.userRole;
 
     return Scaffold(
       drawer: Drawer(
@@ -288,7 +304,7 @@ class RoleWrapper extends ConsumerWidget {
               padding: const EdgeInsets.all(20),
               child: ListTile(
                 onTap: () {
-                  ref.read(authStateProvider.notifier).state = null;
+                  context.read<AuthProvider>().setCurrentUser(null);
                 },
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),

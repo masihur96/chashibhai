@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import '../../core/models.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class AddProductScreen extends ConsumerStatefulWidget {
+class AddProductScreen extends StatefulWidget {
   const AddProductScreen({super.key});
 
   @override
-  ConsumerState<AddProductScreen> createState() => _AddProductScreenState();
+  State<AddProductScreen> createState() => _AddProductScreenState();
 }
 
-class _AddProductScreenState extends ConsumerState<AddProductScreen> {
+class _AddProductScreenState extends State<AddProductScreen> {
   final _formKey = GlobalKey<FormState>();
   String _productName = '';
   double _quantity = 0;

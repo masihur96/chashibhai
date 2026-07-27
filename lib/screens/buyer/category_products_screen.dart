@@ -1,18 +1,23 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/app_providers.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/demand_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/app_state_provider.dart';
 import '../../widgets/product_card.dart';
 import 'product_details.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-class CategoryProductsScreen extends ConsumerWidget {
+class CategoryProductsScreen extends StatelessWidget {
   final String category;
 
   const CategoryProductsScreen({super.key, required this.category});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final products = ref.watch(productsByCategoryProvider(category));
+  Widget build(BuildContext context) {
+    final products = context.watch<ProductProvider>().getProductsByCategory(category);
 
     return Scaffold(
       appBar: AppBar(

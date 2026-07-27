@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import '../../core/models.dart';
-import '../../providers/app_providers.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/demand_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/app_state_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
-class ProductDetailsScreen extends ConsumerWidget {
+class ProductDetailsScreen extends StatelessWidget {
   final Product product;
 
   const ProductDetailsScreen({super.key, required this.product});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     final currencyFormat = NumberFormat.currency(symbol: '৳', decimalDigits: 0);
-    final bids = ref.watch(bidsProvider).where((b) => b.productId == product.id).toList();
+    final bids = context.watch<DemandProvider>().bids.where((b) => b.productId == product.id).toList();
 
     return Scaffold(
       body: CustomScrollView(

@@ -1,19 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../core/models.dart';
-import '../../../providers/app_providers.dart';
+import '../../../providers/auth_provider.dart';
+import '../../../providers/product_provider.dart';
+import '../../../providers/group_provider.dart';
+import '../../../providers/demand_provider.dart';
+import '../../../providers/order_provider.dart';
+import '../../../providers/app_state_provider.dart';
 
-class GroupDetailScreen extends ConsumerStatefulWidget {
+class GroupDetailScreen extends StatefulWidget {
   final String groupId;
   const GroupDetailScreen({super.key, required this.groupId});
 
   @override
-  ConsumerState<GroupDetailScreen> createState() => _GroupDetailScreenState();
+  State<GroupDetailScreen> createState() => _GroupDetailScreenState();
 }
 
-class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
+class _GroupDetailScreenState extends State<GroupDetailScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final TextEditingController _msgController = TextEditingController();
@@ -59,12 +64,12 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
       createdAt: DateTime.now(),
     );
 
-    final groups = ref.read(groupsProvider);
+    final groups = context.read<GroupProvider>().groups;
     final updated = groups.map((g) {
       if (g.id == group.id) return g.copyWith(messages: [...g.messages, newMsg]);
       return g;
     }).toList();
-    ref.read(groupsProvider.notifier).state = updated;
+    context.read<GroupProvider>().setGroups(updated);
 
     _msgController.clear();
     _scrollToBottom();
@@ -140,7 +145,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
           ElevatedButton(
             onPressed: () {
               if (formKey.currentState!.validate()) {
-                final user = ref.read(authStateProvider);
+                final user = context.read<AuthProvider>().currentUser;
                 final newMember = GroupMember(
                   userId: user?.id ?? 'u_new',
                   name: user?.name ?? 'You',
@@ -148,7 +153,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                   phone: user?.phone ?? '',
                 );
 
-                final groups = ref.read(groupsProvider);
+                final groups = context.read<GroupProvider>().groups;
                 final updated = groups.map((g) {
                   if (g.id == group.id) {
                     final welcome = GroupMessage(
@@ -168,7 +173,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                   return g;
                 }).toList();
 
-                ref.read(groupsProvider.notifier).state = updated;
+                context.read<GroupProvider>().setGroups(updated);
                 Navigator.pop(ctx);
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
@@ -187,8 +192,8 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
 
   @override
   Widget build(BuildContext context) {
-    final group = ref.watch(groupByIdProvider(widget.groupId));
-    final user = ref.watch(authStateProvider);
+    final group = context.watch<GroupProvider>().getGroupById(widget.groupId);
+    final user = context.watch<AuthProvider>().currentUser;
 
     if (group == null) {
       return const Scaffold(body: Center(child: Text('Group not found')));
@@ -472,7 +477,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
           ElevatedButton(
             style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
             onPressed: () {
-              final groups = ref.read(groupsProvider);
+              final groups = context.read<GroupProvider>().groups;
               final updated = groups.map((g) {
                 if (g.id == group.id) {
                   final newMembers = g.members.where((m) => m.userId != member.userId).toList();
@@ -492,7 +497,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                 }
                 return g;
               }).toList();
-              ref.read(groupsProvider.notifier).state = updated;
+              context.read<GroupProvider>().setGroups(updated);
               Navigator.pop(ctx);
               ScaffoldMessenger.of(context).showSnackBar(
                 SnackBar(content: Text('${member.name} removed.'), backgroundColor: Colors.red[700]),
@@ -608,7 +613,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                           message: '${buyer['name']} was added to the group and committed ${qty.toInt()} KG! 👋',
                           createdAt: DateTime.now(),
                         );
-                        final groups = ref.read(groupsProvider);
+                        final groups = context.read<GroupProvider>().groups;
                         final updated = groups.map((g) {
                           if (g.id == group.id) {
                             return g.copyWith(
@@ -619,7 +624,7 @@ class _GroupDetailScreenState extends ConsumerState<GroupDetailScreen>
                           }
                           return g;
                         }).toList();
-                        ref.read(groupsProvider.notifier).state = updated;
+                        context.read<GroupProvider>().setGroups(updated);
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(

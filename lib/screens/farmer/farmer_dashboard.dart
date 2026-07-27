@@ -1,17 +1,22 @@
 import '../../core/models.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
-import '../../providers/app_providers.dart';
+import 'package:provider/provider.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/demand_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/app_state_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'add_product_screen.dart';
 
-class FarmerDashboard extends ConsumerWidget {
+class FarmerDashboard extends StatelessWidget {
   const FarmerDashboard({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final products = ref.watch(productsProvider);
+  Widget build(BuildContext context) {
+    final products = context.watch<ProductProvider>().products;
     final currencyFormat = NumberFormat.currency(symbol: '৳', decimalDigits: 0);
 
     return Scaffold(

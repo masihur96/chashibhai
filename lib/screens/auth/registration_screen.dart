@@ -1,17 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import '../../core/models.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'kyc_screen.dart';
 
-class RegistrationScreen extends ConsumerStatefulWidget {
+class RegistrationScreen extends StatefulWidget {
   const RegistrationScreen({super.key});
 
   @override
-  ConsumerState<RegistrationScreen> createState() => _RegistrationScreenState();
+  State<RegistrationScreen> createState() => _RegistrationScreenState();
 }
 
-class _RegistrationScreenState extends ConsumerState<RegistrationScreen> {
+class _RegistrationScreenState extends State<RegistrationScreen> {
   final _formKey = GlobalKey<FormState>();
   UserRole _selectedRole = UserRole.buyer;
   final _nameController = TextEditingController();

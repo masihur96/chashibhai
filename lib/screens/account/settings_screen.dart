@@ -1,24 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
-import '../../providers/app_providers.dart';
+import '../../providers/auth_provider.dart';
+import '../../providers/product_provider.dart';
+import '../../providers/group_provider.dart';
+import '../../providers/demand_provider.dart';
+import '../../providers/order_provider.dart';
+import '../../providers/app_state_provider.dart';
 import '../../core/localization.dart';
 
-class SettingsScreen extends ConsumerStatefulWidget {
+class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
 
   @override
-  ConsumerState<SettingsScreen> createState() => _SettingsScreenState();
+  State<SettingsScreen> createState() => _SettingsScreenState();
 }
 
-class _SettingsScreenState extends ConsumerState<SettingsScreen> {
+class _SettingsScreenState extends State<SettingsScreen> {
   bool _notificationsEnabled = true;
   bool _biometricEnabled = false;
 
   @override
   Widget build(BuildContext context) {
-    final languageCode = ref.watch(appLocaleProvider);
-    final biometricEnabled = ref.watch(biometricEnabledProvider);
+    final languageCode = context.watch<AppStateProvider>().appLocale;
+    final biometricEnabled = context.watch<AuthProvider>().biometricEnabled;
     final isBangla = languageCode == 'bn';
 
     return Scaffold(
@@ -54,9 +59,9 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             (v) async {
               if (v) {
                 // Verify biometric before enabling
-                final authenticated = await ref.read(biometricAuthenticateProvider.future);
+                final authenticated = await context.read<AuthProvider>().authenticateWithBiometrics(languageCode);
                 if (authenticated) {
-                  ref.read(biometricEnabledProvider.notifier).state = true;
+                  context.read<AuthProvider>().setBiometricEnabled(true);
                 } else {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
@@ -66,7 +71,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                   );
                 }
               } else {
-                ref.read(biometricEnabledProvider.notifier).state = false;
+                context.read<AuthProvider>().setBiometricEnabled(false);
               }
             },
           ),
@@ -133,12 +138,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
         title: Text('language'.tr(languageCode), style: const TextStyle(fontWeight: FontWeight.w500)),
         subtitle: Text(languageName, style: TextStyle(color: Colors.grey[500], fontSize: 13)),
         trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
-        onTap: () => _showLanguagePicker(context, ref, languageCode),
+        onTap: () => _showLanguagePicker(context, languageCode),
       ),
     );
   }
 
-  void _showLanguagePicker(BuildContext context, WidgetRef ref, String currentLocale) {
+  void _showLanguagePicker(BuildContext context, String currentLocale) {
     showModalBottomSheet(
       context: context,
       shape: const RoundedRectangleBorder(
@@ -155,8 +160,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
-              _buildLanguageOption(context, ref, 'English', 'en', currentLocale == 'en'),
-              _buildLanguageOption(context, ref, 'বাংলা (Bangla)', 'bn', currentLocale == 'bn'),
+              _buildLanguageOption(context, 'English', 'en', currentLocale == 'en'),
+              _buildLanguageOption(context, 'বাংলা (Bangla)', 'bn', currentLocale == 'bn'),
               const SizedBox(height: 20),
             ],
           ),
@@ -165,12 +170,12 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
     );
   }
 
-  Widget _buildLanguageOption(BuildContext context, WidgetRef ref, String name, String code, bool isSelected) {
+  Widget _buildLanguageOption(BuildContext context, String name, String code, bool isSelected) {
     return ListTile(
       title: Text(name),
       trailing: isSelected ? const Icon(Icons.check_circle, color: Color(0xFF2E7D32)) : null,
       onTap: () {
-        ref.read(appLocaleProvider.notifier).state = code;
+        context.read<AppStateProvider>().setAppLocale(code);
         Navigator.pop(context);
       },
     );
