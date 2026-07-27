@@ -17,7 +17,7 @@ import '../../../group/presentation/views/group_detail_screen.dart';
 import '../../../../core/utils/localization.dart';
 import '../../../../core/models/models.dart';
 import '../../../account/presentation/views/profile_screen.dart';
-import '../../../wallet/presentation/views/transactions_screen.dart';
+import './buyer_orders_screen.dart';
 
 class BuyerHomeScreen extends StatefulWidget {
   const BuyerHomeScreen({super.key});
@@ -40,7 +40,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
         children: [
           _HomeTab(),
           const GroupsListScreen(),
-          const TransactionsScreen(),
+          const BuyerOrdersScreen(),
           const ProfileScreen(),
         ],
       ),
@@ -71,6 +71,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
       ),
       floatingActionButton: _currentIndex == 0
           ? FloatingActionButton.extended(
+              heroTag: null,
               onPressed: () {
                 Navigator.push(
                   context,
