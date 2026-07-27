@@ -30,11 +30,11 @@ class ProductDetailsScreen extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _buildProductInfo(currencyFormat),
+                  _buildProductInfo(context, currencyFormat),
                   const SizedBox(height: 24),
-                  _buildFarmerInfo(),
+                  _buildFarmerInfo(context),
                   const SizedBox(height: 24),
-                  if (product.tradeType != TradeType.negotiation) _buildAuctionSection(bids, currencyFormat),
+                  if (product.tradeType != TradeType.negotiation) _buildAuctionSection(context, bids, currencyFormat),
                   const SizedBox(height: 100), // Space for bottom action bar
                 ],
               ),
@@ -70,7 +70,7 @@ class ProductDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildProductInfo(NumberFormat currencyFormat) {
+  Widget _buildProductInfo(BuildContext context, NumberFormat currencyFormat) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -89,12 +89,12 @@ class ProductDetailsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: Colors.green[50],
+                color: Theme.of(context).colorScheme.primaryContainer,
                 borderRadius: BorderRadius.circular(20),
               ),
               child: Text(
                 'In Stock',
-                style: TextStyle(color: Colors.green[800], fontWeight: FontWeight.bold),
+                style: TextStyle(color: Theme.of(context).colorScheme.onPrimaryContainer, fontWeight: FontWeight.bold),
               ),
             ),
           ],
@@ -120,47 +120,44 @@ class ProductDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildFarmerInfo() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: Colors.grey[50],
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[200]!),
-      ),
-      child: Row(
-        children: [
-          const CircleAvatar(
-            radius: 25,
-            backgroundColor: Color(0xFF2E7D32),
-            child: Icon(Icons.person, color: Colors.white),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                const Text(
-                  'Farmer Abdul',
-                  style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                ),
-                Row(
-                  children: const [
-                    Icon(Icons.star, color: Colors.orange, size: 16),
-                    SizedBox(width: 4),
-                    Text('4.8 (120 reviews)', style: TextStyle(fontSize: 12)),
-                  ],
-                ),
-              ],
+  Widget _buildFarmerInfo(BuildContext context) {
+    return Card.outlined(
+      margin: EdgeInsets.zero,
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Row(
+          children: [
+            CircleAvatar(
+              radius: 25,
+              backgroundColor: Theme.of(context).colorScheme.primary,
+              child: Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary),
             ),
-          ),
-
-        ],
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Farmer Abdul',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  Row(
+                    children: [
+                      Icon(Icons.star, color: Theme.of(context).colorScheme.secondary, size: 16),
+                      const SizedBox(width: 4),
+                      const Text('4.8 (120 reviews)', style: TextStyle(fontSize: 12)),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  Widget _buildAuctionSection(List<Bid> bids, NumberFormat currencyFormat) {
+  Widget _buildAuctionSection(BuildContext context, List<Bid> bids, NumberFormat currencyFormat) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -174,16 +171,16 @@ class ProductDetailsScreen extends StatelessWidget {
             Container(
               padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
               decoration: BoxDecoration(
-                color: Colors.red[50],
+                color: Theme.of(context).colorScheme.errorContainer,
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.timer_outlined, color: Colors.red[800], size: 14),
+                  Icon(Icons.timer_outlined, color: Theme.of(context).colorScheme.onErrorContainer, size: 14),
                   const SizedBox(width: 4),
                   Text(
                     'Ends in 12h 30m',
-                    style: TextStyle(color: Colors.red[800], fontWeight: FontWeight.bold, fontSize: 12),
+                    style: TextStyle(color: Theme.of(context).colorScheme.onErrorContainer, fontWeight: FontWeight.bold, fontSize: 12),
                   ),
                 ],
               ),
@@ -279,17 +276,16 @@ class ProductDetailsScreen extends StatelessWidget {
           children: [
             Text(
               'Place Your Bid',
-              style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold),
+              style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
-            Text('Current highest bid: ৳70.00', style: TextStyle(color: Colors.grey[600])),
+            Text('Current highest bid: ৳70.00', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 20),
             TextField(
               keyboardType: TextInputType.number,
-              decoration: InputDecoration(
+              decoration: const InputDecoration(
                 prefixText: '৳ ',
                 labelText: 'Bid Amount',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
             const SizedBox(height: 8),
@@ -335,26 +331,24 @@ class ProductDetailsScreen extends StatelessWidget {
           children: [
             Text(
               'Direct Negotiation',
-              style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold),
+              style: GoogleFonts.outfit(fontSize: 22, fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.onSurface),
             ),
             const SizedBox(height: 8),
-            Text('Farmer\'s asking price: ৳${product.minimumPrice}', style: TextStyle(color: Colors.grey[600])),
+            Text('Farmer\'s asking price: ৳${product.minimumPrice}', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
             const SizedBox(height: 20),
-            TextField(
+            const TextField(
               keyboardType: TextInputType.number,
               decoration: InputDecoration(
                 prefixText: '৳ ',
                 labelText: 'Your Offer',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
             const SizedBox(height: 20),
-            TextField(
+            const TextField(
               maxLines: 3,
               decoration: InputDecoration(
                 labelText: 'Message (Optional)',
                 hintText: 'e.g., I need 500KG for my restaurant chain.',
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
             const SizedBox(height: 24),

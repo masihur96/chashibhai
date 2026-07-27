@@ -56,21 +56,22 @@ class FarmerDashboard extends StatelessWidget {
           ],
         ),
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: const Color(0xFF2E7D32),
-        unselectedItemColor: Colors.grey,
-        currentIndex: 0,
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: 0,
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.dashboard_outlined),
+            selectedIcon: Icon(Icons.dashboard),
             label: 'Home',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.analytics),
+          NavigationDestination(
+            icon: Icon(Icons.analytics_outlined),
+            selectedIcon: Icon(Icons.analytics),
             label: 'Analytics',
           ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
             label: 'Profile',
           ),
         ],
@@ -92,9 +93,9 @@ class FarmerDashboard extends StatelessWidget {
   Widget _buildFarmerHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(20, 60, 20, 40),
-      decoration: const BoxDecoration(
-        color: Color(0xFF2E7D32),
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(30),
           bottomRight: Radius.circular(30),
         ),
@@ -105,32 +106,32 @@ class FarmerDashboard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               IconButton(
-                icon: const Icon(Icons.menu, color: Colors.white),
+                icon: Icon(Icons.menu, color: Theme.of(context).colorScheme.onPrimary),
                 onPressed: () => Scaffold.of(context).openDrawer(),
               ),
               Text(
                 'Farmer Dashboard',
                 style: GoogleFonts.outfit(
-                  color: Colors.white,
+                  color: Theme.of(context).colorScheme.onPrimary,
                   fontSize: 20,
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              const CircleAvatar(
-                backgroundColor: Colors.white24,
-                child: Icon(Icons.person, color: Colors.white),
+              CircleAvatar(
+                backgroundColor: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.2),
+                child: Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary),
               ),
             ],
           ),
           const SizedBox(height: 30),
-          const Text(
+          Text(
             'Total Earnings',
-            style: TextStyle(color: Colors.white70, fontSize: 16),
+            style: TextStyle(color: Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.8), fontSize: 16),
           ),
-          const Text(
+          Text(
             '৳ 84,250.00',
             style: TextStyle(
-              color: Colors.white,
+              color: Theme.of(context).colorScheme.onPrimary,
               fontSize: 36,
               fontWeight: FontWeight.bold,
             ),
@@ -158,32 +159,35 @@ class FarmerDashboard extends StatelessWidget {
   }
 
   Widget _buildStatCard(String title, String value, IconData icon, Color color) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
+    return Card(
+      elevation: 0,
+      color: color.withValues(alpha: 0.1),
+      shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2)),
+        side: BorderSide(color: color.withValues(alpha: 0.2)),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Icon(icon, color: color, size: 24),
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                value,
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
-              ),
-              Text(
-                title,
-                style: TextStyle(color: Colors.grey[600], fontSize: 12),
-              ),
-            ],
-          ),
-        ],
+      child: Padding(
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Icon(icon, color: color, size: 24),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  value,
+                  style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                Text(
+                  title,
+                  style: TextStyle(color: Colors.grey[700], fontSize: 12),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

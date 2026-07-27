@@ -39,11 +39,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Product Name',
                   hintText: 'e.g., Fresh Red Tomatoes',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.shopping_basket_outlined),
+                  prefixIcon: Icon(Icons.shopping_basket_outlined),
                 ),
                 onChanged: (v) => _productName = v,
                 validator: (v) => (v == null || v.isEmpty) ? 'Please enter name' : null,
@@ -55,7 +54,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     child: TextFormField(
                       decoration: InputDecoration(
                         labelText: 'Quantity',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         suffixText: _unit,
                       ),
                       keyboardType: TextInputType.number,
@@ -63,25 +61,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     ),
                   ),
                   const SizedBox(width: 16),
-                  Container(
-                    width: 100,
-                    padding: const EdgeInsets.symmetric(horizontal: 12),
-                    decoration: BoxDecoration(
-                      border: Border.all(color: Colors.grey),
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    child: DropdownButton<String>(
-                      value: _unit,
-                      isExpanded: true,
-                      underline: const SizedBox(),
-                      items: ['KG', 'Tons', 'Monds', 'Bag'].map((String value) {
-                        return DropdownMenuItem<String>(
-                          value: value,
-                          child: Text(value),
-                        );
-                      }).toList(),
-                      onChanged: (v) => setState(() => _unit = v!),
-                    ),
+                  DropdownMenu<String>(
+                    initialSelection: _unit,
+                    width: 110,
+                    onSelected: (String? value) {
+                      if (value != null) {
+                        setState(() => _unit = value);
+                      }
+                    },
+                    dropdownMenuEntries: ['KG', 'Tons', 'Monds', 'Bag']
+                        .map<DropdownMenuEntry<String>>((String value) {
+                      return DropdownMenuEntry<String>(
+                        value: value,
+                        label: value,
+                      );
+                    }).toList(),
                   ),
                 ],
               ),
@@ -105,7 +99,6 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 decoration: InputDecoration(
                   labelText: _tradeType == TradeType.auction ? 'Minimum Bid Price' : 'Asking Price',
                   prefixText: '৳ ',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                 ),
                 keyboardType: TextInputType.number,
                 onChanged: (v) => _minPrice = double.tryParse(v) ?? 0,
@@ -138,16 +131,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
       height: 150,
       width: double.infinity,
       decoration: BoxDecoration(
-        color: Colors.grey[200],
+        color: Theme.of(context).colorScheme.surfaceVariant,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.grey[300]!, style: BorderStyle.solid),
+        border: Border.all(color: Theme.of(context).colorScheme.outlineVariant, style: BorderStyle.solid),
       ),
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
-        children: const [
-          Icon(Icons.add_a_photo_outlined, size: 40, color: Colors.grey),
-          SizedBox(height: 8),
-          Text('Upload Product Photos', style: TextStyle(color: Colors.grey)),
+        children: [
+          Icon(Icons.add_a_photo_outlined, size: 40, color: Theme.of(context).colorScheme.onSurfaceVariant),
+          const SizedBox(height: 8),
+          Text('Upload Product Photos', style: TextStyle(color: Theme.of(context).colorScheme.onSurfaceVariant)),
         ],
       ),
     );

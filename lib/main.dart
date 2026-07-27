@@ -65,12 +65,15 @@ class MyApp extends StatelessWidget {
       theme: ThemeData(
         useMaterial3: true,
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2E7D32), // Forest Green
+          seedColor: const Color(0xFF2E7D32),
           primary: const Color(0xFF2E7D32),
-          secondary: const Color(0xFFFFA000), // Amber
-          surface: const Color(0xFFF1F8E9),
+          secondary: const Color(0xFFFFA000),
+          surface: const Color(0xFFF8F9FA),
         ),
-        textTheme: GoogleFonts.outfitTextTheme(),
+        textTheme: GoogleFonts.outfitTextTheme(Theme.of(context).textTheme).apply(
+          bodyColor: Colors.black87,
+          displayColor: Colors.black87,
+        ),
         appBarTheme: AppBarTheme(
           backgroundColor: const Color(0xFF2E7D32),
           foregroundColor: Colors.white,
@@ -81,22 +84,80 @@ class MyApp extends StatelessWidget {
             fontWeight: FontWeight.bold,
             color: Colors.white,
           ),
+          iconTheme: const IconThemeData(color: Colors.white),
         ),
         cardTheme: CardThemeData(
-          elevation: 2,
+          elevation: 0,
+          color: Colors.white,
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
+            side: BorderSide(color: Colors.grey.withOpacity(0.2)),
           ),
+          margin: EdgeInsets.zero,
         ),
         elevatedButtonTheme: ElevatedButtonThemeData(
           style: ElevatedButton.styleFrom(
             backgroundColor: const Color(0xFF2E7D32),
             foregroundColor: Colors.white,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+            elevation: 0,
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
+            textStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
           ),
+        ),
+        outlinedButtonTheme: OutlinedButtonThemeData(
+          style: OutlinedButton.styleFrom(
+            foregroundColor: const Color(0xFF2E7D32),
+            side: const BorderSide(color: Color(0xFF2E7D32), width: 1.5),
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+            textStyle: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+        ),
+        inputDecorationTheme: InputDecorationTheme(
+          filled: true,
+          fillColor: Colors.white,
+          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide(color: Colors.grey.shade300),
+          ),
+          focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 2),
+          ),
+          errorBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+          ),
+          labelStyle: TextStyle(color: Colors.grey.shade700),
+          hintStyle: TextStyle(color: Colors.grey.shade500),
+        ),
+        navigationBarTheme: NavigationBarThemeData(
+          backgroundColor: Colors.white,
+          elevation: 8,
+          shadowColor: Colors.black.withOpacity(0.1),
+          indicatorColor: const Color(0xFF2E7D32).withOpacity(0.15),
+          labelTextStyle: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.bold, fontSize: 12);
+            }
+            return const TextStyle(color: Colors.grey, fontWeight: FontWeight.normal, fontSize: 12);
+          }),
+          iconTheme: WidgetStateProperty.resolveWith((states) {
+            if (states.contains(WidgetState.selected)) {
+              return const IconThemeData(color: Color(0xFF2E7D32), size: 26);
+            }
+            return const IconThemeData(color: Colors.grey, size: 24);
+          }),
         ),
       ),
       home: const AuthWrapper(),

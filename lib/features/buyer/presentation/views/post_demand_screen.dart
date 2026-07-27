@@ -95,11 +95,10 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'What product do you need?',
                   hintText: 'e.g., Winter Potatoes',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.search),
+                  prefixIcon: Icon(Icons.search),
                 ),
                 onChanged: (v) => _productName = v,
                 validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
@@ -109,9 +108,8 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
                 children: [
                   Expanded(
                     child: TextFormField(
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'Quantity Needed',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         suffixText: 'KG',
                       ),
                       keyboardType: TextInputType.number,
@@ -121,10 +119,9 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
                   const SizedBox(width: 16),
                   Expanded(
                     child: TextFormField(
-                      decoration: InputDecoration(
+                      decoration: const InputDecoration(
                         labelText: 'Calling Price',
                         prefixText: '৳ ',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
                       keyboardType: TextInputType.number,
                       onChanged: (v) => _callingPrice = double.tryParse(v) ?? 0,
@@ -134,11 +131,10 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
               ),
               const SizedBox(height: 16),
               TextFormField(
-                decoration: InputDecoration(
+                decoration: const InputDecoration(
                   labelText: 'Delivery Location',
                   hintText: 'e.g., Kawran Bazar, Dhaka',
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  prefixIcon: const Icon(Icons.location_on_outlined),
+                  prefixIcon: Icon(Icons.location_on_outlined),
                 ),
                 onChanged: (v) => _location = v,
               ),
@@ -149,9 +145,12 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
               ),
               const SizedBox(height: 12),
               ListTile(
-                tileColor: Colors.grey[100],
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                leading: const Icon(Icons.calendar_today, color: Color(0xFF2E7D32)),
+                tileColor: Theme.of(context).colorScheme.surface,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                ),
+                leading: Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.primary),
                 title: const Text('Demand Expiry'),
                 subtitle: Text('Expires on ${DateFormat('MMM dd, yyyy').format(_expiryDate)}'),
                 trailing: const Icon(Icons.arrow_drop_down),
@@ -209,92 +208,30 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
   }
 
   Widget _buildDemandTypeToggle() {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.grey[100],
-        borderRadius: BorderRadius.circular(14),
-      ),
-      padding: const EdgeInsets.all(4),
-      child: Row(
-        children: [
-          Expanded(child: _toggleOption(
-            label: 'Individual',
-            icon: Icons.person_outline,
-            isSelected: !_isGroupDemand,
-            onTap: () => setState(() => _isGroupDemand = false),
-          )),
-          Expanded(child: _toggleOption(
-            label: 'Group Buy',
-            icon: Icons.groups_outlined,
-            isSelected: _isGroupDemand,
-            onTap: () => setState(() => _isGroupDemand = true),
-            badgeText: 'Save More',
-          )),
+    return SizedBox(
+      width: double.infinity,
+      child: SegmentedButton<bool>(
+        segments: const [
+          ButtonSegment(
+            value: false,
+            label: Text('Individual'),
+            icon: Icon(Icons.person_outline),
+          ),
+          ButtonSegment(
+            value: true,
+            label: Text('Group Buy'),
+            icon: Icon(Icons.groups_outlined),
+          ),
         ],
+        selected: {_isGroupDemand},
+        onSelectionChanged: (Set<bool> newSelection) {
+          setState(() => _isGroupDemand = newSelection.first);
+        },
       ),
     );
   }
 
-  Widget _toggleOption({
-    required String label,
-    required IconData icon,
-    required bool isSelected,
-    required VoidCallback onTap,
-    String? badgeText,
-  }) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 200),
-        margin: const EdgeInsets.all(2),
-        padding: const EdgeInsets.symmetric(vertical: 12),
-        decoration: BoxDecoration(
-          color: isSelected ? const Color(0xFF2E7D32) : Colors.transparent,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: isSelected
-              ? [BoxShadow(color: const Color(0xFF2E7D32).withOpacity(0.3), blurRadius: 8, offset: const Offset(0, 2))]
-              : [],
-        ),
-        child: Column(
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(icon, size: 18, color: isSelected ? Colors.white : Colors.grey[600]),
-                const SizedBox(width: 6),
-                Text(
-                  label,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey[700],
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                    fontSize: 14,
-                  ),
-                ),
-              ],
-            ),
-            if (badgeText != null) ...[
-              const SizedBox(height: 4),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                decoration: BoxDecoration(
-                  color: isSelected ? Colors.white.withOpacity(0.25) : Colors.orange.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(10),
-                ),
-                child: Text(
-                  badgeText,
-                  style: TextStyle(
-                    fontSize: 10,
-                    color: isSelected ? Colors.white : Colors.orange[700],
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-              ),
-            ],
-          ],
-        ),
-      ),
-    );
-  }
+  // _toggleOption removed in favor of SegmentedButton
 
   Widget _buildBuyerSelector(BuildContext context, List<Map<String, String>> buyers) {
     return Column(
@@ -307,10 +244,9 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
           onTap: () => _showMultiSelectDialog(context, buyers),
           borderRadius: BorderRadius.circular(12),
           child: InputDecorator(
-            decoration: InputDecoration(
+            decoration: const InputDecoration(
               labelText: 'Select Buyers',
-              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-              prefixIcon: const Icon(Icons.group_add_outlined),
+              prefixIcon: Icon(Icons.group_add_outlined),
             ),
             isEmpty: _selectedBuyerIds.isEmpty,
             child: _selectedBuyerIds.isEmpty
@@ -344,12 +280,16 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
         // Info chip
         Container(
           padding: const EdgeInsets.all(12),
-          decoration: BoxDecoration(color: Colors.green[50], borderRadius: BorderRadius.circular(12), border: Border.all(color: Colors.green[200]!)),
+          decoration: BoxDecoration(
+            color: Theme.of(context).colorScheme.primaryContainer, 
+            borderRadius: BorderRadius.circular(12),
+          ),
           child: Row(children: [
-            const Icon(Icons.info_outline, color: Color(0xFF2E7D32), size: 16),
+            Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onPrimaryContainer, size: 16),
             const SizedBox(width: 8),
-            const Expanded(
-              child: Text('Group buying lets multiple buyers pool orders for bulk price discounts from farmers.', style: TextStyle(fontSize: 12, color: Color(0xFF2E7D32))),
+            Expanded(
+              child: Text('Group buying lets multiple buyers pool orders for bulk price discounts from farmers.', 
+                style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.onPrimaryContainer)),
             ),
           ]),
         ),
@@ -366,7 +306,7 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
             ),
             child: Row(
               children: [
-                const Icon(Icons.groups, color: Color(0xFF2E7D32)),
+                Icon(Icons.groups, color: Theme.of(context).colorScheme.primary),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Column(
@@ -390,16 +330,10 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
         // Group picker button
         OutlinedButton.icon(
           onPressed: () => _showGroupPickerSheet(context, openGroups, myGroups),
-          icon: const Icon(Icons.group_add_outlined, color: Color(0xFF2E7D32)),
-          label: Text(
-            _selectedGroup == null ? 'Choose or Create a Group' : 'Change Group',
-            style: const TextStyle(color: Color(0xFF2E7D32)),
-          ),
+          icon: Icon(Icons.group_add_outlined, color: Theme.of(context).colorScheme.primary),
+          label: Text(_selectedGroup == null ? 'Choose or Create a Group' : 'Change Group'),
           style: OutlinedButton.styleFrom(
-            side: const BorderSide(color: Color(0xFF2E7D32)),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            padding: const EdgeInsets.symmetric(vertical: 14, horizontal: 16),
-            minimumSize: const Size(double.infinity, 0),
+            minimumSize: const Size(double.infinity, 50),
           ),
         ),
       ],
@@ -629,18 +563,17 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Colors.blue[50],
+        color: Theme.of(context).colorScheme.secondaryContainer,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.blue[100]!),
       ),
-      child: const Row(
+      child: Row(
         children: [
-          Icon(Icons.info_outline, color: Colors.blue),
-          SizedBox(width: 12),
+          Icon(Icons.info_outline, color: Theme.of(context).colorScheme.onSecondaryContainer),
+          const SizedBox(width: 12),
           Expanded(
             child: Text(
               'Specify your price and quantity. Verified farmers will compete to fulfill your demand.',
-              style: TextStyle(fontSize: 13, color: Colors.blue),
+              style: TextStyle(fontSize: 13, color: Theme.of(context).colorScheme.onSecondaryContainer),
             ),
           ),
         ],

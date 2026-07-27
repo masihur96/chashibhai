@@ -44,27 +44,28 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
           const ProfileScreen(),
         ],
       ),
-      bottomNavigationBar: BottomNavigationBar(
-        selectedItemColor: const Color(0xFF2E7D32),
-        unselectedItemColor: Colors.grey,
-        currentIndex: _currentIndex,
-        onTap: (index) => setState(() => _currentIndex = index),
-        items: [
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.home),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) => setState(() => _currentIndex = index),
+        destinations: [
+          NavigationDestination(
+            icon: const Icon(Icons.home_outlined),
+            selectedIcon: const Icon(Icons.home),
             label: 'home'.tr(languageCode),
           ),
-          const BottomNavigationBarItem(
+          const NavigationDestination(
             icon: Icon(Icons.groups_outlined),
-            activeIcon: Icon(Icons.groups),
+            selectedIcon: Icon(Icons.groups),
             label: 'Groups',
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.list_alt),
+          NavigationDestination(
+            icon: const Icon(Icons.list_alt_outlined),
+            selectedIcon: const Icon(Icons.list_alt),
             label: 'orders'.tr(languageCode),
           ),
-          BottomNavigationBarItem(
-            icon: const Icon(Icons.person),
+          NavigationDestination(
+            icon: const Icon(Icons.person_outline),
+            selectedIcon: const Icon(Icons.person),
             label: 'profile'.tr(languageCode),
           ),
         ],
@@ -219,41 +220,34 @@ class _HomeTab extends StatelessWidget {
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF2E7D32), Color(0xFF388E3C)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.circular(16),
-          boxShadow: [BoxShadow(color: const Color(0xFF2E7D32).withOpacity(0.25), blurRadius: 10, offset: const Offset(0, 4))],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(children: [
-              const Icon(Icons.groups, color: Colors.white, size: 16),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(group.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+            child: Column(children: [
+              Row(children: [
+                const Icon(Icons.groups, color: Colors.white, size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(group.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
+                ),
+              ]),
+              const SizedBox(height: 4),
+              Text(group.productName, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+              const Spacer(),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(4),
+                child: LinearProgressIndicator(
+                  value: progress.clamp(0.0, 1.0),
+                  minHeight: 5,
+                  backgroundColor: Colors.white.withOpacity(0.3),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
+                ),
               ),
-            ]),
-            const SizedBox(height: 4),
-            Text(group.productName, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
-            const Spacer(),
-            ClipRRect(
-              borderRadius: BorderRadius.circular(4),
-              child: LinearProgressIndicator(
-                value: progress.clamp(0.0, 1.0),
-                minHeight: 5,
-                backgroundColor: Colors.white.withOpacity(0.3),
-                valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text('${(progress * 100).toInt()}% filled', style: const TextStyle(color: Colors.white70, fontSize: 10)),
-          ],
+              const SizedBox(height: 4),
+              Text('${(progress * 100).toInt()}% filled', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+            ],)
         ),
-      ),
+
     );
   }
 
@@ -263,32 +257,31 @@ class _HomeTab extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
-          gradient: const LinearGradient(
-            colors: [Color(0xFF1B5E20), Color(0xFF2E7D32)],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
+          color: Theme.of(context).colorScheme.secondaryContainer,
           borderRadius: BorderRadius.circular(16),
         ),
         child: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.15), borderRadius: BorderRadius.circular(12)),
-              child: const Icon(Icons.groups_outlined, color: Colors.white, size: 28),
+              decoration: BoxDecoration(
+                color: Theme.of(context).colorScheme.primary,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Icon(Icons.groups_outlined, color: Theme.of(context).colorScheme.onPrimary, size: 28),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Join a Buying Group', style: GoogleFonts.outfit(color: Colors.white, fontSize: 15, fontWeight: FontWeight.bold)),
+                  Text('Join a Buying Group', style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSecondaryContainer, fontSize: 15, fontWeight: FontWeight.bold)),
                   const SizedBox(height: 2),
-                  Text('Pool with others to unlock bulk discounts from farmers!', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
+                  Text('Pool with others to unlock bulk discounts from farmers!', style: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.8), fontSize: 12)),
                 ],
               ),
             ),
-            const Icon(Icons.arrow_forward_ios, color: Colors.white70, size: 16),
+            Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.7), size: 16),
           ],
         ),
       ),
@@ -298,9 +291,9 @@ class _HomeTab extends StatelessWidget {
   Widget _buildHeader(BuildContext context) {
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 60, 16, 20),
-      decoration: const BoxDecoration(
-        color: Color(0xFF2E7D32),
-        borderRadius: BorderRadius.only(
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.primary,
+        borderRadius: const BorderRadius.only(
           bottomLeft: Radius.circular(30),
           bottomRight: Radius.circular(30),
         ),
@@ -349,20 +342,17 @@ class _HomeTab extends StatelessWidget {
   }
 
   Widget _buildSearchBar(BuildContext context, String languageCode) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(15),
-        boxShadow: [BoxShadow(color: Colors.grey.withOpacity(0.1), spreadRadius: 2, blurRadius: 10)],
-      ),
-      child: TextField(
-        onChanged: (value) => context.read<ProductProvider>().setSearchQuery(value),
-        decoration: InputDecoration(
-          hintText: 'search_placeholder'.tr(languageCode),
-          border: InputBorder.none,
-          icon: const Icon(Icons.search, color: Colors.grey),
+      child: SearchBar(
+        hintText: 'search_placeholder'.tr(languageCode),
+        leading: const Padding(
+          padding: EdgeInsets.only(left: 8.0),
+          child: Icon(Icons.search, color: Colors.grey),
         ),
+        onChanged: (value) => context.read<ProductProvider>().setSearchQuery(value),
+        elevation: WidgetStateProperty.all(1),
+        backgroundColor: WidgetStateProperty.all(Colors.white),
       ),
     );
   }
@@ -385,23 +375,23 @@ class _HomeTab extends StatelessWidget {
         itemBuilder: (context, index) {
           final category = categories[index];
           final isSelected = category == selectedCategory;
-          return GestureDetector(
-            onTap: () => context.read<ProductProvider>().setSelectedCategory(category),
-            child: Container(
-              margin: const EdgeInsets.only(right: 10),
-              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-              decoration: BoxDecoration(
-                color: isSelected ? const Color(0xFF2E7D32) : Colors.white,
-                borderRadius: BorderRadius.circular(20),
-                border: Border.all(color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[300]!),
+          return Padding(
+            padding: const EdgeInsets.only(right: 8.0),
+            child: ChoiceChip(
+              label: Text((categoryKeys[category] ?? category).tr(languageCode)),
+              selected: isSelected,
+              onSelected: (selected) {
+                if (selected) {
+                  context.read<ProductProvider>().setSelectedCategory(category);
+                }
+              },
+              labelStyle: TextStyle(
+                color: isSelected ? Theme.of(context).colorScheme.onPrimary : Colors.black87,
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
               ),
-              child: Text(
-                (categoryKeys[category] ?? category).tr(languageCode),
-                style: TextStyle(
-                  color: isSelected ? Colors.white : Colors.black87,
-                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                ),
-              ),
+              selectedColor: Theme.of(context).colorScheme.primary,
+              backgroundColor: Theme.of(context).colorScheme.surface,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
             ),
           );
         },

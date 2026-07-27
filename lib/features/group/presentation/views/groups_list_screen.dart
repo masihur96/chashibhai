@@ -9,6 +9,7 @@ import '../../../buyer/presentation/state/demand_provider.dart';
 import '../../../wallet/presentation/state/order_provider.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
 import './group_detail_screen.dart';
+import '../../../../core/presentation/widgets/empty_state_widget.dart';
 
 class GroupsListScreen extends StatefulWidget {
   const GroupsListScreen({super.key});
@@ -123,27 +124,21 @@ class _GroupsListScreenState extends State<GroupsListScreen>
           itemBuilder: (context, index) {
             final cat = _categories[index];
             final isSelected = cat == _selectedCategory;
-            return GestureDetector(
-              onTap: () => setState(() => _selectedCategory = cat),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                margin: const EdgeInsets.only(right: 8),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                decoration: BoxDecoration(
-                  color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[300]!,
-                  ),
+            return Padding(
+              padding: const EdgeInsets.only(right: 8.0),
+              child: ChoiceChip(
+                label: Text(cat),
+                selected: isSelected,
+                onSelected: (selected) {
+                  if (selected) setState(() => _selectedCategory = cat);
+                },
+                labelStyle: TextStyle(
+                  color: isSelected ? Theme.of(context).colorScheme.onPrimary : Colors.black87,
+                  fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
-                child: Text(
-                  cat,
-                  style: TextStyle(
-                    color: isSelected ? Colors.white : Colors.grey[700],
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-                  ),
-                ),
+                selectedColor: Theme.of(context).colorScheme.primary,
+                backgroundColor: Theme.of(context).colorScheme.surface,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
               ),
             );
           },
@@ -153,28 +148,10 @@ class _GroupsListScreenState extends State<GroupsListScreen>
   }
 
   Widget _buildEmptyState(bool isMyGroups) {
-    return Center(
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Icon(
-            isMyGroups ? Icons.group_off_outlined : Icons.search_off_outlined,
-            size: 72,
-            color: Colors.grey[300],
-          ),
-          const SizedBox(height: 16),
-          Text(
-            isMyGroups ? 'You haven\'t joined any group yet' : 'No groups in this category',
-            style: GoogleFonts.outfit(color: Colors.grey[500], fontSize: 16),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            isMyGroups ? 'Create or join a buying group to save more!' : 'Try a different category or create one',
-            style: TextStyle(color: Colors.grey[400], fontSize: 13),
-            textAlign: TextAlign.center,
-          ),
-        ],
-      ),
+    return EmptyStateWidget(
+      icon: isMyGroups ? Icons.group_off_outlined : Icons.search_off_outlined,
+      title: isMyGroups ? 'You haven\'t joined any group yet' : 'No groups in this category',
+      subtitle: isMyGroups ? 'Create or join a buying group to save more!' : 'Try a different category or create one',
     );
   }
 
