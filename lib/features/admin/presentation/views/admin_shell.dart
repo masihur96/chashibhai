@@ -10,7 +10,7 @@ import './admin_escrow_screen.dart';
 import './analytics_screen.dart';
 import './reports_screen.dart';
 import './admin_settings_screen.dart';
-import '../../../account/presentation/views/profile_screen.dart';
+import './admin_profile_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -28,7 +28,7 @@ class _AdminShellState extends State<AdminShell> {
     const UserManagementScreen(),
     const AdminOrdersScreen(),
     const AdminProductsScreen(),
-    const ProfileScreen(),
+    const AdminProfileScreen(),
     const AdminWalletScreen(),
     const AdminEscrowScreen(),
     const AnalyticsScreen(),
