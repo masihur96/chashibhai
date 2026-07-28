@@ -67,16 +67,24 @@ class _AdminShellState extends State<AdminShell> {
           ? null // Hide AppBar on desktop
           : AppBar(
               title: _isSearchExpanded
-                  ? TextField(
-                      controller: _searchController,
-                      autofocus: true,
-                      style: const TextStyle(color: Colors.white),
-                      decoration: const InputDecoration(
-                        hintText: 'Search...',
-                        hintStyle: TextStyle(color: Colors.white70),
-                        border: InputBorder.none,
-                        enabledBorder: InputBorder.none,
-                        focusedBorder: InputBorder.none,
+                  ? Container(
+                      height: 42,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.15),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: TextField(
+                        controller: _searchController,
+                        autofocus: true,
+                        style: const TextStyle(color: Colors.white, fontSize: 16),
+                        cursorColor: Colors.white,
+                        decoration: InputDecoration(
+                          hintText: 'Search...',
+                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+                          border: InputBorder.none,
+                          prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 20),
+                          contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                        ),
                       ),
                     )
                   : Text((_destinations[_selectedIndex].label as Text).data ?? 'Admin Portal', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
@@ -92,7 +100,7 @@ class _AdminShellState extends State<AdminShell> {
                       });
                     },
                   )
-                else
+                else if (_selectedIndex != 4)
                   IconButton(
                     icon: const Icon(Icons.search),
                     onPressed: () {
