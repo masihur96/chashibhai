@@ -20,6 +20,7 @@ class AdminShell extends StatefulWidget {
 
 class _AdminShellState extends State<AdminShell> {
   int _selectedIndex = 0;
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final List<Widget> _screens = [
     const AdminDashboardScreen(),
@@ -50,6 +51,7 @@ class _AdminShellState extends State<AdminShell> {
     final isDesktop = MediaQuery.of(context).size.width >= 800;
 
     return Scaffold(
+      key: _scaffoldKey,
       appBar: isDesktop
           ? null // Hide AppBar on desktop
           : AppBar(
@@ -123,6 +125,25 @@ class _AdminShellState extends State<AdminShell> {
           ),
         ],
       ),
+      bottomNavigationBar: isDesktop
+          ? null
+          : NavigationBar(
+              selectedIndex: _selectedIndex < 4 ? _selectedIndex : 4,
+              onDestinationSelected: (index) {
+                if (index == 4) {
+                  _scaffoldKey.currentState?.openDrawer();
+                } else {
+                  setState(() => _selectedIndex = index);
+                }
+              },
+              destinations: const [
+                NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
+                NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Users'),
+                NavigationDestination(icon: Icon(Icons.shopping_cart_outlined), selectedIcon: Icon(Icons.shopping_cart), label: 'Orders'),
+                NavigationDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2), label: 'Products'),
+                NavigationDestination(icon: Icon(Icons.menu), label: 'Menu'),
+              ],
+            ),
     );
   }
 }
