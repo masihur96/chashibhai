@@ -53,7 +53,14 @@ class _AdminShellState extends State<AdminShell> {
       appBar: isDesktop
           ? null // Hide AppBar on desktop
           : AppBar(
-              title: Text('ChashiBhai Admin', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              title: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text('ChashiBhai Admin', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                  Text('Welcome back, Admin. Here is what is happening today.', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[300])),
+                ],
+              ),
+
 
               elevation: 1,
             ),
