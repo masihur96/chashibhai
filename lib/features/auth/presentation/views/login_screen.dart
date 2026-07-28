@@ -120,7 +120,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     final user = MockData.currentUser.copyWith(role: UserRole.admin);
                     context.read<AuthProvider>().setCurrentUser(user);
                   },
-                  child: const Text('Admin Login'),
+                  child: const Text('Admin'),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.green, padding: const EdgeInsets.symmetric(horizontal: 16)),
@@ -128,7 +128,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     final user = MockData.currentUser.copyWith(role: UserRole.buyer);
                     context.read<AuthProvider>().setCurrentUser(user);
                   },
-                  child: const Text('Buyer Login'),
+                  child: const Text('Buyer'),
                 ),
                 ElevatedButton(
                   style: ElevatedButton.styleFrom(backgroundColor: Colors.orange, padding: const EdgeInsets.symmetric(horizontal: 16)),
@@ -136,7 +136,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     final user = MockData.currentUser.copyWith(role: UserRole.farmer);
                     context.read<AuthProvider>().setCurrentUser(user);
                   },
-                  child: const Text('Farmer Login'),
+                  child: const Text('Farmer'),
                 ),
               ],
             ),
