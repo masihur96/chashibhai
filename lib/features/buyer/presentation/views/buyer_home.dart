@@ -331,7 +331,13 @@ class _HomeTab extends StatelessWidget {
         children: [
           IconButton(
             icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () => Scaffold.of(context).openDrawer(),
+            onPressed: () {
+              ScaffoldState? scaffold = Scaffold.maybeOf(context);
+              if (scaffold == null || !scaffold.hasDrawer) {
+                scaffold = context.findRootAncestorStateOfType<ScaffoldState>();
+              }
+              scaffold?.openDrawer();
+            },
           ),
           Column(
             children: [
