@@ -25,58 +25,84 @@ class DemandDetailsScreen extends StatelessWidget {
     final reviewsCount = reviewProvider.getReviewsForUser(buyerId).length;
 
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Demand Details', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-        elevation: 0,
-      ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(20),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _buildDemandHeader(context, currencyFormat),
-            const SizedBox(height: 24),
-            _buildBuyerInfo(context, buyerId, averageRating, reviewsCount),
-            const SizedBox(height: 24),
-            _buildDemandDetails(context),
-            const SizedBox(height: 40),
-            if (currentUser?.role == UserRole.farmer) ...[
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Offer submitted successfully!')),
-                    );
-                  },
-                  child: const Text('Offer to Supply'),
-                ),
-              ),
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-                      builder: (context) => RatingDialog(
-                        reviewerId: currentUser!.id,
-                        revieweeId: buyerId,
-                        orderId: null, // Allow rating without an order ID
+      body: CustomScrollView(
+        slivers: [
+          _buildSliverAppBar(context),
+          SliverToBoxAdapter(
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildDemandHeader(context, currencyFormat),
+                  const SizedBox(height: 24),
+                  _buildBuyerInfo(context, buyerId, averageRating, reviewsCount),
+                  const SizedBox(height: 24),
+                  _buildDemandDetails(context),
+                  const SizedBox(height: 40),
+                  if (currentUser?.role == UserRole.farmer) ...[
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: ElevatedButton(
+                        onPressed: () {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(content: Text('Offer submitted successfully!')),
+                          );
+                        },
+                        child: const Text('Offer to Supply'),
                       ),
-                    );
-                  },
-                  icon: const Icon(Icons.star_rate_rounded),
-                  label: const Text('Rate Buyer'),
-                ),
+                    ),
+                    const SizedBox(height: 16),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 50,
+                      child: OutlinedButton.icon(
+                        onPressed: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+                            builder: (context) => RatingDialog(
+                              reviewerId: currentUser!.id,
+                              revieweeId: buyerId,
+                              orderId: null, // Allow rating without an order ID
+                            ),
+                          );
+                        },
+                        icon: const Icon(Icons.star_rate_rounded),
+                        label: const Text('Rate Buyer'),
+                      ),
+                    ),
+                  ]
+                ],
               ),
-            ]
-          ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSliverAppBar(BuildContext context) {
+    return SliverAppBar(
+      expandedHeight: 250,
+      pinned: true,
+      backgroundColor: Colors.white,
+      leading: CircleAvatar(
+        backgroundColor: Colors.black26,
+        child: IconButton(
+          icon: const Icon(Icons.arrow_back, color: Colors.white),
+          onPressed: () => Navigator.pop(context),
+        ),
+      ),
+      flexibleSpace: FlexibleSpaceBar(
+        background: Hero(
+          tag: demand.id,
+          child: Image.asset(
+            demand.imageUrl,
+            fit: BoxFit.cover,
+          ),
         ),
       ),
     );
@@ -99,24 +125,45 @@ class DemandDetailsScreen extends StatelessWidget {
                 ),
               ),
             ),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: demand.status == DemandStatus.active
-                    ? Theme.of(context).colorScheme.primaryContainer
-                    : Colors.grey.shade200,
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Text(
-                demand.status.name.toUpperCase(),
-                style: TextStyle(
-                  color: demand.status == DemandStatus.active
-                      ? Theme.of(context).colorScheme.onPrimaryContainer
-                      : Colors.grey.shade700,
-                  fontWeight: FontWeight.bold,
-                  fontSize: 12,
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: demand.status == DemandStatus.active
+                        ? Theme.of(context).colorScheme.primaryContainer
+                        : Colors.grey.shade200,
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    demand.status.name.toUpperCase(),
+                    style: TextStyle(
+                      color: demand.status == DemandStatus.active
+                          ? Theme.of(context).colorScheme.onPrimaryContainer
+                          : Colors.grey.shade700,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: demand.tradeType == TradeType.auction ? Colors.orange.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Text(
+                    demand.tradeType.toString().split('.').last.toUpperCase(),
+                    style: TextStyle(
+                      color: demand.tradeType == TradeType.auction ? Colors.orange.shade800 : Colors.blue.shade800,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 10,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ],
         ),

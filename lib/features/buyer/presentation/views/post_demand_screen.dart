@@ -29,6 +29,7 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
   List<String> _selectedBuyerIds = [];
   bool _isInit = false;
   late DateTime _expiryDate;
+  TradeType _tradeType = TradeType.negotiation;
 
   // Group buying state
   bool _isGroupDemand = false;
@@ -137,6 +138,51 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
                   prefixIcon: Icon(Icons.location_on_outlined),
                 ),
                 onChanged: (v) => _location = v,
+              ),
+              const SizedBox(height: 24),
+              Text(
+                'Trade Configuration',
+                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+              ),
+              const SizedBox(height: 12),
+              DropdownButtonFormField<TradeType>(
+                value: _tradeType,
+                decoration: const InputDecoration(
+                  labelText: 'Trade Type',
+                  prefixIcon: Icon(Icons.handshake_outlined),
+                ),
+                items: TradeType.values.map((type) {
+                  return DropdownMenuItem(
+                    value: type,
+                    child: Text(type.name.toUpperCase()),
+                  );
+                }).toList(),
+                onChanged: (val) {
+                  if (val != null) setState(() => _tradeType = val);
+                },
+              ),
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () {
+                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Image selection mocked for demo.')));
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 120,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
+                  ),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.grey.shade400),
+                      const SizedBox(height: 8),
+                      Text('Upload Product Image (Optional)', style: TextStyle(color: Colors.grey.shade600)),
+                    ],
+                  ),
+                ),
               ),
               const SizedBox(height: 24),
               Text(

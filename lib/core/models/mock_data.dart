@@ -173,6 +173,8 @@ class MockData {
       deliveryLocation: 'Dhaka, Bangladesh',
       expiryTime: DateTime.now().add(const Duration(days: 3)),
       status: DemandStatus.active,
+      tradeType: TradeType.negotiation,
+      imageUrl: 'assets/images/potato.png',
     ),
   ];
 

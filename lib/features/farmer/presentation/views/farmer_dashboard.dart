@@ -12,6 +12,8 @@ import 'package:intl/intl.dart';
 import './add_product_screen.dart';
 import '../../../admin/presentation/views/analytics_screen.dart';
 import '../../../account/presentation/views/profile_screen.dart';
+import '../../../../core/presentation/widgets/demand_card.dart';
+import './demand_details_screen.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -111,6 +113,25 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                     ),
                     const SizedBox(height: 12),
                     _buildListingList(products, currencyFormat),
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Recent Buyer Demands',
+                          style: GoogleFonts.outfit(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {},
+                          child: const Text('View All'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildRecentDemandsList(context, currencyFormat),
                   ],
                 ),
               ),
@@ -297,6 +318,35 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                 ],
               ),
             ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildRecentDemandsList(BuildContext context, NumberFormat currencyFormat) {
+    final demands = context.watch<DemandProvider>().demands;
+    if (demands.isEmpty) return const Text('No recent demands.');
+
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: demands.length > 3 ? 3 : demands.length,
+      itemBuilder: (context, index) {
+        final demand = demands[index];
+        return Semantics(
+          label: 'Demand Card for ${demand.productName}',
+          child: DemandCard(
+            demand: demand,
+            currencyFormat: currencyFormat,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DemandDetailsScreen(demand: demand),
+                ),
+              );
+            },
           ),
         );
       },

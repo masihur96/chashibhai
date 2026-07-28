@@ -137,6 +137,8 @@ class DemandPost {
   final String deliveryLocation;
   final DateTime expiryTime;
   final DemandStatus status;
+  final TradeType tradeType;
+  final String imageUrl;
 
   DemandPost({
     required this.id,
@@ -147,6 +149,8 @@ class DemandPost {
     required this.deliveryLocation,
     required this.expiryTime,
     required this.status,
+    required this.tradeType,
+    required this.imageUrl,
   });
 }
 
