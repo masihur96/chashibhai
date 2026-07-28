@@ -26,6 +26,7 @@ import './features/group/presentation/views/groups_list_screen.dart';
 import './core/utils/localization.dart';
 import './features/admin/presentation/views/admin_shell.dart';
 
+import './features/splash/presentation/views/splash_screen.dart';
 
 void main() {
   runApp(
@@ -161,7 +162,7 @@ class MyApp extends StatelessWidget {
           }),
         ),
       ),
-      home: const AuthWrapper(),
+      home: const SplashScreen(),
     );
   }
 }
