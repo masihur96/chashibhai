@@ -27,22 +27,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text('User Management', style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold)),
-              SizedBox(
-                width: 300,
-                child: TextField(
-                  decoration: InputDecoration(
-                    hintText: 'Search users by name or ID...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                  ),
-                ),
+          Text('User Management', style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold)),
+          SizedBox(
+            width: 300,
+            child: TextField(
+              decoration: InputDecoration(
+                hintText: 'Search users by name or ID...',
+                prefixIcon: const Icon(Icons.search),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               ),
-            ],
+            ),
           ),
           const SizedBox(height: 32),
           Container(
