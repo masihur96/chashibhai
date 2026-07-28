@@ -10,6 +10,7 @@ import './admin_escrow_screen.dart';
 import './analytics_screen.dart';
 import './reports_screen.dart';
 import './admin_settings_screen.dart';
+import '../../../account/presentation/views/profile_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -27,6 +28,7 @@ class _AdminShellState extends State<AdminShell> {
     const UserManagementScreen(),
     const AdminOrdersScreen(),
     const AdminProductsScreen(),
+    const ProfileScreen(),
     const AdminWalletScreen(),
     const AdminEscrowScreen(),
     const AnalyticsScreen(),
@@ -39,6 +41,7 @@ class _AdminShellState extends State<AdminShell> {
     NavigationRailDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: Text('Users')),
     NavigationRailDestination(icon: Icon(Icons.shopping_cart_outlined), selectedIcon: Icon(Icons.shopping_cart), label: Text('Orders')),
     NavigationRailDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2), label: Text('Products')),
+    NavigationRailDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: Text('Profile')),
     NavigationRailDestination(icon: Icon(Icons.account_balance_wallet_outlined), selectedIcon: Icon(Icons.account_balance_wallet), label: Text('Wallet')),
     NavigationRailDestination(icon: Icon(Icons.lock_outline), selectedIcon: Icon(Icons.lock), label: Text('Escrow')),
     NavigationRailDestination(icon: Icon(Icons.analytics_outlined), selectedIcon: Icon(Icons.analytics), label: Text('Analytics')),
@@ -128,20 +131,16 @@ class _AdminShellState extends State<AdminShell> {
       bottomNavigationBar: isDesktop
           ? null
           : NavigationBar(
-              selectedIndex: _selectedIndex < 4 ? _selectedIndex : 4,
+              selectedIndex: _selectedIndex < 5 ? _selectedIndex : 0,
               onDestinationSelected: (index) {
-                if (index == 4) {
-                  _scaffoldKey.currentState?.openDrawer();
-                } else {
-                  setState(() => _selectedIndex = index);
-                }
+                setState(() => _selectedIndex = index);
               },
               destinations: const [
                 NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
                 NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Users'),
                 NavigationDestination(icon: Icon(Icons.shopping_cart_outlined), selectedIcon: Icon(Icons.shopping_cart), label: 'Orders'),
                 NavigationDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2), label: 'Products'),
-                NavigationDestination(icon: Icon(Icons.menu), label: 'Menu'),
+                NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
               ],
             ),
     );
