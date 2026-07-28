@@ -54,7 +54,7 @@ class _AdminShellState extends State<AdminShell> {
           ? null // Hide AppBar on desktop
           : AppBar(
               title: Text('ChashiBhai Admin', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-              backgroundColor: Theme.of(context).colorScheme.surface,
+
               elevation: 1,
             ),
       drawer: isDesktop

@@ -145,35 +145,36 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
 
   Widget _buildStatsGrid(double maxWidth) {
     int crossAxisCount;
-    double childAspectRatio;
     
-    if (maxWidth > 1400) {
+    if (maxWidth > 1100) {
       crossAxisCount = 4;
-      childAspectRatio = 1.8;
-    } else if (maxWidth > 1100) {
-      crossAxisCount = 4;
-      childAspectRatio = 1.4;
     } else if (maxWidth > 768) {
       crossAxisCount = 2;
-      childAspectRatio = 1.8;
     } else {
       crossAxisCount = 1;
-      childAspectRatio = 2.2;
     }
 
-    return GridView.count(
-      crossAxisCount: crossAxisCount,
-      crossAxisSpacing: 24,
-      mainAxisSpacing: 24,
+    return GridView.builder(
       shrinkWrap: true,
-      childAspectRatio: childAspectRatio,
       physics: const NeverScrollableScrollPhysics(),
-      children: [
-        _buildStatCard('Total Users', '1,245', '+12% this week', Icons.people_alt_rounded, const Color(0xFF4F46E5), true),
-        _buildStatCard('Active Orders', '342', '+5.2% this week', Icons.shopping_bag_rounded, const Color(0xFF10B981), true),
-        _buildStatCard('Total Escrow', '৳ 4.5M', '+2.4% this week', Icons.account_balance_wallet_rounded, const Color(0xFFF59E0B), true),
-        _buildStatCard('Open Disputes', '12', '-3.1% this week', Icons.gavel_rounded, const Color(0xFFEF4444), false),
-      ],
+      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: crossAxisCount,
+        crossAxisSpacing: 24,
+        mainAxisSpacing: 24,
+        mainAxisExtent: 180, // Fixed height to prevent RenderFlex overflow
+      ),
+      itemCount: 4,
+      itemBuilder: (context, index) {
+        if (index == 0) {
+          return _buildStatCard('Total Users', '1,245', '+12% this week', Icons.people_alt_rounded, const Color(0xFF4F46E5), true);
+        } else if (index == 1) {
+          return _buildStatCard('Active Orders', '342', '+5.2% this week', Icons.shopping_bag_rounded, const Color(0xFF10B981), true);
+        } else if (index == 2) {
+          return _buildStatCard('Total Escrow', '৳ 4.5M', '+2.4% this week', Icons.account_balance_wallet_rounded, const Color(0xFFF59E0B), true);
+        } else {
+          return _buildStatCard('Open Disputes', '12', '-3.1% this week', Icons.gavel_rounded, const Color(0xFFEF4444), false);
+        }
+      },
     );
   }
 
@@ -315,12 +316,17 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
               ],
             ),
           ),
-          const Divider(height: 1),
-          ListView.separated(
+          GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
+            padding: const EdgeInsets.all(24),
+            gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+              maxCrossAxisExtent: 450,
+              mainAxisExtent: 90,
+              crossAxisSpacing: 16,
+              mainAxisSpacing: 16,
+            ),
             itemCount: 6,
-            separatorBuilder: (context, index) => Divider(height: 1, color: Colors.grey.shade100),
             itemBuilder: (context, index) {
               final isWarning = index % 3 == 0;
               final isSuccess = index % 2 == 0 && !isWarning;
@@ -328,37 +334,45 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen> with Single
               final iconColor = isWarning ? Colors.orange : (isSuccess ? Colors.green : Colors.blue);
               final iconData = isWarning ? Icons.warning_amber_rounded : (isSuccess ? Icons.check_circle_outline_rounded : Icons.person_add_outlined);
               
-              return ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                leading: Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: iconColor.withOpacity(0.1),
-                    shape: BoxShape.circle,
+              return Container(
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey.shade200),
+                  borderRadius: BorderRadius.circular(16),
+                  color: Colors.grey.shade50,
+                ),
+                child: ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16),
+                  leading: Container(
+                    padding: const EdgeInsets.all(10),
+                    decoration: BoxDecoration(
+                      color: iconColor.withOpacity(0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(iconData, color: iconColor, size: 20),
                   ),
-                  child: Icon(iconData, color: iconColor, size: 20),
-                ),
-                title: Text(
-                  isWarning ? 'Dispute raised on Order #${1024 + index}' : (isSuccess ? 'Payment cleared for Order #${2040 + index}' : 'New user registration (Farmer)'),
-                  style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-                ),
-                subtitle: Padding(
-                  padding: const EdgeInsets.only(top: 4),
-                  child: Text(
+                  title: Text(
+                    isWarning ? 'Dispute on #${1024 + index}' : (isSuccess ? 'Payment for #${2040 + index}' : 'New user (Farmer)'),
+                    style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 14),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  subtitle: Text(
                     '${index + 1} hours ago',
-                    style: TextStyle(color: Colors.grey.shade500, fontSize: 13),
+                    style: TextStyle(color: Colors.grey.shade500, fontSize: 12),
                   ),
-                ),
-                trailing: OutlinedButton(
-                  onPressed: () {},
-                  style: OutlinedButton.styleFrom(
-                    padding: const EdgeInsets.symmetric(horizontal: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                    side: BorderSide(color: Colors.grey.shade300),
-                  ),
-                  child: Text(
-                    'Review',
-                    style: TextStyle(color: Colors.grey.shade700),
+                  trailing: OutlinedButton(
+                    onPressed: () {},
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(horizontal: 12),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                      side: BorderSide(color: Colors.grey.shade300),
+                      minimumSize: const Size(60, 36),
+                    ),
+                    child: Text(
+                      'Review',
+                      style: TextStyle(color: Colors.grey.shade700, fontSize: 12),
+                    ),
                   ),
                 ),
               );
