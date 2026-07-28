@@ -58,15 +58,16 @@ class _AdminShellState extends State<AdminShell> {
       appBar: isDesktop
           ? null // Hide AppBar on desktop
           : AppBar(
-              title: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('ChashiBhai Admin', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-                  Text('Welcome back, Admin. Here is what is happening today.', style: GoogleFonts.outfit(fontSize: 12, color: Colors.grey[300])),
-                ],
-              ),
-
-
+              title:  Text((_destinations[_selectedIndex].label as Text).data ?? 'Admin Portal', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              centerTitle: false,
+              actions: [
+                IconButton(
+                  icon: const Icon(Icons.filter_list_rounded),
+                  tooltip: 'Filter Options',
+                  onPressed: () => _showFilterOptions(context, _selectedIndex),
+                ),
+                const SizedBox(width: 8),
+              ],
               elevation: 1,
             ),
       drawer: isDesktop
@@ -145,4 +146,82 @@ class _AdminShellState extends State<AdminShell> {
             ),
     );
   }
+
+  void _showFilterOptions(BuildContext context, int index) {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      builder: (context) {
+        return _buildFilterContent(index);
+      },
+    );
+  }
+
+  Widget _buildFilterContent(int index) {
+    String pageName = (_destinations[index].label as Text).data ?? 'Filter';
+    return Padding(
+      padding: const EdgeInsets.all(24.0),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text('$pageName Filters', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
+              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (index == 0) ...[
+            _buildFilterOption('Today'),
+            _buildFilterOption('This Week'),
+            _buildFilterOption('This Month'),
+          ] else if (index == 1) ...[
+            _buildFilterOption('All Users'),
+            _buildFilterOption('Farmers Only'),
+            _buildFilterOption('Buyers Only'),
+            _buildFilterOption('Pending Verification'),
+          ] else if (index == 2) ...[
+            _buildFilterOption('All Orders'),
+            _buildFilterOption('Pending'),
+            _buildFilterOption('Completed'),
+            _buildFilterOption('Disputed'),
+          ] else if (index == 3) ...[
+            _buildFilterOption('All Products'),
+            _buildFilterOption('In Stock'),
+            _buildFilterOption('Out of Stock'),
+            _buildFilterOption('High Demand'),
+          ] else ...[
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 16.0),
+              child: Text('No specific filters available for this page.', style: TextStyle(color: Colors.grey)),
+            ),
+          ],
+          const SizedBox(height: 24),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Apply Filters'),
+            ),
+          )
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterOption(String label) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 8.0),
+      child: Row(
+        children: [
+          const Icon(Icons.check_box_outline_blank, color: Colors.grey),
+          const SizedBox(width: 12),
+          Text(label, style: const TextStyle(fontSize: 16)),
+        ],
+      ),
+    );
+  }
 }
+
