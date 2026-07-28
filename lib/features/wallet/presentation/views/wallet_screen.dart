@@ -90,9 +90,10 @@ class WalletScreen extends StatelessWidget {
               itemCount: transactions.length > 5 ? 5 : transactions.length, // Show up to 5 recent
               itemBuilder: (context, index) {
                 final tx = transactions[index];
+                final shortId = tx.id.length > 6 ? tx.id.substring(0, 6) : tx.id;
                 return TransactionCard(
                   transaction: tx,
-                  description: 'Transaction #${tx.id.substring(0, 6)}',
+                  description: 'Transaction #$shortId',
                   currencyFormat: currencyFormat,
                 );
               },

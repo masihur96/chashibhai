@@ -19,7 +19,7 @@ class _DepositScreenState extends State<DepositScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Deposit Funds', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+
         elevation: 0,
       ),
       body: Padding(

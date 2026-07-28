@@ -28,7 +28,7 @@ class EscrowScreen extends StatelessWidget {
     return Scaffold(
       appBar: AppBar(
         title: Text('Escrow Vault', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+
         elevation: 0,
       ),
       body: Column(
@@ -73,9 +73,10 @@ class EscrowScreen extends StatelessWidget {
                     itemCount: escrowTxs.length,
                     itemBuilder: (context, index) {
                       final tx = escrowTxs[index];
+                      final shortId = tx.id.length > 6 ? tx.id.substring(0, 6) : tx.id;
                       return TransactionCard(
                         transaction: tx,
-                        description: 'Order Escrow #${tx.id.substring(0, 6)}',
+                        description: 'Order Escrow #$shortId',
                         currencyFormat: currencyFormat,
                       );
                     },

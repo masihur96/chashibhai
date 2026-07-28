@@ -42,9 +42,10 @@ class TransactionsScreen extends StatelessWidget {
               itemBuilder: (context, index) {
                 final tx = transactions[index];
                 final currencyFormat = NumberFormat.currency(symbol: '৳', decimalDigits: 2);
+                final shortId = tx.id.length > 6 ? tx.id.substring(0, 6) : tx.id;
                 return TransactionCard(
                   transaction: tx,
-                  description: 'Transaction #${tx.id.substring(0, 6)}',
+                  description: 'Transaction #$shortId',
                   currencyFormat: currencyFormat,
                 );
               },

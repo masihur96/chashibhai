@@ -19,7 +19,7 @@ class _WithdrawScreenState extends State<WithdrawScreen> {
     return Scaffold(
       appBar: AppBar(
         title: Text('Withdraw Funds', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+
         elevation: 0,
       ),
       body: Padding(
