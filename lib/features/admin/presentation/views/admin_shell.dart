@@ -11,6 +11,9 @@ import './analytics_screen.dart';
 import './reports_screen.dart';
 import './admin_settings_screen.dart';
 import './admin_profile_screen.dart';
+import 'package:provider/provider.dart';
+import '../../../auth/presentation/state/auth_provider.dart';
+import '../../../auth/presentation/views/login_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -148,6 +151,25 @@ class _AdminShellState extends State<AdminShell> {
                       },
                     );
                   }),
+                  const Divider(),
+                  ListTile(
+                    leading: const Icon(Icons.logout, color: Colors.red),
+                    title: const Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    onTap: () {
+                      Navigator.pop(context); // Close drawer
+                      
+                      // Clear the current user from state
+                      context.read<AuthProvider>().setCurrentUser(null);
+                      
+                      // Navigate back to the login screen and clear navigation history
+                      Navigator.of(context).pushAndRemoveUntil(
+                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        (route) => false,
+                      );
+                      
+                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logged out successfully')));
+                    },
+                  ),
                 ],
               ),
             ),
