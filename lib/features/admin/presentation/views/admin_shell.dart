@@ -21,6 +21,8 @@ class AdminShell extends StatefulWidget {
 
 class _AdminShellState extends State<AdminShell> {
   int _selectedIndex = 0;
+  bool _isSearchExpanded = false;
+  final TextEditingController _searchController = TextEditingController();
   final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
 
   final List<Widget> _screens = [
@@ -50,6 +52,12 @@ class _AdminShellState extends State<AdminShell> {
   ];
 
   @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final isDesktop = MediaQuery.of(context).size.width >= 800;
 
@@ -58,14 +66,47 @@ class _AdminShellState extends State<AdminShell> {
       appBar: isDesktop
           ? null // Hide AppBar on desktop
           : AppBar(
-              title:  Text((_destinations[_selectedIndex].label as Text).data ?? 'Admin Portal', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              title: _isSearchExpanded
+                  ? TextField(
+                      controller: _searchController,
+                      autofocus: true,
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        hintText: 'Search...',
+                        hintStyle: TextStyle(color: Colors.white70),
+                        border: InputBorder.none,
+                        enabledBorder: InputBorder.none,
+                        focusedBorder: InputBorder.none,
+                      ),
+                    )
+                  : Text((_destinations[_selectedIndex].label as Text).data ?? 'Admin Portal', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
               centerTitle: false,
               actions: [
-                IconButton(
-                  icon: const Icon(Icons.filter_list_rounded),
-                  tooltip: 'Filter Options',
-                  onPressed: () => _showFilterOptions(context, _selectedIndex),
-                ),
+                if (_isSearchExpanded)
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: () {
+                      setState(() {
+                        _isSearchExpanded = false;
+                        _searchController.clear();
+                      });
+                    },
+                  )
+                else
+                  IconButton(
+                    icon: const Icon(Icons.search),
+                    onPressed: () {
+                      setState(() {
+                        _isSearchExpanded = true;
+                      });
+                    },
+                  ),
+                if (!_isSearchExpanded && _selectedIndex != 4)
+                  IconButton(
+                    icon: const Icon(Icons.filter_list_rounded),
+                    tooltip: 'Filter Options',
+                    onPressed: () => _showFilterOptions(context, _selectedIndex),
+                  ),
                 const SizedBox(width: 8),
               ],
               elevation: 1,
