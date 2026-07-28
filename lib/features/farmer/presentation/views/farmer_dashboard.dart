@@ -10,9 +10,18 @@ import '../../../account/presentation/state/app_state_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import './add_product_screen.dart';
+import '../../../admin/presentation/views/analytics_screen.dart';
+import '../../../account/presentation/views/profile_screen.dart';
 
-class FarmerDashboard extends StatelessWidget {
+class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
+
+  @override
+  State<FarmerDashboard> createState() => _FarmerDashboardState();
+}
+
+class _FarmerDashboardState extends State<FarmerDashboard> {
+  int _currentIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -21,48 +30,17 @@ class FarmerDashboard extends StatelessWidget {
 
     return Scaffold(
       backgroundColor: Colors.white,
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            _buildFarmerHeader(context),
-            Center(
-              child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 800),
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      _buildStatsGrid(currencyFormat),
-                      const SizedBox(height: 32),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            'Your Active Listings',
-                            style: GoogleFonts.outfit(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                          TextButton(
-                            onPressed: () {},
-                            child: const Text('View All'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      _buildListingList(products, currencyFormat),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-          ],
-        ),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _buildHomeTab(context, products, currencyFormat),
+          const AnalyticsScreen(),
+          const ProfileScreen(),
+        ],
       ),
       bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) => setState(() => _currentIndex = index),
         destinations: const [
           NavigationDestination(
             icon: Icon(Icons.dashboard_outlined),
@@ -81,19 +59,64 @@ class FarmerDashboard extends StatelessWidget {
           ),
         ],
       ),
-      floatingActionButton: Semantics(
-        label: 'Add New Product',
-        child: FloatingActionButton.extended(
-          onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(builder: (context) => const AddProductScreen()),
-            );
-          },
-          backgroundColor: Theme.of(context).colorScheme.primary,
-          label: const Text('Add Product', style: TextStyle(color: Colors.white)),
-          icon: const Icon(Icons.add, color: Colors.white),
-        ),
+      floatingActionButton: _currentIndex == 0
+          ? Semantics(
+              label: 'Add New Product',
+              child: FloatingActionButton.extended(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (context) => const AddProductScreen()),
+                  );
+                },
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                label: const Text('Add Product', style: TextStyle(color: Colors.white)),
+                icon: const Icon(Icons.add, color: Colors.white),
+              ),
+            )
+          : null,
+    );
+  }
+
+  Widget _buildHomeTab(BuildContext context, List products, NumberFormat currencyFormat) {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          _buildFarmerHeader(context),
+          Center(
+            child: ConstrainedBox(
+              constraints: const BoxConstraints(maxWidth: 800),
+              child: Padding(
+                padding: const EdgeInsets.all(20),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _buildStatsGrid(currencyFormat),
+                    const SizedBox(height: 32),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          'Your Active Listings',
+                          style: GoogleFonts.outfit(
+                            fontSize: 20,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () {},
+                          child: const Text('View All'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    _buildListingList(products, currencyFormat),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -117,7 +140,13 @@ class FarmerDashboard extends StatelessWidget {
               children: [
                 IconButton(
                   icon: Icon(Icons.menu, color: Theme.of(context).colorScheme.onPrimary),
-                  onPressed: () => Scaffold.of(context).openDrawer(),
+                  onPressed: () {
+                    ScaffoldState? scaffold = Scaffold.maybeOf(context);
+                    if (scaffold == null || !scaffold.hasDrawer) {
+                      scaffold = context.findRootAncestorStateOfType<ScaffoldState>();
+                    }
+                    scaffold?.openDrawer();
+                  },
                 ),
                 Text(
                   'Farmer Dashboard',
