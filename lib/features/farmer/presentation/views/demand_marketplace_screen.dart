@@ -7,6 +7,7 @@ import '../../../../core/presentation/widgets/custom_search_bar.dart';
 import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import '../../../buyer/presentation/state/demand_provider.dart';
 import 'package:intl/intl.dart';
+import './demand_details_screen.dart';
 
 class DemandMarketplaceScreen extends StatelessWidget {
   const DemandMarketplaceScreen({super.key});
@@ -49,7 +50,14 @@ class DemandMarketplaceScreen extends StatelessWidget {
                         child: DemandCard(
                           demand: demands[index],
                           currencyFormat: currencyFormat,
-                          onTap: () {},
+                          onTap: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => DemandDetailsScreen(demand: demands[index]),
+                              ),
+                            );
+                          },
                         ),
                       );
                     },

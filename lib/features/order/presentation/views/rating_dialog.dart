@@ -6,13 +6,13 @@ import '../../../../core/presentation/widgets/custom_buttons.dart';
 import '../../../account/presentation/state/review_provider.dart';
 
 class RatingDialog extends StatefulWidget {
-  final String orderId;
+  final String? orderId;
   final String reviewerId;
   final String revieweeId;
 
   const RatingDialog({
     super.key,
-    required this.orderId,
+    this.orderId,
     required this.reviewerId,
     required this.revieweeId,
   });
