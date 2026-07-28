@@ -6,6 +6,8 @@ import 'package:intl/intl.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/presentation/widgets/custom_buttons.dart';
 import '../../../buyer/presentation/state/product_provider.dart';
+import '../../../account/presentation/state/review_provider.dart';
+import '../../../auth/presentation/state/auth_provider.dart';
 import './invoice_screen.dart';
 import './rating_dialog.dart';
 
@@ -17,6 +19,9 @@ class OrderDetailsScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final products = context.watch<ProductProvider>().products;
+    final currentUser = context.watch<AuthProvider>().currentUser;
+    final reviewProvider = context.watch<ReviewProvider>();
+    
     final product = products.firstWhere(
       (p) => p.id == order.supplyId,
       orElse: () => Product(
@@ -28,11 +33,16 @@ class OrderDetailsScreen extends StatelessWidget {
     );
 
     final currencyFormat = NumberFormat.currency(symbol: '৳', decimalDigits: 2);
+    
+    final isBuyer = currentUser?.id == order.buyerId;
+    final reviewerId = currentUser?.id ?? '';
+    final revieweeId = isBuyer ? order.farmerId : order.buyerId;
+    final hasReviewed = reviewProvider.hasReviewedOrder(order.id, reviewerId);
 
     return Scaffold(
       appBar: AppBar(
-        title: Text('Order #${order.id.substring(0, 8)}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: Theme.of(context).colorScheme.surface,
+        title: Text('Order #${order.id.length > 8 ? order.id.substring(0, 8) : order.id}', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+
         elevation: 0,
         actions: [
           IconButton(
@@ -59,20 +69,35 @@ class OrderDetailsScreen extends StatelessWidget {
             const SizedBox(height: 16),
             _buildPaymentSummary(context, currencyFormat),
             const SizedBox(height: 32),
-            if (order.status == OrderStatus.delivered)
+            if (order.status == OrderStatus.delivered && currentUser != null)
               SizedBox(
                 width: double.infinity,
-                child: PrimaryButton(
-                  text: 'Rate your Experience',
-                  onPressed: () {
-                    showModalBottomSheet(
-                      context: context,
-                      isScrollControlled: true,
-                      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
-                      builder: (context) => const RatingDialog(),
-                    );
-                  },
-                ),
+                child: hasReviewed
+                    ? Container(
+                        padding: const EdgeInsets.symmetric(vertical: 16),
+                        decoration: BoxDecoration(
+                          color: Colors.green.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                        ),
+                        alignment: Alignment.center,
+                        child: const Text('You have reviewed this order', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
+                      )
+                    : PrimaryButton(
+                        text: 'Rate your Experience',
+                        onPressed: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+                            builder: (context) => RatingDialog(
+                              orderId: order.id,
+                              reviewerId: reviewerId,
+                              revieweeId: revieweeId,
+                            ),
+                          );
+                        },
+                      ),
               ),
           ],
         ),

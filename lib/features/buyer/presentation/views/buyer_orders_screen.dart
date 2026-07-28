@@ -5,6 +5,7 @@ import '../../../wallet/presentation/state/order_provider.dart';
 import '../../../../core/models/models.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import '../../../../features/order/presentation/views/order_details_screen.dart';
 
 class BuyerOrdersScreen extends StatelessWidget {
   const BuyerOrdersScreen({super.key});
@@ -47,13 +48,13 @@ class BuyerOrdersScreen extends StatelessWidget {
               separatorBuilder: (context, index) => const Divider(height: 1, indent: 20, endIndent: 20),
               itemBuilder: (context, index) {
                 final order = orders[index];
-                return _buildOrderItem(order, currencyFormat);
+                return _buildOrderItem(order, currencyFormat,context);
               },
             ),
     );
   }
 
-  Widget _buildOrderItem(Order order, NumberFormat currencyFormat) {
+  Widget _buildOrderItem(Order order, NumberFormat currencyFormat,BuildContext context) {
     return ListTile(
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
       leading: Container(
@@ -99,7 +100,12 @@ class BuyerOrdersScreen extends StatelessWidget {
         ),
       ),
       onTap: () {
-        // Handle order tap
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OrderDetailsScreen(order: order),
+          ),
+        );
       },
     );
   }

@@ -26,7 +26,7 @@ class InvoiceScreen extends StatelessWidget {
       backgroundColor: Colors.grey.shade100,
       appBar: AppBar(
         title: Text('Invoice', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
-        backgroundColor: Colors.white,
+
         elevation: 0,
       ),
       body: SingleChildScrollView(
@@ -83,7 +83,7 @@ class InvoiceScreen extends StatelessWidget {
                         Text('Billed To', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                         const SizedBox(height: 4),
                         const Text('Buyer ID:', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text(order.buyerId.substring(0, 8), style: TextStyle(color: Colors.grey.shade700)),
+                        Text(order.buyerId.length > 8 ? order.buyerId.substring(0, 8) : order.buyerId, style: TextStyle(color: Colors.grey.shade700)),
                       ],
                     ),
                   ),
@@ -94,7 +94,7 @@ class InvoiceScreen extends StatelessWidget {
                         Text('Supplied By', style: TextStyle(color: Colors.grey.shade500, fontSize: 12)),
                         const SizedBox(height: 4),
                         const Text('Farmer ID:', style: TextStyle(fontWeight: FontWeight.bold)),
-                        Text(order.farmerId.substring(0, 8), style: TextStyle(color: Colors.grey.shade700)),
+                        Text(order.farmerId.length > 8 ? order.farmerId.substring(0, 8) : order.farmerId, style: TextStyle(color: Colors.grey.shade700)),
                       ],
                     ),
                   ),

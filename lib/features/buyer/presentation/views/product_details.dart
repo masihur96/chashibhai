@@ -7,6 +7,8 @@ import '../../../group/presentation/state/group_provider.dart';
 import '../state/demand_provider.dart';
 import '../../../wallet/presentation/state/order_provider.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
+import '../../../account/presentation/state/review_provider.dart';
+import '../../../../core/presentation/widgets/reviews_list_sheet.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -121,37 +123,54 @@ class ProductDetailsScreen extends StatelessWidget {
   }
 
   Widget _buildFarmerInfo(BuildContext context) {
+    final reviewProvider = context.watch<ReviewProvider>();
+    final farmerId = product.farmerId;
+    final averageRating = reviewProvider.getAverageRating(farmerId);
+    final reviewsCount = reviewProvider.getReviewsForUser(farmerId).length;
+
     return Card.outlined(
       margin: EdgeInsets.zero,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            CircleAvatar(
-              radius: 25,
-              backgroundColor: Theme.of(context).colorScheme.primary,
-              child: Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Text(
-                    'Farmer Abdul',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-                  ),
-                  Row(
-                    children: [
-                      Icon(Icons.star, color: Theme.of(context).colorScheme.secondary, size: 16),
-                      const SizedBox(width: 4),
-                      const Text('4.8 (120 reviews)', style: TextStyle(fontSize: 12)),
-                    ],
-                  ),
-                ],
+      child: InkWell(
+        onTap: () {
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+            builder: (context) => ReviewsListSheet(userId: farmerId),
+          );
+        },
+        borderRadius: BorderRadius.circular(16),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
+          child: Row(
+            children: [
+              CircleAvatar(
+                radius: 25,
+                backgroundColor: Theme.of(context).colorScheme.primary,
+                child: Icon(Icons.person, color: Theme.of(context).colorScheme.onPrimary),
               ),
-            ),
-          ],
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Farmer Abdul',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                    ),
+                    Row(
+                      children: [
+                        Icon(Icons.star, color: Theme.of(context).colorScheme.secondary, size: 16),
+                        const SizedBox(width: 4),
+                        Text('${averageRating.toStringAsFixed(1)} ($reviewsCount reviews)', style: const TextStyle(fontSize: 12)),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              const Icon(Icons.chevron_right, color: Colors.grey),
+            ],
+          ),
         ),
       ),
     );

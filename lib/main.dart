@@ -9,6 +9,7 @@ import './features/group/presentation/state/group_provider.dart';
 import './features/buyer/presentation/state/demand_provider.dart';
 import './features/wallet/presentation/state/order_provider.dart';
 import './features/account/presentation/state/app_state_provider.dart';
+import './features/account/presentation/state/review_provider.dart';
 
 import './core/models/models.dart';
 import './features/buyer/presentation/views/buyer_home.dart';
@@ -38,6 +39,7 @@ void main() {
         ChangeNotifierProvider(create: (_) => DemandProvider()),
         ChangeNotifierProvider(create: (_) => OrderProvider()),
         ChangeNotifierProvider(create: (_) => AppStateProvider()),
+        ChangeNotifierProvider(create: (_) => ReviewProvider()),
       ],
       child: const MyApp(),
     ),

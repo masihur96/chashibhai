@@ -12,6 +12,7 @@ import '../../../auth/presentation/state/auth_provider.dart';
 import '../../../wallet/presentation/state/order_provider.dart';
 import '../../../buyer/presentation/state/product_provider.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
+import '../../../../features/order/presentation/views/order_details_screen.dart';
 
 class FarmerOrdersScreen extends StatefulWidget {
   const FarmerOrdersScreen({super.key});
@@ -124,7 +125,12 @@ class _FarmerOrdersScreenState extends State<FarmerOrdersScreen> {
                         createdAt: createdAt,
                         currencyFormat: currencyFormat,
                         onTap: () {
-                          // View order details
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => OrderDetailsScreen(order: order),
+                            ),
+                          );
                         },
                       );
                     },

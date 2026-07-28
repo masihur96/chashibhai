@@ -1,10 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../core/presentation/widgets/custom_buttons.dart';
+import '../../../account/presentation/state/review_provider.dart';
 
 class RatingDialog extends StatefulWidget {
-  const RatingDialog({super.key});
+  final String orderId;
+  final String reviewerId;
+  final String revieweeId;
+
+  const RatingDialog({
+    super.key,
+    required this.orderId,
+    required this.reviewerId,
+    required this.revieweeId,
+  });
 
   @override
   State<RatingDialog> createState() => _RatingDialogState();
@@ -71,6 +82,13 @@ class _RatingDialogState extends State<RatingDialog> {
               text: 'Submit Review',
               onPressed: _rating > 0
                   ? () {
+                      context.read<ReviewProvider>().addReview(
+                        reviewerId: widget.reviewerId,
+                        revieweeId: widget.revieweeId,
+                        orderId: widget.orderId,
+                        rating: _rating.toDouble(),
+                        comment: _reviewController.text.trim().isEmpty ? null : _reviewController.text.trim(),
+                      );
                       ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Review submitted!')));
                       Navigator.pop(context);
                     }

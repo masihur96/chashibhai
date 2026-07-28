@@ -238,4 +238,25 @@ class MockData {
       isRead: true,
     ),
   ];
+
+  static final demoReviews = [
+    Review(
+      id: 'r1',
+      reviewerId: 'u1',
+      revieweeId: 'f1',
+      orderId: 'o1',
+      rating: 5.0,
+      comment: 'Excellent quality and timely delivery. The farmer was very communicative.',
+      createdAt: DateTime.now().subtract(const Duration(days: 1)),
+    ),
+    Review(
+      id: 'r2',
+      reviewerId: 'f1',
+      revieweeId: 'u1',
+      orderId: 'o1',
+      rating: 4.5,
+      comment: 'Prompt payment and smooth transaction. Great buyer!',
+      createdAt: DateTime.now().subtract(const Duration(hours: 12)),
+    ),
+  ];
 }
