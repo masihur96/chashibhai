@@ -24,19 +24,6 @@ class _AdminProductsScreenState extends State<AdminProductsScreen> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('Marketplace Products', style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold)),
-          SizedBox(
-            width: 300,
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: 'Search products...',
-                prefixIcon: const Icon(Icons.search),
-                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              ),
-            ),
-          ),
-          const SizedBox(height: 32),
           Container(
             width: double.infinity,
             decoration: BoxDecoration(
