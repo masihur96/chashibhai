@@ -97,15 +97,6 @@ class _AdminOrdersScreenState extends State<AdminOrdersScreen> {
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          CircleAvatar(
-                            radius: 28,
-                            backgroundColor: Colors.blue.shade50,
-                            child: Icon(
-                              Icons.receipt_long_rounded,
-                              color: Colors.blue.shade700,
-                              size: 28,
-                            ),
-                          ),
                           const SizedBox(width: 16),
                           Expanded(
                             child: Column(
