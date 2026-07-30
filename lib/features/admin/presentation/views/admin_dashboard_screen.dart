@@ -32,10 +32,8 @@ class _AdminDashboardScreenState extends State<AdminDashboardScreen>
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, constraints) {
-        final isDesktop = constraints.maxWidth > 1100;
-
         return SingleChildScrollView(
-          padding: EdgeInsets.all(isDesktop ? 40 : 20),
+          padding: EdgeInsets.all(20),
           child: FadeTransition(
             opacity: _animationController,
             child: Column(

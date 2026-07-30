@@ -1,19 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import './admin_dashboard_screen.dart';
-import './user_management_screen.dart';
-import './admin_orders_screen.dart';
-import './admin_products_screen.dart';
-import './admin_wallet_screen.dart';
-import './admin_escrow_screen.dart';
-import './analytics_screen.dart';
-import './reports_screen.dart';
-import './admin_settings_screen.dart';
-import './admin_profile_screen.dart';
 import 'package:provider/provider.dart';
+
 import '../../../auth/presentation/state/auth_provider.dart';
 import '../../../auth/presentation/views/login_screen.dart';
+import './admin_dashboard_screen.dart';
+import './admin_escrow_screen.dart';
+import './admin_orders_screen.dart';
+import './admin_products_screen.dart';
+import './admin_profile_screen.dart';
+import './admin_settings_screen.dart';
+import './admin_wallet_screen.dart';
+import './analytics_screen.dart';
+import './reports_screen.dart';
+import './user_management_screen.dart';
 
 class AdminShell extends StatefulWidget {
   const AdminShell({super.key});
@@ -42,16 +42,56 @@ class _AdminShellState extends State<AdminShell> {
   ];
 
   final List<NavigationRailDestination> _destinations = const [
-    NavigationRailDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: Text('Dashboard')),
-    NavigationRailDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: Text('Users')),
-    NavigationRailDestination(icon: Icon(Icons.shopping_cart_outlined), selectedIcon: Icon(Icons.shopping_cart), label: Text('Orders')),
-    NavigationRailDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2), label: Text('Products')),
-    NavigationRailDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: Text('Profile')),
-    NavigationRailDestination(icon: Icon(Icons.account_balance_wallet_outlined), selectedIcon: Icon(Icons.account_balance_wallet), label: Text('Wallet')),
-    NavigationRailDestination(icon: Icon(Icons.lock_outline), selectedIcon: Icon(Icons.lock), label: Text('Escrow')),
-    NavigationRailDestination(icon: Icon(Icons.analytics_outlined), selectedIcon: Icon(Icons.analytics), label: Text('Analytics')),
-    NavigationRailDestination(icon: Icon(Icons.receipt_long_outlined), selectedIcon: Icon(Icons.receipt_long), label: Text('Reports')),
-    NavigationRailDestination(icon: Icon(Icons.settings_outlined), selectedIcon: Icon(Icons.settings), label: Text('Settings')),
+    NavigationRailDestination(
+      icon: Icon(Icons.dashboard_outlined),
+      selectedIcon: Icon(Icons.dashboard),
+      label: Text('Dashboard'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.people_outline),
+      selectedIcon: Icon(Icons.people),
+      label: Text('Users'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.shopping_cart_outlined),
+      selectedIcon: Icon(Icons.shopping_cart),
+      label: Text('Orders'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.inventory_2_outlined),
+      selectedIcon: Icon(Icons.inventory_2),
+      label: Text('Products'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.person_outline),
+      selectedIcon: Icon(Icons.person),
+      label: Text('Profile'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.account_balance_wallet_outlined),
+      selectedIcon: Icon(Icons.account_balance_wallet),
+      label: Text('Wallet'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.lock_outline),
+      selectedIcon: Icon(Icons.lock),
+      label: Text('Escrow'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.analytics_outlined),
+      selectedIcon: Icon(Icons.analytics),
+      label: Text('Analytics'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.receipt_long_outlined),
+      selectedIcon: Icon(Icons.receipt_long),
+      label: Text('Reports'),
+    ),
+    NavigationRailDestination(
+      icon: Icon(Icons.settings_outlined),
+      selectedIcon: Icon(Icons.settings),
+      label: Text('Settings'),
+    ),
   ];
 
   @override
@@ -79,18 +119,21 @@ class _AdminShellState extends State<AdminShell> {
                       child: TextField(
                         controller: _searchController,
                         autofocus: true,
-                        style: const TextStyle(color: Colors.white, fontSize: 16),
-                        cursorColor: Colors.white,
+
+                        // cursorColor: Colors.white,
                         decoration: InputDecoration(
                           hintText: 'Search...',
-                          hintStyle: TextStyle(color: Colors.white.withOpacity(0.7)),
+
                           border: InputBorder.none,
-                          prefixIcon: const Icon(Icons.search, color: Colors.white70, size: 20),
-                          contentPadding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
+                          prefixIcon: const Icon(Icons.search, size: 20),
                         ),
                       ),
                     )
-                  : Text((_destinations[_selectedIndex].label as Text).data ?? 'Admin Portal', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                  : Text(
+                      (_destinations[_selectedIndex].label as Text).data ??
+                          'Admin Portal',
+                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                    ),
               centerTitle: false,
               actions: [
                 if (_isSearchExpanded)
@@ -116,7 +159,8 @@ class _AdminShellState extends State<AdminShell> {
                   IconButton(
                     icon: const Icon(Icons.filter_list_rounded),
                     tooltip: 'Filter Options',
-                    onPressed: () => _showFilterOptions(context, _selectedIndex),
+                    onPressed: () =>
+                        _showFilterOptions(context, _selectedIndex),
                   ),
                 const SizedBox(width: 8),
               ],
@@ -128,13 +172,26 @@ class _AdminShellState extends State<AdminShell> {
               child: ListView(
                 children: [
                   DrawerHeader(
-                    decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.admin_panel_settings, size: 48, color: Colors.white),
+                        const Icon(
+                          Icons.admin_panel_settings,
+                          size: 48,
+                          color: Colors.white,
+                        ),
                         const SizedBox(height: 16),
-                        Text('Admin Portal', style: GoogleFonts.outfit(color: Colors.white, fontSize: 24, fontWeight: FontWeight.bold)),
+                        Text(
+                          'Admin Portal',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 24,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -142,7 +199,9 @@ class _AdminShellState extends State<AdminShell> {
                     final index = entry.key;
                     final dest = entry.value;
                     return ListTile(
-                      leading: _selectedIndex == index ? dest.selectedIcon : dest.icon,
+                      leading: _selectedIndex == index
+                          ? dest.selectedIcon
+                          : dest.icon,
                       title: dest.label,
                       selected: _selectedIndex == index,
                       onTap: () {
@@ -154,20 +213,32 @@ class _AdminShellState extends State<AdminShell> {
                   const Divider(),
                   ListTile(
                     leading: const Icon(Icons.logout, color: Colors.red),
-                    title: const Text('Logout', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                    title: const Text(
+                      'Logout',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                     onTap: () {
                       Navigator.pop(context); // Close drawer
-                      
+
                       // Clear the current user from state
                       context.read<AuthProvider>().setCurrentUser(null);
-                      
+
                       // Navigate back to the login screen and clear navigation history
                       Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(builder: (context) => const LoginScreen()),
+                        MaterialPageRoute(
+                          builder: (context) => const LoginScreen(),
+                        ),
                         (route) => false,
                       );
-                      
-                      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Logged out successfully')));
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(
+                          content: Text('Logged out successfully'),
+                        ),
+                      );
                     },
                   ),
                 ],
@@ -178,26 +249,38 @@ class _AdminShellState extends State<AdminShell> {
           if (isDesktop)
             NavigationRail(
               selectedIndex: _selectedIndex,
-              onDestinationSelected: (index) => setState(() => _selectedIndex = index),
+              onDestinationSelected: (index) =>
+                  setState(() => _selectedIndex = index),
               labelType: NavigationRailLabelType.all,
-              selectedLabelTextStyle: TextStyle(fontWeight: FontWeight.bold, color: Theme.of(context).colorScheme.primary),
+              selectedLabelTextStyle: TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Theme.of(context).colorScheme.primary,
+              ),
               unselectedLabelTextStyle: TextStyle(color: Colors.grey.shade600),
               destinations: _destinations,
               leading: Padding(
                 padding: const EdgeInsets.symmetric(vertical: 24.0),
                 child: Column(
                   children: [
-                    Icon(Icons.admin_panel_settings, size: 40, color: Theme.of(context).colorScheme.primary),
+                    Icon(
+                      Icons.admin_panel_settings,
+                      size: 40,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                     const SizedBox(height: 8),
-                    Text('Admin', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 16)),
+                    Text(
+                      'Admin',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 16,
+                      ),
+                    ),
                   ],
                 ),
               ),
             ),
           if (isDesktop) const VerticalDivider(thickness: 1, width: 1),
-          Expanded(
-            child: _screens[_selectedIndex],
-          ),
+          Expanded(child: _screens[_selectedIndex]),
         ],
       ),
       bottomNavigationBar: isDesktop
@@ -208,11 +291,31 @@ class _AdminShellState extends State<AdminShell> {
                 setState(() => _selectedIndex = index);
               },
               destinations: const [
-                NavigationDestination(icon: Icon(Icons.dashboard_outlined), selectedIcon: Icon(Icons.dashboard), label: 'Dashboard'),
-                NavigationDestination(icon: Icon(Icons.people_outline), selectedIcon: Icon(Icons.people), label: 'Users'),
-                NavigationDestination(icon: Icon(Icons.shopping_cart_outlined), selectedIcon: Icon(Icons.shopping_cart), label: 'Orders'),
-                NavigationDestination(icon: Icon(Icons.inventory_2_outlined), selectedIcon: Icon(Icons.inventory_2), label: 'Products'),
-                NavigationDestination(icon: Icon(Icons.person_outline), selectedIcon: Icon(Icons.person), label: 'Profile'),
+                NavigationDestination(
+                  icon: Icon(Icons.dashboard_outlined),
+                  selectedIcon: Icon(Icons.dashboard),
+                  label: 'Dashboard',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.people_outline),
+                  selectedIcon: Icon(Icons.people),
+                  label: 'Users',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.shopping_cart_outlined),
+                  selectedIcon: Icon(Icons.shopping_cart),
+                  label: 'Orders',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.inventory_2_outlined),
+                  selectedIcon: Icon(Icons.inventory_2),
+                  label: 'Products',
+                ),
+                NavigationDestination(
+                  icon: Icon(Icons.person_outline),
+                  selectedIcon: Icon(Icons.person),
+                  label: 'Profile',
+                ),
               ],
             ),
     );
@@ -221,7 +324,9 @@ class _AdminShellState extends State<AdminShell> {
   void _showFilterOptions(BuildContext context, int index) {
     showModalBottomSheet(
       context: context,
-      shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(20))),
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
       builder: (context) {
         return _buildFilterContent(index);
       },
@@ -239,8 +344,17 @@ class _AdminShellState extends State<AdminShell> {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('$pageName Filters', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
-              IconButton(icon: const Icon(Icons.close), onPressed: () => Navigator.pop(context)),
+              Text(
+                '$pageName Filters',
+                style: GoogleFonts.outfit(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () => Navigator.pop(context),
+              ),
             ],
           ),
           const SizedBox(height: 16),
@@ -266,7 +380,10 @@ class _AdminShellState extends State<AdminShell> {
           ] else ...[
             const Padding(
               padding: EdgeInsets.symmetric(vertical: 16.0),
-              child: Text('No specific filters available for this page.', style: TextStyle(color: Colors.grey)),
+              child: Text(
+                'No specific filters available for this page.',
+                style: TextStyle(color: Colors.grey),
+              ),
             ),
           ],
           const SizedBox(height: 24),
@@ -276,7 +393,7 @@ class _AdminShellState extends State<AdminShell> {
               onPressed: () => Navigator.pop(context),
               child: const Text('Apply Filters'),
             ),
-          )
+          ),
         ],
       ),
     );
@@ -295,4 +412,3 @@ class _AdminShellState extends State<AdminShell> {
     );
   }
 }
-
