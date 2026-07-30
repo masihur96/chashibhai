@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 class ReportsScreen extends StatelessWidget {
   const ReportsScreen({super.key});
@@ -11,10 +10,6 @@ class ReportsScreen extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('System Reports', style: GoogleFonts.outfit(fontSize: 28, fontWeight: FontWeight.bold)),
-          const SizedBox(height: 8),
-          Text('Generate and download platform data reports for accounting and compliance.', style: TextStyle(color: Colors.grey.shade600, fontSize: 16)),
-          const SizedBox(height: 32),
           Wrap(
             spacing: 24,
             runSpacing: 24,
@@ -50,7 +45,12 @@ class ReportsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildReportCard(BuildContext context, String title, String description, IconData icon) {
+  Widget _buildReportCard(
+    BuildContext context,
+    String title,
+    String description,
+    IconData icon,
+  ) {
     return Container(
       width: 400,
       padding: const EdgeInsets.all(24),
@@ -66,11 +66,22 @@ class ReportsScreen extends StatelessWidget {
             children: [
               Container(
                 padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(color: Theme.of(context).colorScheme.primary.withOpacity(0.1), borderRadius: BorderRadius.circular(12)),
+                decoration: BoxDecoration(
+                  color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 child: Icon(icon, color: Theme.of(context).colorScheme.primary),
               ),
               const SizedBox(width: 16),
-              Expanded(child: Text(title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16))),
+              Expanded(
+                child: Text(
+                  title,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+              ),
             ],
           ),
           const SizedBox(height: 16),
