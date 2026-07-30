@@ -97,8 +97,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                   ),
                                 ),
                               ),
-                              SizedBox(height: 5),
-
+                              const SizedBox(height: 8),
                               StatusBadge(
                                 label: user.isVerified
                                     ? 'VERIFIED'
@@ -122,6 +121,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                     color: Colors.black87,
                                   ),
                                 ),
+                                const SizedBox(height: 4),
                                 StatusBadge(
                                   label: user.role
                                       .toString()
@@ -132,7 +132,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                       ? BadgeVariant.info
                                       : BadgeVariant.warning,
                                 ),
-                                const SizedBox(height: 6),
+                                const SizedBox(height: 8),
                                 Wrap(
                                   spacing: 16,
                                   runSpacing: 4,
@@ -155,90 +155,61 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                                         ),
                                       ],
                                     ),
-                                    Row(
-                                      mainAxisSize: MainAxisSize.min,
-                                      children: [
-                                        Icon(
-                                          Icons.fingerprint,
-                                          size: 16,
-                                          color: Colors.grey.shade600,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          'ID: ${user.id}',
-                                          style: TextStyle(
-                                            color: Colors.grey.shade600,
-                                            fontSize: 14,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
                                   ],
                                 ),
                               ],
                             ),
                           ),
-                        ],
-                      ),
-                      const SizedBox(height: 16),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: Wrap(
-                          spacing: 8,
-                          runSpacing: 8,
-                          children: [
-                            if (!user.isVerified)
-                              OutlinedButton.icon(
-                                onPressed: () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(
-                                      content: Text('KYC Approved (Mocked)'),
-                                    ),
-                                  );
-                                },
-                                icon: const Icon(
-                                  Icons.check_circle_outline,
-                                  size: 18,
-                                ),
-                                label: const Text('Approve'),
-                                style: OutlinedButton.styleFrom(
-                                  foregroundColor: Colors.green.shade700,
-                                  side: BorderSide(
-                                    color: Colors.green.shade200,
+                          PopupMenuButton<String>(
+                            icon: const Icon(Icons.more_vert),
+                            onSelected: (value) {
+                              if (value == 'approve') {
+                                ScaffoldMessenger.of(context).showSnackBar(
+                                  const SnackBar(
+                                    content: Text('KYC Approved (Mocked)'),
                                   ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(8),
-                                  ),
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 16,
-                                    vertical: 12,
-                                  ),
-                                ),
-                              ),
-                            OutlinedButton.icon(
-                              onPressed: () {
+                                );
+                              } else if (value == 'suspend') {
                                 ScaffoldMessenger.of(context).showSnackBar(
                                   const SnackBar(
                                     content: Text('User Suspended (Mocked)'),
                                   ),
                                 );
-                              },
-                              icon: const Icon(Icons.block, size: 18),
-                              label: const Text('Suspend'),
-                              style: OutlinedButton.styleFrom(
-                                foregroundColor: Colors.red.shade700,
-                                side: BorderSide(color: Colors.red.shade200),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(8),
+                              }
+                            },
+                            itemBuilder: (context) => [
+                              if (!user.isVerified)
+                                PopupMenuItem(
+                                  value: 'approve',
+                                  child: Row(
+                                    children: [
+                                      Icon(
+                                        Icons.check_circle_outline,
+                                        color: Colors.green.shade700,
+                                        size: 20,
+                                      ),
+                                      const SizedBox(width: 12),
+                                      const Text('Approve'),
+                                    ],
+                                  ),
                                 ),
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 12,
+                              PopupMenuItem(
+                                value: 'suspend',
+                                child: Row(
+                                  children: [
+                                    Icon(
+                                      Icons.block,
+                                      color: Colors.red.shade700,
+                                      size: 20,
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Text('Suspend'),
+                                  ],
                                 ),
                               ),
-                            ),
-                          ],
-                        ),
+                            ],
+                          ),
+                        ],
                       ),
                     ],
                   ),
