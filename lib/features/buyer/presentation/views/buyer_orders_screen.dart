@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
-import '../../../auth/presentation/state/auth_provider.dart';
-import '../../../wallet/presentation/state/order_provider.dart';
-import '../../../../core/models/models.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
+
+import '../../../../core/models/models.dart';
 import '../../../../features/order/presentation/views/order_details_screen.dart';
+import '../../../wallet/presentation/state/order_provider.dart';
 
 class BuyerOrdersScreen extends StatelessWidget {
   const BuyerOrdersScreen({super.key});
@@ -19,7 +19,6 @@ class BuyerOrdersScreen extends StatelessWidget {
     final currencyFormat = NumberFormat.currency(symbol: '৳', decimalDigits: 2);
 
     return Scaffold(
-      backgroundColor: Colors.grey[50],
       appBar: AppBar(
         title: Text(
           'My Orders',
@@ -33,7 +32,11 @@ class BuyerOrdersScreen extends StatelessWidget {
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.shopping_bag_outlined, size: 80, color: Colors.grey[300]),
+                  Icon(
+                    Icons.shopping_bag_outlined,
+                    size: 80,
+                    color: Colors.grey[300],
+                  ),
                   const SizedBox(height: 16),
                   Text(
                     'No orders found',
@@ -45,68 +48,75 @@ class BuyerOrdersScreen extends StatelessWidget {
           : ListView.separated(
               padding: const EdgeInsets.symmetric(vertical: 12),
               itemCount: orders.length,
-              separatorBuilder: (context, index) => const Divider(height: 1, indent: 20, endIndent: 20),
+              separatorBuilder: (context, index) =>
+                  const Divider(height: 1, indent: 20, endIndent: 20),
               itemBuilder: (context, index) {
                 final order = orders[index];
-                return _buildOrderItem(order, currencyFormat,context);
+                return Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: _buildOrderItem(order, currencyFormat, context),
+                );
               },
             ),
     );
   }
 
-  Widget _buildOrderItem(Order order, NumberFormat currencyFormat,BuildContext context) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-      leading: Container(
-        padding: const EdgeInsets.all(12),
-        decoration: BoxDecoration(
-          color: const Color(0xFF2E7D32).withOpacity(0.1),
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.inventory_2_outlined,
-          color: Color(0xFF2E7D32),
-          size: 24,
-        ),
-      ),
-      title: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          Text(
-            'Order #${order.id.length > 5 ? order.id.substring(0, 5).toUpperCase() : order.id.toUpperCase()}',
-            style: const TextStyle(
-              fontWeight: FontWeight.bold,
-              fontSize: 16,
-            ),
+  Widget _buildOrderItem(
+    Order order,
+    NumberFormat currencyFormat,
+    BuildContext context,
+  ) {
+    return Card(
+      child: ListTile(
+        contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+        leading: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: const Color(0xFF2E7D32).withOpacity(0.1),
+            shape: BoxShape.circle,
           ),
-          _buildStatusBadge(order.status),
-        ],
-      ),
-      subtitle: Padding(
-        padding: const EdgeInsets.only(top: 8.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          child: const Icon(
+            Icons.inventory_2_outlined,
+            color: Color(0xFF2E7D32),
+            size: 24,
+          ),
+        ),
+        title: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            Text('Quantity: ${order.quantity} units'),
-            const SizedBox(height: 4),
             Text(
-              'Total: ${currencyFormat.format(order.finalPrice)}',
-              style: const TextStyle(
-                fontWeight: FontWeight.bold,
-                color: Color(0xFF2E7D32),
-              ),
+              'Order #${order.id.length > 5 ? order.id.substring(0, 5).toUpperCase() : order.id.toUpperCase()}',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
+            _buildStatusBadge(order.status),
           ],
         ),
-      ),
-      onTap: () {
-        Navigator.push(
-          context,
-          MaterialPageRoute(
-            builder: (context) => OrderDetailsScreen(order: order),
+        subtitle: Padding(
+          padding: const EdgeInsets.only(top: 8.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Quantity: ${order.quantity} units'),
+              const SizedBox(height: 4),
+              Text(
+                'Total: ${currencyFormat.format(order.finalPrice)}',
+                style: const TextStyle(
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFF2E7D32),
+                ),
+              ),
+            ],
           ),
-        );
-      },
+        ),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => OrderDetailsScreen(order: order),
+            ),
+          );
+        },
+      ),
     );
   }
 

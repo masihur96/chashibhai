@@ -1,15 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:provider/provider.dart';
+
 import '../../../../core/models/models.dart';
-import '../../../auth/presentation/state/auth_provider.dart';
-import '../../../buyer/presentation/state/product_provider.dart';
-import '../state/group_provider.dart';
-import '../../../buyer/presentation/state/demand_provider.dart';
-import '../../../wallet/presentation/state/order_provider.dart';
-import '../../../account/presentation/state/app_state_provider.dart';
-import './group_detail_screen.dart';
 import '../../../../core/presentation/widgets/empty_state_widget.dart';
+import '../../../auth/presentation/state/auth_provider.dart';
+import '../state/group_provider.dart';
+import './group_detail_screen.dart';
 
 class GroupsListScreen extends StatefulWidget {
   const GroupsListScreen({super.key});
@@ -22,7 +19,13 @@ class _GroupsListScreenState extends State<GroupsListScreen>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   String _selectedCategory = 'All';
-  final List<String> _categories = ['All', 'Vegetables', 'Grains', 'Fruits', 'Spices'];
+  final List<String> _categories = [
+    'All',
+    'Vegetables',
+    'Grains',
+    'Fruits',
+    'Spices',
+  ];
 
   @override
   void initState() {
@@ -39,18 +42,23 @@ class _GroupsListScreenState extends State<GroupsListScreen>
   @override
   Widget build(BuildContext context) {
     final groups = context.watch<GroupProvider>().groups;
-    final myGroups = context.watch<GroupProvider>().getMyGroups(context.watch<AuthProvider>().currentUser?.id);
+    final myGroups = context.watch<GroupProvider>().getMyGroups(
+      context.watch<AuthProvider>().currentUser?.id,
+    );
     final user = context.watch<AuthProvider>().currentUser;
 
     final openGroups = groups.where((g) {
-      final matchesCat = _selectedCategory == 'All' || g.category == _selectedCategory;
+      final matchesCat =
+          _selectedCategory == 'All' || g.category == _selectedCategory;
       return g.status == GroupBuyStatus.open && matchesCat;
     }).toList();
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF1F8E9),
       appBar: AppBar(
-        title: Text('Buying Groups', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        title: Text(
+          'Buying Groups',
+          style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+        ),
         bottom: TabBar(
           controller: _tabController,
           labelColor: Colors.white,
@@ -76,13 +84,20 @@ class _GroupsListScreenState extends State<GroupsListScreen>
         icon: const Icon(Icons.group_add, color: Colors.white),
         label: Text(
           'Create Group',
-          style: GoogleFonts.outfit(color: Colors.white, fontWeight: FontWeight.bold),
+          style: GoogleFonts.outfit(
+            color: Colors.white,
+            fontWeight: FontWeight.bold,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildGroupList(List<BuyingGroup> groups, AppUser? user, {bool isMyGroups = false}) {
+  Widget _buildGroupList(
+    List<BuyingGroup> groups,
+    AppUser? user, {
+    bool isMyGroups = false,
+  }) {
     return Column(
       children: [
         if (!isMyGroups) _buildCategoryFilter(),
@@ -100,7 +115,8 @@ class _GroupsListScreenState extends State<GroupsListScreen>
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => GroupDetailScreen(groupId: groups[index].id),
+                            builder: (_) =>
+                                GroupDetailScreen(groupId: groups[index].id),
                           ),
                         );
                       },
@@ -133,12 +149,16 @@ class _GroupsListScreenState extends State<GroupsListScreen>
                   if (selected) setState(() => _selectedCategory = cat);
                 },
                 labelStyle: TextStyle(
-                  color: isSelected ? Theme.of(context).colorScheme.onPrimary : Colors.black87,
+                  color: isSelected
+                      ? Theme.of(context).colorScheme.onPrimary
+                      : Colors.black87,
                   fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
                 ),
                 selectedColor: Theme.of(context).colorScheme.primary,
                 backgroundColor: Theme.of(context).colorScheme.surface,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20),
+                ),
               ),
             );
           },
@@ -150,8 +170,12 @@ class _GroupsListScreenState extends State<GroupsListScreen>
   Widget _buildEmptyState(bool isMyGroups) {
     return EmptyStateWidget(
       icon: isMyGroups ? Icons.group_off_outlined : Icons.search_off_outlined,
-      title: isMyGroups ? 'You haven\'t joined any group yet' : 'No groups in this category',
-      subtitle: isMyGroups ? 'Create or join a buying group to save more!' : 'Try a different category or create one',
+      title: isMyGroups
+          ? 'You haven\'t joined any group yet'
+          : 'No groups in this category',
+      subtitle: isMyGroups
+          ? 'Create or join a buying group to save more!'
+          : 'Try a different category or create one',
     );
   }
 
@@ -174,7 +198,12 @@ class _GroupsListScreenState extends State<GroupsListScreen>
           color: Colors.white,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
         ),
-        padding: EdgeInsets.fromLTRB(24, 24, 24, MediaQuery.of(ctx).viewInsets.bottom + 24),
+        padding: EdgeInsets.fromLTRB(
+          24,
+          24,
+          24,
+          MediaQuery.of(ctx).viewInsets.bottom + 24,
+        ),
         child: SingleChildScrollView(
           child: Form(
             key: formKey,
@@ -184,38 +213,92 @@ class _GroupsListScreenState extends State<GroupsListScreen>
               children: [
                 Center(
                   child: Container(
-                    width: 40, height: 4,
-                    decoration: BoxDecoration(color: Colors.grey[300], borderRadius: BorderRadius.circular(2)),
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey[300],
+                      borderRadius: BorderRadius.circular(2),
+                    ),
                   ),
                 ),
                 const SizedBox(height: 20),
-                Text('Create Buying Group', style: GoogleFonts.outfit(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text(
+                  'Create Buying Group',
+                  style: GoogleFonts.outfit(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(height: 6),
-                Text('Pool with other buyers to get bulk discounts', style: TextStyle(color: Colors.grey[500], fontSize: 13)),
+                Text(
+                  'Pool with other buyers to get bulk discounts',
+                  style: TextStyle(color: Colors.grey[500], fontSize: 13),
+                ),
                 const SizedBox(height: 24),
-                _formField(hint: 'Group Name', icon: Icons.group, onChanged: (v) => name = v),
+                _formField(
+                  hint: 'Group Name',
+                  icon: Icons.group,
+                  onChanged: (v) => name = v,
+                ),
                 const SizedBox(height: 14),
-                _formField(hint: 'Product Name', icon: Icons.eco_outlined, onChanged: (v) => productName = v),
+                _formField(
+                  hint: 'Product Name',
+                  icon: Icons.eco_outlined,
+                  onChanged: (v) => productName = v,
+                ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<String>(
                   value: category,
-                  decoration: _inputDecoration('Category', Icons.category_outlined),
-                  items: ['Vegetables', 'Fruits', 'Grains', 'Spices'].map((c) => DropdownMenuItem(value: c, child: Text(c))).toList(),
+                  decoration: _inputDecoration(
+                    'Category',
+                    Icons.category_outlined,
+                  ),
+                  items: ['Vegetables', 'Fruits', 'Grains', 'Spices']
+                      .map((c) => DropdownMenuItem(value: c, child: Text(c)))
+                      .toList(),
                   onChanged: (v) => category = v!,
                 ),
                 const SizedBox(height: 14),
-                Row(children: [
-                  Expanded(child: _formField(hint: 'Target Qty (KG)', icon: Icons.scale, keyboard: TextInputType.number, onChanged: (v) => targetQty = double.tryParse(v) ?? 0)),
-                  const SizedBox(width: 12),
-                  Expanded(child: _formField(hint: 'Price/KG (৳)', icon: Icons.monetization_on_outlined, keyboard: TextInputType.number, onChanged: (v) => pricePerKg = double.tryParse(v) ?? 0)),
-                ]),
+                Row(
+                  children: [
+                    Expanded(
+                      child: _formField(
+                        hint: 'Target Qty (KG)',
+                        icon: Icons.scale,
+                        keyboard: TextInputType.number,
+                        onChanged: (v) => targetQty = double.tryParse(v) ?? 0,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: _formField(
+                        hint: 'Price/KG (৳)',
+                        icon: Icons.monetization_on_outlined,
+                        keyboard: TextInputType.number,
+                        onChanged: (v) => pricePerKg = double.tryParse(v) ?? 0,
+                      ),
+                    ),
+                  ],
+                ),
                 const SizedBox(height: 14),
-                _formField(hint: 'Delivery Location', icon: Icons.location_on_outlined, onChanged: (v) => location = v),
+                _formField(
+                  hint: 'Delivery Location',
+                  icon: Icons.location_on_outlined,
+                  onChanged: (v) => location = v,
+                ),
                 const SizedBox(height: 14),
                 DropdownButtonFormField<int>(
                   value: days,
-                  decoration: _inputDecoration('Group Active For', Icons.timer_outlined),
-                  items: [3, 5, 7, 14, 30].map((d) => DropdownMenuItem(value: d, child: Text('$d days'))).toList(),
+                  decoration: _inputDecoration(
+                    'Group Active For',
+                    Icons.timer_outlined,
+                  ),
+                  items: [3, 5, 7, 14, 30]
+                      .map(
+                        (d) =>
+                            DropdownMenuItem(value: d, child: Text('$d days')),
+                      )
+                      .toList(),
                   onChanged: (v) => days = v!,
                 ),
                 const SizedBox(height: 28),
@@ -254,7 +337,9 @@ class _GroupsListScreenState extends State<GroupsListScreen>
                         Navigator.pop(ctx);
                         ScaffoldMessenger.of(context).showSnackBar(
                           SnackBar(
-                            content: Text('Group "$name" created! Share it with buyers.'),
+                            content: Text(
+                              'Group "$name" created! Share it with buyers.',
+                            ),
                             backgroundColor: const Color(0xFF2E7D32),
                           ),
                         );
@@ -262,9 +347,18 @@ class _GroupsListScreenState extends State<GroupsListScreen>
                     },
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2E7D32),
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
-                    child: Text('Create Group', style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold, color: Colors.white)),
+                    child: Text(
+                      'Create Group',
+                      style: GoogleFonts.outfit(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
                   ),
                 ),
               ],
@@ -275,25 +369,28 @@ class _GroupsListScreenState extends State<GroupsListScreen>
     );
   }
 
-  InputDecoration _inputDecoration(String label, IconData icon) => InputDecoration(
-    labelText: label,
-    prefixIcon: Icon(icon),
-    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-  );
+  InputDecoration _inputDecoration(String label, IconData icon) =>
+      InputDecoration(
+        labelText: label,
+        prefixIcon: Icon(icon),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
+      );
 
   Widget _formField({
     required String hint,
     required IconData icon,
     required Function(String) onChanged,
     TextInputType keyboard = TextInputType.text,
-  }) =>
-      TextFormField(
-        keyboardType: keyboard,
-        decoration: _inputDecoration(hint, icon),
-        onChanged: onChanged,
-        validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
-      );
+  }) => TextFormField(
+    keyboardType: keyboard,
+    decoration: _inputDecoration(hint, icon),
+    onChanged: onChanged,
+    validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+  );
 }
 
 // ─── Group Card Widget ────────────────────────────────────────────────────────
@@ -303,23 +400,35 @@ class _GroupCard extends StatelessWidget {
   final String currentUserId;
   final VoidCallback onTap;
 
-  const _GroupCard({required this.group, required this.currentUserId, required this.onTap});
+  const _GroupCard({
+    required this.group,
+    required this.currentUserId,
+    required this.onTap,
+  });
 
   Color get _statusColor {
     switch (group.status) {
-      case GroupBuyStatus.open: return const Color(0xFF2E7D32);
-      case GroupBuyStatus.active: return Colors.blue;
-      case GroupBuyStatus.fulfilled: return Colors.grey;
-      case GroupBuyStatus.cancelled: return Colors.red;
+      case GroupBuyStatus.open:
+        return const Color(0xFF2E7D32);
+      case GroupBuyStatus.active:
+        return Colors.blue;
+      case GroupBuyStatus.fulfilled:
+        return Colors.grey;
+      case GroupBuyStatus.cancelled:
+        return Colors.red;
     }
   }
 
   String get _statusLabel {
     switch (group.status) {
-      case GroupBuyStatus.open: return 'OPEN';
-      case GroupBuyStatus.active: return 'ACTIVE';
-      case GroupBuyStatus.fulfilled: return 'FULFILLED';
-      case GroupBuyStatus.cancelled: return 'CANCELLED';
+      case GroupBuyStatus.open:
+        return 'OPEN';
+      case GroupBuyStatus.active:
+        return 'ACTIVE';
+      case GroupBuyStatus.fulfilled:
+        return 'FULFILLED';
+      case GroupBuyStatus.cancelled:
+        return 'CANCELLED';
     }
   }
 
@@ -337,7 +446,11 @@ class _GroupCard extends StatelessWidget {
           color: Colors.white,
           borderRadius: BorderRadius.circular(18),
           boxShadow: [
-            BoxShadow(color: Colors.black.withOpacity(0.06), blurRadius: 12, offset: const Offset(0, 4)),
+            BoxShadow(
+              color: Colors.black.withOpacity(0.06),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
           ],
         ),
         child: Column(
@@ -352,7 +465,9 @@ class _GroupCard extends StatelessWidget {
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
                 ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(18)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(18),
+                ),
               ),
               child: Row(
                 children: [
@@ -360,9 +475,22 @@ class _GroupCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text(group.name, style: GoogleFonts.outfit(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                        Text(
+                          group.name,
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
                         const SizedBox(height: 2),
-                        Text(group.productName, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13)),
+                        Text(
+                          group.productName,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.8),
+                            fontSize: 13,
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -370,19 +498,43 @@ class _GroupCard extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 10,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: Colors.white.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: Text(_statusLabel, style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold, letterSpacing: 0.8)),
+                        child: Text(
+                          _statusLabel,
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 10,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 0.8,
+                          ),
+                        ),
                       ),
                       if (isMember) ...[
                         const SizedBox(height: 4),
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-                          decoration: BoxDecoration(color: Colors.amber.withOpacity(0.9), borderRadius: BorderRadius.circular(12)),
-                          child: const Text('Joined', style: TextStyle(color: Colors.black87, fontSize: 10, fontWeight: FontWeight.bold)),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 8,
+                            vertical: 3,
+                          ),
+                          decoration: BoxDecoration(
+                            color: Colors.amber.withOpacity(0.9),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: const Text(
+                            'Joined',
+                            style: TextStyle(
+                              color: Colors.black87,
+                              fontSize: 10,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                         ),
                       ],
                     ],
@@ -399,10 +551,22 @@ class _GroupCard extends StatelessWidget {
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text('${group.filledQuantity.toInt()} / ${group.targetQuantity.toInt()} KG filled',
-                          style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.black87)),
-                      Text('${(progress * 100).toInt()}%',
-                          style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.bold, color: _statusColor)),
+                      Text(
+                        '${group.filledQuantity.toInt()} / ${group.targetQuantity.toInt()} KG filled',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Colors.black87,
+                        ),
+                      ),
+                      Text(
+                        '${(progress * 100).toInt()}%',
+                        style: GoogleFonts.outfit(
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          color: _statusColor,
+                        ),
+                      ),
                     ],
                   ),
                   const SizedBox(height: 8),
@@ -419,19 +583,42 @@ class _GroupCard extends StatelessWidget {
                   // Info row
                   Row(
                     children: [
-                      _infoChip(Icons.people_outline, '${group.members.length} members'),
+                      _infoChip(
+                        Icons.people_outline,
+                        '${group.members.length} members',
+                      ),
                       const SizedBox(width: 8),
-                      _infoChip(Icons.monetization_on_outlined, '৳${group.pricePerKg}/KG'),
+                      _infoChip(
+                        Icons.monetization_on_outlined,
+                        '৳${group.pricePerKg}/KG',
+                      ),
                       const SizedBox(width: 8),
-                      _infoChip(Icons.timer_outlined, '${daysLeft}d left', color: daysLeft <= 1 ? Colors.orange : null),
+                      _infoChip(
+                        Icons.timer_outlined,
+                        '${daysLeft}d left',
+                        color: daysLeft <= 1 ? Colors.orange : null,
+                      ),
                     ],
                   ),
                   const SizedBox(height: 10),
                   Row(
                     children: [
-                      const Icon(Icons.location_on_outlined, size: 14, color: Colors.grey),
+                      const Icon(
+                        Icons.location_on_outlined,
+                        size: 14,
+                        color: Colors.grey,
+                      ),
                       const SizedBox(width: 4),
-                      Expanded(child: Text(group.deliveryLocation, style: const TextStyle(color: Colors.grey, fontSize: 12), overflow: TextOverflow.ellipsis)),
+                      Expanded(
+                        child: Text(
+                          group.deliveryLocation,
+                          style: const TextStyle(
+                            color: Colors.grey,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -447,12 +634,25 @@ class _GroupCard extends StatelessWidget {
     final c = color ?? Colors.grey[700]!;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
-      decoration: BoxDecoration(color: Colors.grey[100], borderRadius: BorderRadius.circular(20)),
-      child: Row(mainAxisSize: MainAxisSize.min, children: [
-        Icon(icon, size: 13, color: c),
-        const SizedBox(width: 4),
-        Text(label, style: TextStyle(fontSize: 11, color: c, fontWeight: FontWeight.w500)),
-      ]),
+      decoration: BoxDecoration(
+        color: Colors.grey[100],
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 13, color: c),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: c,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
