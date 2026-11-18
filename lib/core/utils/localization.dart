@@ -69,6 +69,8 @@ class AppTranslations {
       // Login
       'welcome_back': 'Welcome to ChashiBhai',
       'login_subtitle': 'Your trusted B2B agri marketplace. Login to continue trading.',
+      'login_button': 'Login',
+      'login_success': 'Login successful!',
       'send_otp': 'Send OTP',
       'dont_have_account': "Don't have an account?",
       'register_now': 'Register now',
@@ -144,6 +146,8 @@ class AppTranslations {
       // Login
       'welcome_back': 'চাষীভাইয়ে স্বাগতম',
       'login_subtitle': 'আপনার বিশ্বস্ত কৃষি মার্কেটপ্লেস। লেনদেন চালিয়ে যেতে লগইন করুন।',
+      'login_button': 'লগইন করুন',
+      'login_success': 'সফলভাবে লগইন হয়েছে!',
       'send_otp': 'ওটিপি পাঠান',
       'dont_have_account': 'অ্যাকাউন্ট নেই?',
       'register_now': 'নিবন্ধন করুন',

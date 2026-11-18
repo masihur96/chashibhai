@@ -1,6 +1,7 @@
 import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
+import '../models/login_request_model.dart';
 import '../models/register_request_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
@@ -26,14 +27,19 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<UserEntity?> login(String emailOrPhone, String password) async {
-    // Placeholder login implementation
-    return null;
+  Future<UserEntity> login({
+    required String phone,
+    required String password,
+  }) async {
+    final request = LoginRequestModel(
+      phone: phone,
+      password: password,
+    );
+    return await remoteDataSource.login(request);
   }
 
   @override
   Future<UserEntity?> getProfile(String userId) async {
-    // Placeholder getProfile implementation
     return null;
   }
 
@@ -44,6 +50,6 @@ class AuthRepositoryImpl implements AuthRepository {
 
   @override
   Future<void> logout() async {
-    // Placeholder logout implementation
+    // Logout logic
   }
 }
