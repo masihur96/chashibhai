@@ -9,8 +9,25 @@ import '../../../auth/presentation/providers/auth_provider.dart';
 import '../state/app_state_provider.dart';
 import './edit_profile_screen.dart';
 
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
+
+  @override
+  State<ProfileScreen> createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final authProvider = context.read<AuthProvider>();
+      final token = authProvider.token;
+      if (token != null && token.isNotEmpty) {
+        authProvider.fetchCurrentUser(token);
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -182,6 +199,12 @@ class ProfileScreen extends StatelessWidget {
                       label: 'phone_number'.tr(languageCode),
                       value: displayPhone,
                     ),
+                    if (user?.email != null && user!.email!.isNotEmpty)
+                      _buildProfileTile(
+                        icon: Icons.email_outlined,
+                        label: 'Email',
+                        value: user.email!,
+                      ),
                     _buildProfileTile(
                       icon: Icons.badge_outlined,
                       label: 'user_id'.tr(languageCode),

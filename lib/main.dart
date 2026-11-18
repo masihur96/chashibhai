@@ -301,9 +301,11 @@ class RoleWrapper extends StatelessWidget {
                   ),
                   const SizedBox(height: 14),
                   Text(
-                    user?.name.isNotEmpty == true
+                    user?.name.isNotEmpty == true && user!.name != 'User'
                         ? user!.name
-                        : (languageCode == 'bn' ? 'ব্যবহারকারী' : 'User'),
+                        : (user?.phone.isNotEmpty == true
+                            ? user!.phone
+                            : (languageCode == 'bn' ? 'ব্যবহারকারী' : 'User')),
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 20,
@@ -321,6 +323,22 @@ class RoleWrapper extends StatelessWidget {
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.85),
                             fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  if (user?.email != null && user!.email!.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(Icons.email_outlined, size: 13, color: Colors.white70),
+                        const SizedBox(width: 4),
+                        Text(
+                          user.email!,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.85),
+                            fontSize: 12,
                           ),
                         ),
                       ],

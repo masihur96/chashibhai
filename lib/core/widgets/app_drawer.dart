@@ -32,9 +32,11 @@ class AppDrawer extends StatelessWidget {
     final user = authProvider.currentUser;
 
     final String name = userName ??
-        (user?.name.isNotEmpty == true
+        (user?.name.isNotEmpty == true && user!.name != 'User'
             ? user!.name
-            : (languageCode == 'bn' ? 'ব্যবহারকারী' : 'User'));
+            : (user?.phone.isNotEmpty == true
+                ? user!.phone
+                : (languageCode == 'bn' ? 'ব্যবহারকারী' : 'User')));
     final String phone = userPhone ?? user?.phone ?? '';
     final String? avatar = avatarUrl ?? user?.avatarUrl;
 

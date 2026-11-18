@@ -23,7 +23,9 @@ class ApiPath {
   // Auth endpoints
   static String get login => '$baseUrl/auth/login';
   static String get register => '$baseUrl/auth/register';
-  static String get me => '$baseUrl/auth/me';
+  static String get me => '$baseUrl/users/me';
+  static String get usersMe => '$baseUrl/users/me';
+  static String get authMe => '$baseUrl/auth/me';
   static String get refresh => '$baseUrl/auth/refresh';
   static String get sendOtp => '$baseUrl/auth/send-otp';
   static String get verifyOtp => '$baseUrl/auth/verify-otp';

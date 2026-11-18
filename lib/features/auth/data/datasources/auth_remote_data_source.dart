@@ -216,12 +216,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
   @override
   Future<UserModel> getMe(String token) async {
-    final endpoint = ApiPath.me;
+    final endpoint = ApiPath.usersMe;
     final uri = Uri.parse(endpoint);
     final stopwatch = Stopwatch()..start();
 
     final headers = {
-      'accept': '*/*',
+      'accept': 'application/json',
       'Authorization': 'Bearer $token',
     };
 
@@ -259,7 +259,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         if (decodedJson is Map<String, dynamic>) {
           return UserModel.fromJson(decodedJson, token);
         } else {
-          throw Exception('Invalid response format from /auth/me');
+          throw Exception('Invalid response format from /users/me');
         }
       } else if (httpResponse.statusCode == 401) {
         ApiLogger.logError(
