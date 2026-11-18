@@ -19,7 +19,7 @@ class FarmerRemoteDataSourceImpl implements FarmerRemoteDataSource {
 
   /// Default fallback token from user curl specification
   static const String defaultFallbackToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MmY2ODM5YS01ZDBjLTQwYTctYmQ5Mi1hNTA4MGNkOGIwNzAiLCJwaG9uZSI6Ijg4MDE3NDA3MTkyMDUiLCJlbWFpbCI6IiIsInJvbGUiOiJmYXJtZXIiLCJpYXQiOjE3OTUwMTMzOTcsImV4cCI6MTc5NTAxNDI5N30.Df2lr6aGKqwlXfHL9SFA9Cft2IoL0XzdeVgd1VJpDXg';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MmY2ODM5YS01ZDBjLTQwYTctYmQ5Mi1hNTA4MGNkOGIwNzAiLCJwaG9uZSI6Ijg4MDE3NDA3MTkyMDUiLCJlbWFpbCI6IiIsInJvbGUiOiJmYXJtZXIiLCJpYXQiOjE3OTUwMTYwNzMsImV4cCI6MTc5NTAxNjk3M30.R_asblBCluelVCEcIPveOiojYkgQawjzVfup2qyCMw4';
 
   FarmerRemoteDataSourceImpl({HttpClient? client})
       : _client = client ?? HttpClient() {

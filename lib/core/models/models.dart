@@ -144,7 +144,7 @@ class Product {
       id: (json['id'] ?? json['_id'] ?? 'p_${DateTime.now().millisecondsSinceEpoch}').toString(),
       farmerId: (json['farmerId'] ?? json['farmer_id'] ?? json['userId'] ?? json['user_id'] ?? '').toString(),
       productName: (json['productName'] ?? json['product_name'] ?? json['name'] ?? '').toString(),
-      imageUrl: (json['imageUrl'] ?? json['image_url'] ?? '').toString(),
+      imageUrl: (json['imageUrl'] ?? json['image_url'] ?? (json['image'] != null && json['image'] != 'string' ? json['image'] : null) ?? (json['file'] != null && json['file'] != 'string' ? json['file'] : null) ?? '').toString(),
       quantity: parseDouble(json['quantity']),
       unit: (json['unit'] ?? 'KG').toString(),
       minimumPrice: parseDouble(json['minimumPrice'] ?? json['minimum_price']),

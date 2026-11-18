@@ -227,6 +227,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
       startTime: _startTime,
       endTime: _endTime,
       imageUrl: _imageUrl.trim(),
+      file: 'string',
+      image: 'string',
     );
 
     try {

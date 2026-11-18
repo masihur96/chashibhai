@@ -8,6 +8,8 @@ class CreateProductRequestModel {
   final DateTime startTime;
   final DateTime endTime;
   final String imageUrl;
+  final String file;
+  final String image;
 
   const CreateProductRequestModel({
     required this.productName,
@@ -19,6 +21,8 @@ class CreateProductRequestModel {
     required this.startTime,
     required this.endTime,
     required this.imageUrl,
+    this.file = 'string',
+    this.image = 'string',
   });
 
   Map<String, dynamic> toJson() {
@@ -41,6 +45,8 @@ class CreateProductRequestModel {
       'end_time': endTimeIso,
       'imageUrl': imageUrl,
       'image_url': imageUrl,
+      'file': file,
+      'image': image,
     };
   }
 
@@ -55,6 +61,8 @@ class CreateProductRequestModel {
       startTime: DateTime.tryParse((json['startTime'] ?? json['start_time'])?.toString() ?? '') ?? DateTime.now(),
       endTime: DateTime.tryParse((json['endTime'] ?? json['end_time'])?.toString() ?? '') ?? DateTime.now().add(const Duration(days: 7)),
       imageUrl: (json['imageUrl'] ?? json['image_url'] ?? '').toString(),
+      file: (json['file'] ?? 'string').toString(),
+      image: (json['image'] ?? 'string').toString(),
     );
   }
 }
