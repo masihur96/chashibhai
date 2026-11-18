@@ -206,6 +206,12 @@ class _ProfileScreenState extends State<ProfileScreen> {
                         label: 'Email',
                         value: user.email!,
                       ),
+                    if (user?.district != null && user!.district!.isNotEmpty)
+                      _buildProfileTile(
+                        icon: Icons.location_on_outlined,
+                        label: 'District',
+                        value: user.district!,
+                      ),
                     _buildProfileTile(
                       icon: Icons.badge_outlined,
                       label: 'user_id'.tr(languageCode),

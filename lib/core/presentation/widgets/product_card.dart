@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/models/models.dart';
+import './product_image_view.dart';
 import './status_badge.dart';
 
 class ProductCard extends StatelessWidget {
@@ -36,8 +37,8 @@ class ProductCard extends StatelessWidget {
                   Semantics(
                     image: true,
                     label: 'Image of ${product.productName}',
-                    child: Image.asset(
-                      product.imageUrl,
+                    child: ProductImageView(
+                      imageUrl: product.imageUrl,
                       width: double.infinity,
                       fit: BoxFit.cover,
                     ),

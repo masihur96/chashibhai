@@ -7,6 +7,7 @@ class UserEntity {
   final String? token;
   final String? refreshToken;
   final String? avatarUrl;
+  final String? district;
   final bool isVerified;
 
   const UserEntity({
@@ -18,6 +19,7 @@ class UserEntity {
     this.token,
     this.refreshToken,
     this.avatarUrl,
+    this.district,
     this.isVerified = false,
   });
 }

@@ -62,7 +62,17 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<void> logout() async {
-    // Logout logic
+  Future<void> logout([String? token]) async {
+    if (token != null && token.isNotEmpty) {
+      await remoteDataSource.logout(token);
+    }
+  }
+
+  @override
+  Future<UserEntity> updateProfile({
+    required String token,
+    required Map<String, dynamic> data,
+  }) async {
+    return await remoteDataSource.updateProfile(token: token, data: data);
   }
 }

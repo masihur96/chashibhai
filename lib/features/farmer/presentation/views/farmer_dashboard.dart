@@ -14,6 +14,7 @@ import '../../../admin/presentation/views/analytics_screen.dart';
 import '../../../account/presentation/views/profile_screen.dart';
 import '../../../../core/presentation/widgets/demand_card.dart';
 import './demand_details_screen.dart';
+import '../../../../core/presentation/widgets/product_image_view.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -271,8 +272,8 @@ class _FarmerDashboardState extends State<FarmerDashboard> {
                 child: Semantics(
                   image: true,
                   label: 'Product Image',
-                  child: Image.asset(
-                    product.imageUrl,
+                  child: ProductImageView(
+                    imageUrl: product.imageUrl,
                     width: 60,
                     height: 60,
                     fit: BoxFit.cover,

@@ -8,8 +8,10 @@ import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/entities/user_entity.dart';
 import '../../domain/usecases/get_me_usecase.dart';
 import '../../domain/usecases/login_usecase.dart';
+import '../../domain/usecases/logout_usecase.dart';
 import '../../domain/usecases/refresh_token_usecase.dart';
 import '../../domain/usecases/register_usecase.dart';
+import '../../domain/usecases/update_profile_usecase.dart';
 
 class AuthProvider extends ChangeNotifier {
   AppUser? _currentUser;
@@ -27,18 +29,26 @@ class AuthProvider extends ChangeNotifier {
   final LoginUseCase _loginUseCase;
   final GetMeUseCase _getMeUseCase;
   final RefreshTokenUseCase _refreshTokenUseCase;
+  final LogoutUseCase _logoutUseCase;
+  final UpdateProfileUseCase _updateProfileUseCase;
 
   AuthProvider({
     RegisterUseCase? registerUseCase,
     LoginUseCase? loginUseCase,
     GetMeUseCase? getMeUseCase,
     RefreshTokenUseCase? refreshTokenUseCase,
+    LogoutUseCase? logoutUseCase,
+    UpdateProfileUseCase? updateProfileUseCase,
   }) : _registerUseCase =
            registerUseCase ?? RegisterUseCase(AuthRepositoryImpl()),
        _loginUseCase = loginUseCase ?? LoginUseCase(AuthRepositoryImpl()),
        _getMeUseCase = getMeUseCase ?? GetMeUseCase(AuthRepositoryImpl()),
        _refreshTokenUseCase =
-           refreshTokenUseCase ?? RefreshTokenUseCase(AuthRepositoryImpl());
+           refreshTokenUseCase ?? RefreshTokenUseCase(AuthRepositoryImpl()),
+       _logoutUseCase =
+           logoutUseCase ?? LogoutUseCase(AuthRepositoryImpl()),
+       _updateProfileUseCase =
+           updateProfileUseCase ?? UpdateProfileUseCase(AuthRepositoryImpl());
 
   // Getters
   AppUser? get currentUser => _currentUser;
@@ -95,8 +105,9 @@ class AuthProvider extends ChangeNotifier {
       name: userName,
       phone: userPhone,
       role: mappedRole,
-      email: user.email,
-      avatarUrl: user.avatarUrl,
+      email: user.email ?? _currentUser?.email,
+      avatarUrl: user.avatarUrl ?? _currentUser?.avatarUrl,
+      district: user.district ?? _currentUser?.district,
       isVerified: user.isVerified,
     );
   }
@@ -310,14 +321,79 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Cleans Hive data, clears in-memory state and notifies listeners
+  /// Logs out user: calls POST /api/v1/auth/logout API with bearer token,
+  /// cleans Hive data, clears in-memory state and notifies listeners.
   Future<void> logout() async {
+    final tokenToInvalidate = _token ?? await StorageService().getAccessToken();
+
+    if (tokenToInvalidate != null && tokenToInvalidate.isNotEmpty) {
+      try {
+        debugPrint('🚪 [AUTH] Calling POST /api/v1/auth/logout with token: ${tokenToInvalidate.substring(0, tokenToInvalidate.length > 20 ? 20 : tokenToInvalidate.length)}...');
+        await _logoutUseCase(tokenToInvalidate);
+      } catch (e) {
+        debugPrint('⚠️ [AUTH] Logout API call failed: $e');
+      }
+    }
+
     _token = null;
     _refreshToken = null;
     _currentUser = null;
     // Clean Hive data
     await StorageService().clearAuthData();
     notifyListeners();
+  }
+
+  /// Updates user profile on the server via PATCH /api/v1/users/me matching curl:
+  /// {
+  ///   "name": "Rafiq Ahmed",
+  ///   "avatarUrl": "https://cdn.example.com/avatar.jpg",
+  ///   "district": "Bogura",
+  ///   "file": "string"
+  /// }
+  Future<bool> updateProfile({
+    required String name,
+    String? avatarUrl,
+    String? district,
+    String? file,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    final token = _token ?? await StorageService().getAccessToken();
+    if (token == null || token.isEmpty) {
+      _errorMessage = 'User not authenticated.';
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
+
+    final payload = <String, dynamic>{
+      'name': name.trim(),
+      if (avatarUrl != null && avatarUrl.trim().isNotEmpty)
+        'avatarUrl': avatarUrl.trim(),
+      if (district != null && district.trim().isNotEmpty)
+        'district': district.trim(),
+      if (file != null && file.trim().isNotEmpty)
+        'file': file.trim(),
+    };
+
+    try {
+      final updatedUserEntity =
+          await _updateProfileUseCase(token: token, data: payload);
+      _currentUser = _mapUserEntityToAppUser(updatedUserEntity);
+      debugPrint(
+        '✅ [AUTH] Profile updated on server: ${_currentUser?.name} | Avatar: ${_currentUser?.avatarUrl} | District: ${_currentUser?.district}',
+      );
+      _isLoading = false;
+      notifyListeners();
+      return true;
+    } catch (e) {
+      _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      _isLoading = false;
+      notifyListeners();
+      return false;
+    }
   }
 
   Future<bool> authenticateWithBiometrics(String appLocale) async {

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/models/models.dart';
+import './product_image_view.dart';
 import './status_badge.dart';
 
 class AuctionCard extends StatelessWidget {
@@ -42,8 +43,8 @@ class AuctionCard extends StatelessWidget {
               children: [
                 ClipRRect(
                   borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
-                  child: Image.asset(
-                    product.imageUrl,
+                  child: ProductImageView(
+                    imageUrl: product.imageUrl,
                     height: 100,
                     width: double.infinity,
                     fit: BoxFit.cover,

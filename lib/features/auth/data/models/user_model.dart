@@ -10,6 +10,7 @@ class UserModel extends UserEntity {
     super.token,
     super.refreshToken,
     super.avatarUrl,
+    super.district,
     super.isVerified,
   });
 
@@ -75,6 +76,7 @@ class UserModel extends UserEntity {
 
     // Extract role accurately from nested userMap (e.g. "farmer", "buyer", "admin")
     final role = (userMap['role'] ?? 'buyer').toString();
+    final district = userMap['district']?.toString();
 
     return UserModel(
       id: (userMap['id'] ?? userMap['_id'] ?? userMap['sub'] ?? userMap['supabaseId'])?.toString(),
@@ -85,6 +87,7 @@ class UserModel extends UserEntity {
       token: token,
       refreshToken: refreshToken,
       avatarUrl: (userMap['avatarUrl'] ?? userMap['avatar'])?.toString(),
+      district: district,
       isVerified: userMap['isVerified'] == true,
     );
   }
@@ -99,6 +102,7 @@ class UserModel extends UserEntity {
       if (token != null) 'token': token,
       if (refreshToken != null) 'refreshToken': refreshToken,
       if (avatarUrl != null) 'avatarUrl': avatarUrl,
+      if (district != null) 'district': district,
       'isVerified': isVerified,
     };
   }

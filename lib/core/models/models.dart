@@ -20,6 +20,7 @@ class AppUser {
   final bool isVerified;
   final String? email;
   final String? avatarUrl;
+  final String? district;
 
   AppUser({
     required this.id,
@@ -31,6 +32,7 @@ class AppUser {
     this.isVerified = false,
     this.email,
     this.avatarUrl,
+    this.district,
   });
 
   AppUser copyWith({
@@ -43,6 +45,7 @@ class AppUser {
     bool? isVerified,
     String? email,
     String? avatarUrl,
+    String? district,
   }) {
     return AppUser(
       id: id ?? this.id,
@@ -54,6 +57,7 @@ class AppUser {
       isVerified: isVerified ?? this.isVerified,
       email: email ?? this.email,
       avatarUrl: avatarUrl ?? this.avatarUrl,
+      district: district ?? this.district,
     );
   }
 }
@@ -86,6 +90,108 @@ class Product {
     required this.category,
     this.status = 'active',
   });
+
+  Product copyWith({
+    String? id,
+    String? farmerId,
+    String? productName,
+    String? imageUrl,
+    double? quantity,
+    String? unit,
+    double? minimumPrice,
+    TradeType? tradeType,
+    DateTime? startTime,
+    DateTime? endTime,
+    String? category,
+    String? status,
+  }) {
+    return Product(
+      id: id ?? this.id,
+      farmerId: farmerId ?? this.farmerId,
+      productName: productName ?? this.productName,
+      imageUrl: imageUrl ?? this.imageUrl,
+      quantity: quantity ?? this.quantity,
+      unit: unit ?? this.unit,
+      minimumPrice: minimumPrice ?? this.minimumPrice,
+      tradeType: tradeType ?? this.tradeType,
+      startTime: startTime ?? this.startTime,
+      endTime: endTime ?? this.endTime,
+      category: category ?? this.category,
+      status: status ?? this.status,
+    );
+  }
+
+  factory Product.fromJson(Map<String, dynamic> json) {
+    TradeType parseTradeType(dynamic val) {
+      final str = val?.toString().toLowerCase();
+      if (str == 'auction') return TradeType.auction;
+      if (str == 'negotiation') return TradeType.negotiation;
+      return TradeType.both;
+    }
+
+    DateTime parseDate(dynamic val, DateTime fallback) {
+      if (val == null) return fallback;
+      return DateTime.tryParse(val.toString()) ?? fallback;
+    }
+
+    double parseDouble(dynamic val) {
+      if (val == null) return 0.0;
+      if (val is num) return val.toDouble();
+      return double.tryParse(val.toString()) ?? 0.0;
+    }
+
+    return Product(
+      id: (json['id'] ?? json['_id'] ?? 'p_${DateTime.now().millisecondsSinceEpoch}').toString(),
+      farmerId: (json['farmerId'] ?? json['farmer_id'] ?? json['userId'] ?? json['user_id'] ?? '').toString(),
+      productName: (json['productName'] ?? json['product_name'] ?? json['name'] ?? '').toString(),
+      imageUrl: (json['imageUrl'] ?? json['image_url'] ?? '').toString(),
+      quantity: parseDouble(json['quantity']),
+      unit: (json['unit'] ?? 'KG').toString(),
+      minimumPrice: parseDouble(json['minimumPrice'] ?? json['minimum_price']),
+      tradeType: parseTradeType(json['tradeType'] ?? json['trade_type']),
+      startTime: parseDate(json['startTime'] ?? json['start_time'], DateTime.now()),
+      endTime: parseDate(json['endTime'] ?? json['end_time'], DateTime.now().add(const Duration(days: 7))),
+      category: (json['category'] ?? '').toString(),
+      status: (json['status'] ?? 'active').toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    String tradeTypeString;
+    switch (tradeType) {
+      case TradeType.auction:
+        tradeTypeString = 'auction';
+        break;
+      case TradeType.negotiation:
+        tradeTypeString = 'negotiation';
+        break;
+      case TradeType.both:
+        tradeTypeString = 'both';
+        break;
+    }
+
+    return {
+      'id': id,
+      'farmerId': farmerId,
+      'farmer_id': farmerId,
+      'productName': productName,
+      'product_name': productName,
+      'quantity': quantity,
+      'unit': unit,
+      'minimumPrice': minimumPrice,
+      'minimum_price': minimumPrice,
+      'tradeType': tradeTypeString,
+      'trade_type': tradeTypeString,
+      'category': category,
+      'startTime': startTime.toUtc().toIso8601String(),
+      'start_time': startTime.toUtc().toIso8601String(),
+      'endTime': endTime.toUtc().toIso8601String(),
+      'end_time': endTime.toUtc().toIso8601String(),
+      'imageUrl': imageUrl,
+      'image_url': imageUrl,
+      'status': status,
+    };
+  }
 }
 
 class Bid {

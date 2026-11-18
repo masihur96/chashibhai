@@ -16,5 +16,9 @@ abstract class AuthRepository {
   Future<TokenModel> refreshToken(String refreshToken);
   Future<UserEntity?> getProfile(String userId);
   Future<bool> changePassword(String oldPassword, String newPassword);
-  Future<void> logout();
+  Future<void> logout([String? token]);
+  Future<UserEntity> updateProfile({
+    required String token,
+    required Map<String, dynamic> data,
+  });
 }

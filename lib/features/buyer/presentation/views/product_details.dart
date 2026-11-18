@@ -9,6 +9,7 @@ import '../../../wallet/presentation/state/order_provider.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
 import '../../../account/presentation/state/review_provider.dart';
 import '../../../../core/presentation/widgets/reviews_list_sheet.dart';
+import '../../../../core/presentation/widgets/product_image_view.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
@@ -63,8 +64,8 @@ class ProductDetailsScreen extends StatelessWidget {
       flexibleSpace: FlexibleSpaceBar(
         background: Hero(
           tag: product.id,
-          child: Image.asset(
-            product.imageUrl,
+          child: ProductImageView(
+            imageUrl: product.imageUrl,
             fit: BoxFit.cover,
           ),
         ),
