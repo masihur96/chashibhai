@@ -5,6 +5,7 @@ import '../../features/account/presentation/state/app_state_provider.dart';
 import '../../features/account/presentation/views/profile_screen.dart';
 import '../../features/account/presentation/views/settings_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
+import '../../features/auth/presentation/views/login_screen.dart';
 import '../models/models.dart';
 import '../utils/localization.dart';
 import 'language_toggle_button.dart';
@@ -152,6 +153,13 @@ class AppDrawer extends StatelessWidget {
                 onLogout!();
               } else {
                 await authProvider.logout();
+                if (context.mounted) {
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                    (route) => false,
+                  );
+                }
               }
             },
           ),

@@ -70,11 +70,13 @@ class AuthProvider extends ChangeNotifier {
   /// Helper to convert UserEntity to AppUser
   AppUser _mapUserEntityToAppUser(UserEntity user) {
     UserRole mappedRole = UserRole.buyer;
-    final r = user.role.toUpperCase();
+    final r = user.role.trim().toUpperCase();
     if (r == 'FARMER') {
       mappedRole = UserRole.farmer;
-    } else if (r == 'ADMIN' || r == 'SUPER_ADMIN') {
+    } else if (r == 'ADMIN' || r == 'SUPER_ADMIN' || r == 'SUPERADMIN') {
       mappedRole = UserRole.admin;
+    } else {
+      mappedRole = UserRole.buyer;
     }
 
     return AppUser(
@@ -85,6 +87,21 @@ class AuthProvider extends ChangeNotifier {
       email: user.email,
       avatarUrl: user.avatarUrl,
     );
+  }
+
+  /// Attempts to automatically restore authenticated session on app startup
+  Future<bool> tryAutoLogin() async {
+    try {
+      final savedToken = await StorageService().getString('auth_token');
+      if (savedToken != null && savedToken.isNotEmpty) {
+        debugPrint('[AUTH] Stored token found, restoring session via /auth/me...');
+        final meUser = await fetchCurrentUser(savedToken);
+        return meUser != null;
+      }
+    } catch (e) {
+      debugPrint('[AUTH] Auto-login attempt failed: $e');
+    }
+    return false;
   }
 
   /// Generates a new access token using the stored refresh token via POST /api/v1/auth/refresh
@@ -137,6 +154,7 @@ class AuthProvider extends ChangeNotifier {
       _token = accessToken;
       await StorageService().setString('auth_token', accessToken);
       _currentUser = _mapUserEntityToAppUser(meUser);
+      debugPrint('👤 [AUTH] Authenticated User: ${_currentUser?.name} | Role: ${_currentUser?.role.name.toUpperCase()}');
       notifyListeners();
       return meUser;
     } on TokenExpiredException catch (_) {

@@ -3,6 +3,7 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
 import '../../../../core/utils/localization.dart';
 import '../../../../core/widgets/language_toggle_button.dart';
+import '../../../../main.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
 import '../providers/auth_provider.dart';
 import './login_screen.dart';
@@ -77,11 +78,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
         ),
       );
 
-      // Navigate to Login screen
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginScreen()),
-      );
+      // Navigate to the module corresponding to authenticated user's role:
+      // - if "role": "farmer" -> Farmer module (FarmerDashboard)
+      // - if "role": "buyer"  -> Buyer module (BuyerHomeScreen)
+      // - if "role": "admin"  -> Admin module (AdminShell)
+      RoleWrapper.navigate(context, authProvider.userRole);
     } else {
       final error = authProvider.errorMessage ?? 'Registration failed. Please try again.';
       ScaffoldMessenger.of(context).showSnackBar(

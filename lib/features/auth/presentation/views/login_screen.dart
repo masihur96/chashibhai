@@ -69,15 +69,11 @@ class _LoginScreenState extends State<LoginScreen> {
         ),
       );
 
-      // Transition to authenticated view
-      if (Navigator.canPop(context)) {
-        Navigator.pop(context);
-      } else {
-        Navigator.pushReplacement(
-          context,
-          MaterialPageRoute(builder: (_) => const AuthWrapper()),
-        );
-      }
+      // Navigate to the module corresponding to authenticated user's role:
+      // - if "role": "farmer" -> Farmer module (FarmerDashboard)
+      // - if "role": "buyer"  -> Buyer module (BuyerHomeScreen)
+      // - if "role": "admin"  -> Admin module (AdminShell)
+      RoleWrapper.navigate(context, authProvider.userRole);
     } else {
       final error = authProvider.errorMessage ?? 'Login failed. Please check your credentials.';
       ScaffoldMessenger.of(context).showSnackBar(
@@ -417,7 +413,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: () {
                           final user = MockData.currentUser.copyWith(role: UserRole.admin);
                           context.read<AuthProvider>().setCurrentUser(user);
-                          if (Navigator.canPop(context)) Navigator.pop(context);
+                          RoleWrapper.navigate(context, UserRole.admin);
                         },
                         child: const Text('Admin'),
                       ),
@@ -430,7 +426,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: () {
                           final user = MockData.currentUser.copyWith(role: UserRole.buyer);
                           context.read<AuthProvider>().setCurrentUser(user);
-                          if (Navigator.canPop(context)) Navigator.pop(context);
+                          RoleWrapper.navigate(context, UserRole.buyer);
                         },
                         child: const Text('Buyer'),
                       ),
@@ -443,7 +439,7 @@ class _LoginScreenState extends State<LoginScreen> {
                         onPressed: () {
                           final user = MockData.currentUser.copyWith(role: UserRole.farmer);
                           context.read<AuthProvider>().setCurrentUser(user);
-                          if (Navigator.canPop(context)) Navigator.pop(context);
+                          RoleWrapper.navigate(context, UserRole.farmer);
                         },
                         child: const Text('Farmer'),
                       ),

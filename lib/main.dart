@@ -186,14 +186,44 @@ class AuthWrapper extends StatelessWidget {
 }
 
 class RoleWrapper extends StatelessWidget {
-  const RoleWrapper({super.key});
+  final UserRole? initialRole;
+  const RoleWrapper({super.key, this.initialRole});
+
+  /// Navigates to the appropriate module based on role, replacing all prior routes:
+  /// - UserRole.farmer -> Farmer module (FarmerDashboard)
+  /// - UserRole.buyer  -> Buyer module (BuyerHomeScreen)
+  /// - UserRole.admin  -> Admin module (AdminShell)
+  static void navigate(BuildContext context, UserRole role) {
+    Widget target;
+    switch (role) {
+      case UserRole.farmer:
+        target = const RoleWrapper(initialRole: UserRole.farmer);
+        break;
+      case UserRole.buyer:
+        target = const RoleWrapper(initialRole: UserRole.buyer);
+        break;
+      case UserRole.admin:
+        target = const AdminShell();
+        break;
+    }
+
+    Navigator.pushAndRemoveUntil(
+      context,
+      MaterialPageRoute(builder: (_) => target),
+      (route) => false,
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     final languageCode = context.watch<AppStateProvider>().appLocale;
     final authProvider = context.watch<AuthProvider>();
     final user = authProvider.currentUser;
-    final role = authProvider.userRole;
+    final role = initialRole ?? authProvider.userRole;
+
+    if (role == UserRole.admin) {
+      return const AdminShell();
+    }
 
     return Scaffold(
       drawer: Drawer(
@@ -431,8 +461,15 @@ class RoleWrapper extends StatelessWidget {
             Padding(
               padding: const EdgeInsets.all(20),
               child: ListTile(
-                onTap: () {
-                  context.read<AuthProvider>().setCurrentUser(null);
+                onTap: () async {
+                  await context.read<AuthProvider>().logout();
+                  if (context.mounted) {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+                      (route) => false,
+                    );
+                  }
                 },
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
@@ -451,11 +488,9 @@ class RoleWrapper extends StatelessWidget {
         ),
 
     ),
-      body: role == UserRole.admin
-          ? const AdminShell()
-          : role == UserRole.buyer 
-              ? const BuyerHomeScreen() 
-              : const FarmerDashboard(),
+      body: role == UserRole.buyer 
+          ? const BuyerHomeScreen() 
+          : const FarmerDashboard(),
     );
   }
 
