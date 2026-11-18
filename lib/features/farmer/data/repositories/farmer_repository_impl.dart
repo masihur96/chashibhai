@@ -31,4 +31,29 @@ class FarmerRepositoryImpl implements FarmerRepository {
       token: token,
     );
   }
+
+  @override
+  Future<List<Product>> getMyProducts({
+    int page = 1,
+    int limit = 10,
+    String? status,
+    String? category,
+    String? tradeType,
+    double? minPrice,
+    double? maxPrice,
+    String? search,
+    String? token,
+  }) async {
+    return await remoteDataSource.getMyProducts(
+      page: page,
+      limit: limit,
+      status: status,
+      category: category,
+      tradeType: tradeType,
+      minPrice: minPrice,
+      maxPrice: maxPrice,
+      search: search,
+      token: token,
+    );
+  }
 }

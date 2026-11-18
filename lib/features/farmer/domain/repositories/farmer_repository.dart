@@ -12,4 +12,16 @@ abstract class FarmerRepository {
     required List<UploadFileItem> files,
     String? token,
   });
+
+  Future<List<Product>> getMyProducts({
+    int page = 1,
+    int limit = 10,
+    String? status,
+    String? category,
+    String? tradeType,
+    double? minPrice,
+    double? maxPrice,
+    String? search,
+    String? token,
+  });
 }
