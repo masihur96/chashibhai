@@ -1,7 +1,7 @@
 import 'dart:convert';
-import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
@@ -149,6 +149,77 @@ class _AddProductScreenState extends State<AddProductScreen> {
             backgroundColor: const Color(0xFF2E7D32),
             duration: const Duration(seconds: 2),
             behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } on PlatformException catch (e) {
+      debugPrint('⚠️ [IMAGE_PICKER] PlatformException ($source): code=${e.code}, message=${e.message}');
+
+      // If camera is unsupported (e.g. on iOS simulator or device without camera), fall back to gallery
+      if (source == ImageSource.camera) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Camera unavailable on simulator/device. Opening Gallery instead...'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        await _pickImage(ImageSource.gallery);
+        return;
+      }
+
+      String userFriendlyMessage;
+      if (e.code == 'camera_access_denied') {
+        userFriendlyMessage = 'Camera access was denied. Please allow camera permissions in device settings.';
+      } else if (e.code == 'photo_access_denied') {
+        userFriendlyMessage = 'Photo access was denied. Please allow photo gallery permissions in device settings.';
+      } else if (e.code.contains('channel') ||
+          e.message?.contains('channel') == true ||
+          e.code == 'MissingPluginException') {
+        userFriendlyMessage =
+            'Native plugin not registered. Since image_picker was just added, please fully stop and re-run the app (hot reload cannot register new native plugins).';
+      } else {
+        userFriendlyMessage = 'Could not access device photos (${e.code}): ${e.message ?? 'Unknown error'}';
+      }
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (dialogCtx) => AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.orange),
+                const SizedBox(width: 8),
+                Text('Image Picker Note', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(userFriendlyMessage),
+                const SizedBox(height: 12),
+                const Text('Would you like to select from presets or enter an image URL instead?'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  Navigator.pop(dialogCtx);
+                  _showImagePickerDialog();
+                },
+                child: const Text('Choose Preset / URL'),
+              ),
+            ],
           ),
         );
       }
