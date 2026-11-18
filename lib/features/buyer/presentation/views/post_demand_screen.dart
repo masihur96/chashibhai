@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -8,6 +10,7 @@ import '../../../group/presentation/state/group_provider.dart';
 import '../state/demand_provider.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/presentation/widgets/product_image_view.dart';
+import '../../../../core/services/upload_service.dart';
 import '../../../../core/utils/storage_service.dart';
 import '../../../group/presentation/views/groups_list_screen.dart';
 import '../../data/models/create_demand_request_model.dart';
@@ -35,9 +38,25 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
   TradeType _tradeType = TradeType.both;
   bool _isSubmitting = false;
 
+  // Image picking & upload state
+  final ImagePicker _picker = ImagePicker();
+  final List<UploadFileItem> _selectedImages = [];
+  bool _isUploadingImage = false;
+  String _submissionStatus = '';
+  String _imageSourceType = 'curl_default'; // 'camera', 'gallery', 'preset', 'curl_default', 'uploaded'
+
   // Group buying state
   bool _isGroupDemand = false;
   BuyingGroup? _selectedGroup;
+
+  @visibleForTesting
+  void setSelectedImagesForTesting(List<UploadFileItem> items) {
+    setState(() {
+      _selectedImages.clear();
+      _selectedImages.addAll(items);
+      _imageSourceType = 'gallery';
+    });
+  }
 
   @override
   void initState() {
@@ -72,6 +91,8 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
       _locationController.text = 'Karwan Bazar, Dhaka';
       _imageUrl = 'https://cdn.example.com/demands/potato.jpg';
       _imageUrlController.text = _imageUrl;
+      _selectedImages.clear();
+      _imageSourceType = 'curl_default';
       _tradeType = TradeType.both;
       _expiryDate = DateTime.tryParse('2026-11-30T18:00:00Z')?.toLocal() ??
           DateTime(2026, 11, 30, 18, 0);
@@ -82,6 +103,230 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
         duration: Duration(seconds: 2),
       ),
     );
+  }
+
+  /// Picks image(s) from Camera or Gallery for multipart upload
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      if (source == ImageSource.camera) {
+        final XFile? file = await _picker.pickImage(
+          source: ImageSource.camera,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          imageQuality: 85,
+        );
+
+        if (file == null) return;
+
+        final item = await UploadFileItem.fromXFile(file);
+        setState(() {
+          _selectedImages.add(item);
+          _imageSourceType = 'camera';
+        });
+
+        _showSuccessNotification('Photo captured from camera!');
+      } else {
+        // Try picking multiple images from gallery
+        try {
+          final List<XFile> pickedList = await _picker.pickMultiImage(
+            maxWidth: 1024,
+            maxHeight: 1024,
+            imageQuality: 85,
+          );
+
+          if (pickedList.isNotEmpty) {
+            final List<UploadFileItem> newItems = [];
+            for (final f in pickedList) {
+              newItems.add(await UploadFileItem.fromXFile(f));
+            }
+            setState(() {
+              _selectedImages.addAll(newItems);
+              _imageSourceType = 'gallery';
+            });
+            _showSuccessNotification(
+              '${pickedList.length} photo(s) selected from gallery!',
+            );
+            return;
+          }
+        } catch (_) {
+          // Fallback to single pickImage if pickMultiImage fails on platform
+        }
+
+        // Single image picker fallback
+        final XFile? file = await _picker.pickImage(
+          source: ImageSource.gallery,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          imageQuality: 85,
+        );
+
+        if (file == null) return;
+
+        final item = await UploadFileItem.fromXFile(file);
+        setState(() {
+          _selectedImages.add(item);
+          _imageSourceType = 'gallery';
+        });
+
+        _showSuccessNotification('Photo selected from gallery!');
+      }
+    } on PlatformException catch (e) {
+      debugPrint('⚠️ [IMAGE_PICKER] PlatformException ($source): ${e.code} ${e.message}');
+      if (source == ImageSource.camera) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Camera unavailable on device. Opening Gallery instead...'),
+              duration: Duration(seconds: 2),
+            ),
+          );
+        }
+        await _pickImage(ImageSource.gallery);
+        return;
+      }
+
+      String userFriendlyMessage;
+      if (e.code == 'camera_access_denied') {
+        userFriendlyMessage =
+            'Camera access was denied. Please allow camera permissions in device settings.';
+      } else if (e.code == 'photo_access_denied') {
+        userFriendlyMessage =
+            'Photo access was denied. Please allow photo gallery permissions in device settings.';
+      } else if (e.code.contains('channel') ||
+          e.message?.contains('channel') == true ||
+          e.code == 'MissingPluginException') {
+        userFriendlyMessage =
+            'Native plugin not registered. Since image_picker was just added, please fully stop and re-run the app.';
+      } else {
+        userFriendlyMessage =
+            'Could not access device photos (${e.code}): ${e.message ?? 'Unknown error'}';
+      }
+
+      if (mounted) {
+        showDialog(
+          context: context,
+          builder: (dialogCtx) => AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.info_outline, color: Colors.orange),
+                const SizedBox(width: 8),
+                Text('Image Picker Note',
+                    style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(userFriendlyMessage),
+                const SizedBox(height: 12),
+                const Text('Would you like to select from presets or enter an image URL instead?'),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(dialogCtx),
+                child: const Text('Cancel'),
+              ),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                  foregroundColor: Colors.white,
+                ),
+                onPressed: () {
+                  Navigator.pop(dialogCtx);
+                  _showEditImageUrlDialog(context);
+                },
+                child: const Text('Choose Preset / URL'),
+              ),
+            ],
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick image: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  void _showSuccessNotification(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(Icons.check_circle_outline, color: Colors.white, size: 20),
+            const SizedBox(width: 8),
+            Expanded(child: Text(message)),
+          ],
+        ),
+        backgroundColor: const Color(0xFF2E7D32),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  /// Uploads selected images immediately before publishing
+  Future<void> _uploadSelectedImagesNow() async {
+    if (_selectedImages.isEmpty) return;
+
+    setState(() {
+      _isUploadingImage = true;
+      _submissionStatus = 'Uploading ${_selectedImages.length} image(s)...';
+    });
+
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final demandProvider = context.read<DemandProvider>();
+      String? token = authProvider.token;
+      if (token == null || token.isEmpty) {
+        try {
+          token = await StorageService().getAccessToken();
+        } catch (_) {}
+      }
+
+      final filesToUpload = List<UploadFileItem>.from(_selectedImages);
+      final uploadedUrls = await demandProvider.uploadImages(
+        files: filesToUpload,
+        token: token,
+      );
+
+      if (uploadedUrls.isNotEmpty) {
+        final firstUrl = uploadedUrls.first;
+        setState(() {
+          _imageUrl = firstUrl;
+          _imageUrlController.text = firstUrl;
+          _selectedImages.clear();
+          _imageSourceType = 'uploaded';
+        });
+
+        _showSuccessNotification('Image uploaded successfully: $firstUrl');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Upload failed: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isUploadingImage = false;
+          _submissionStatus = '';
+        });
+      }
+    }
   }
 
   Future<void> _submitDemand() async {
@@ -99,7 +344,10 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _submissionStatus = 'Preparing demand...';
+    });
 
     try {
       final authProvider = context.read<AuthProvider>();
@@ -112,6 +360,32 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
       }
       if (!mounted) return;
 
+      String effectiveImageUrl = _imageUrl;
+
+      // 1. Upload local images via POST /api/v1/upload if any are selected
+      if (_selectedImages.isNotEmpty) {
+        setState(() => _submissionStatus = 'Uploading ${_selectedImages.length} image(s)...');
+        try {
+          final filesToUpload = List<UploadFileItem>.from(_selectedImages);
+          final uploadedUrls = await demandProvider.uploadImages(
+            files: filesToUpload,
+            token: token,
+          );
+          if (uploadedUrls.isNotEmpty) {
+            effectiveImageUrl = uploadedUrls.first;
+            _imageUrl = effectiveImageUrl;
+            _imageUrlController.text = effectiveImageUrl;
+            _selectedImages.clear();
+            _imageSourceType = 'uploaded';
+          }
+        } catch (uploadError) {
+          debugPrint('⚠️ [POST_DEMAND] Image upload failed: $uploadError');
+          throw Exception('Image upload failed: $uploadError');
+        }
+      }
+
+      setState(() => _submissionStatus = 'Publishing demand...');
+
       final qty = double.tryParse(_quantityController.text.trim()) ?? 0;
       final price = double.tryParse(_callingPriceController.text.trim()) ?? 0;
 
@@ -122,8 +396,8 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
         deliveryLocation: _locationController.text.trim(),
         expiryTime: _expiryDate,
         tradeType: _tradeType.name.toLowerCase(),
-        imageUrl: _imageUrl.isNotEmpty
-            ? _imageUrl
+        imageUrl: effectiveImageUrl.isNotEmpty
+            ? effectiveImageUrl
             : 'https://cdn.example.com/demands/potato.jpg',
       );
 
@@ -179,9 +453,152 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _isSubmitting = false);
+        setState(() {
+          _isSubmitting = false;
+          _submissionStatus = '';
+        });
       }
     }
+  }
+
+  void _showImageSourceSelector() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    'Demand Product Image',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.camera_alt_outlined,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                  title: const Text(
+                    'Take Photo',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('Capture photo with camera'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(
+                      Icons.photo_library_outlined,
+                      color: Colors.blue,
+                    ),
+                  ),
+                  title: const Text(
+                    'Choose from Gallery',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('Select photos from your device'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.link, color: Colors.orange),
+                  ),
+                  title: const Text(
+                    'Enter Image URL / Presets',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text(
+                    'Paste a web URL or choose demo presets',
+                  ),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showEditImageUrlDialog(context);
+                  },
+                ),
+                if (_selectedImages.isNotEmpty ||
+                    _imageUrl != 'https://cdn.example.com/demands/potato.jpg') ...[
+                  const Divider(),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.restart_alt, color: Colors.red),
+                    ),
+                    title: const Text(
+                      'Reset to Curl Default',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: const Text('Reset to https://cdn.example.com/demands/potato.jpg'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() {
+                        _selectedImages.clear();
+                        _imageUrl = 'https://cdn.example.com/demands/potato.jpg';
+                        _imageUrlController.text = _imageUrl;
+                        _imageSourceType = 'curl_default';
+                      });
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
   }
 
   void _showEditImageUrlDialog(BuildContext context) {
@@ -232,6 +649,8 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
             onPressed: () {
               setState(() {
                 _imageUrl = _imageUrlController.text.trim();
+                _selectedImages.clear();
+                _imageSourceType = 'preset';
               });
               Navigator.pop(ctx);
             },
@@ -397,56 +816,8 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              // Image preview & URL configuration
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey.shade50,
-                  borderRadius: BorderRadius.circular(14),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Row(
-                  children: [
-                    ClipRRect(
-                      borderRadius: BorderRadius.circular(8),
-                      child: ProductImageView(
-                        imageUrl: _imageUrl,
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            'Demand Product Image',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                            ),
-                          ),
-                          const SizedBox(height: 2),
-                          Text(
-                            _imageUrl.isNotEmpty ? _imageUrl : 'No image URL',
-                            style: TextStyle(fontSize: 11, color: Colors.grey[700]),
-                            maxLines: 2,
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ],
-                      ),
-                    ),
-                    TextButton.icon(
-                      onPressed: () => _showEditImageUrlDialog(context),
-                      icon: const Icon(Icons.edit, size: 16),
-                      label: const Text('Change'),
-                    ),
-                  ],
-                ),
-              ),
+              // Demand Product Image Picker & Preview
+              _buildImagePickerSection(),
               const SizedBox(height: 24),
               Text(
                 'Timeline',
@@ -504,7 +875,7 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: _isSubmitting ? null : _submitDemand,
+                  onPressed: _isSubmitting || _isUploadingImage ? null : _submitDemand,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2E7D32),
                     foregroundColor: Colors.white,
@@ -513,13 +884,31 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
                     ),
                   ),
                   child: _isSubmitting
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            color: Colors.white,
-                            strokeWidth: 2.5,
-                          ),
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                color: Colors.white,
+                                strokeWidth: 2.5,
+                              ),
+                            ),
+                            if (_submissionStatus.isNotEmpty) ...[
+                              const SizedBox(width: 12),
+                              Flexible(
+                                child: Text(
+                                  _submissionStatus,
+                                  style: const TextStyle(
+                                    fontSize: 14,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                            ],
+                          ],
                         )
                       : const Text(
                           'Publish Demand',
@@ -541,6 +930,274 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
             ],
           ),
         ),
+      ),
+    );
+  }
+
+  Widget _buildImagePickerSection() {
+    final bool hasSelectedImages = _selectedImages.isNotEmpty;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasSelectedImages ? const Color(0xFF2E7D32) : Colors.grey.shade300,
+          width: hasSelectedImages ? 1.5 : 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                hasSelectedImages ? Icons.image_rounded : Icons.add_photo_alternate_outlined,
+                size: 20,
+                color: const Color(0xFF2E7D32),
+              ),
+              const SizedBox(width: 8),
+              Text(
+                'Product Image',
+                style: GoogleFonts.outfit(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const Spacer(),
+              if (hasSelectedImages)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2E7D32).withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Text(
+                    '${_selectedImages.length} image(s) picked',
+                    style: const TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2E7D32),
+                    ),
+                  ),
+                )
+              else if (_imageSourceType == 'uploaded')
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.blue.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Uploaded',
+                    style: TextStyle(
+                      fontSize: 11,
+                      fontWeight: FontWeight.w600,
+                      color: Colors.blue,
+                    ),
+                  ),
+                )
+              else
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Text(
+                    'Default / Preset',
+                    style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.grey,
+                    ),
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // Content body
+          if (hasSelectedImages) ...[
+            // Local picked image preview
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 76,
+                    height: 76,
+                    color: Colors.grey.shade200,
+                    child: Image.memory(
+                      _selectedImages.first.bytes,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, __, ___) => const Icon(Icons.broken_image),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _selectedImages.first.name,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${(_selectedImages.first.bytes.length / 1024).toStringAsFixed(1)} KB • ${_selectedImages.first.mimeType}',
+                        style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        'Will be uploaded to POST /api/v1/upload upon publishing.',
+                        style: TextStyle(fontSize: 11, color: Colors.green.shade800),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            // Actions row for picked images
+            Row(
+              children: [
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isUploadingImage ? null : _uploadSelectedImagesNow,
+                    icon: _isUploadingImage
+                        ? const SizedBox(
+                            width: 14,
+                            height: 14,
+                            child: CircularProgressIndicator(strokeWidth: 2),
+                          )
+                        : const Icon(Icons.cloud_upload_outlined, size: 16),
+                    label: Text(
+                      _isUploadingImage ? 'Uploading...' : 'Upload Now',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: OutlinedButton.icon(
+                    onPressed: _isUploadingImage ? null : _showImageSourceSelector,
+                    icon: const Icon(Icons.swap_horiz, size: 16),
+                    label: const Text('Change', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 8),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                IconButton(
+                  tooltip: 'Remove selected image',
+                  onPressed: _isUploadingImage
+                      ? null
+                      : () {
+                          setState(() {
+                            _selectedImages.clear();
+                            _imageSourceType = 'curl_default';
+                          });
+                        },
+                  icon: const Icon(Icons.delete_outline, color: Colors.red, size: 20),
+                ),
+              ],
+            ),
+          ] else ...[
+            // Default or URL image preview
+            Row(
+              children: [
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    width: 76,
+                    height: 76,
+                    color: Colors.grey.shade100,
+                    child: ProductImageView(
+                      imageUrl: _imageUrl,
+                      width: 76,
+                      height: 76,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _imageSourceType == 'uploaded'
+                            ? 'Uploaded Image URL'
+                            : 'Default Image URL',
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w600,
+                          fontSize: 13,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _imageUrl.isNotEmpty ? _imageUrl : 'No URL provided',
+                        style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  flex: 2,
+                  child: ElevatedButton.icon(
+                    onPressed: _showImageSourceSelector,
+                    icon: const Icon(Icons.add_a_photo_outlined, size: 16),
+                    label: const Text('Pick Image', style: TextStyle(fontSize: 13)),
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  flex: 1,
+                  child: OutlinedButton.icon(
+                    onPressed: () => _showEditImageUrlDialog(context),
+                    icon: const Icon(Icons.edit, size: 14),
+                    label: const Text('URL', style: TextStyle(fontSize: 12)),
+                    style: OutlinedButton.styleFrom(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
       ),
     );
   }

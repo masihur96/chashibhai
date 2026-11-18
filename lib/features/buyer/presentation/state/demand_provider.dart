@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/models/mock_data.dart';
+import '../../../../core/services/upload_service.dart';
 import '../../data/models/create_demand_request_model.dart';
 import '../../data/repositories/buyer_repository_impl.dart';
 import '../../domain/repositories/buyer_repository.dart';
@@ -42,6 +43,17 @@ class DemandProvider extends ChangeNotifier {
   void setBids(List<Bid> bids) {
     _bids = bids;
     notifyListeners();
+  }
+
+  /// Uploads demand product images using POST /api/v1/upload
+  Future<List<String>> uploadImages({
+    required List<UploadFileItem> files,
+    String? token,
+  }) async {
+    return await _buyerRepository.uploadImages(
+      files: files,
+      token: token,
+    );
   }
 
   /// Creates a new demand using POST /api/v1/demands
