@@ -2,7 +2,9 @@ import '../../domain/entities/user_entity.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_remote_data_source.dart';
 import '../models/login_request_model.dart';
+import '../models/refresh_token_request_model.dart';
 import '../models/register_request_model.dart';
+import '../models/token_model.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
   final AuthRemoteDataSource remoteDataSource;
@@ -41,6 +43,12 @@ class AuthRepositoryImpl implements AuthRepository {
   @override
   Future<UserEntity> getMe(String token) async {
     return await remoteDataSource.getMe(token);
+  }
+
+  @override
+  Future<TokenModel> refreshToken(String refreshToken) async {
+    final request = RefreshTokenRequestModel(refreshToken: refreshToken);
+    return await remoteDataSource.refreshToken(request);
   }
 
   @override

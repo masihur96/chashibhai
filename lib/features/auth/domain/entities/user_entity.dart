@@ -5,6 +5,7 @@ class UserEntity {
   final String role;
   final String? email;
   final String? token;
+  final String? refreshToken;
   final String? avatarUrl;
 
   const UserEntity({
@@ -14,6 +15,7 @@ class UserEntity {
     required this.role,
     this.email,
     this.token,
+    this.refreshToken,
     this.avatarUrl,
   });
 }
