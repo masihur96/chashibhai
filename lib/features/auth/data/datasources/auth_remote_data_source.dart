@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
+import '../../../../configs/network/api_logger.dart';
 import '../../../../core/constants/api_path.dart';
 import '../models/login_request_model.dart';
 import '../models/refresh_token_request_model.dart';
@@ -33,20 +34,30 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<UserModel> register(RegisterRequestModel request) async {
     final endpoint = ApiPath.register;
     final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    final headers = {
+      'accept': '*/*',
+      'Content-Type': 'application/json; charset=utf-8',
+    };
+
+    ApiLogger.logRequest(
+      method: 'POST',
+      uri: uri,
+      headers: headers,
+      body: request.toJson(),
+    );
 
     try {
       final httpRequest = await _client.postUrl(uri);
-
-      httpRequest.headers.set(HttpHeaders.acceptHeader, '*/*');
-      httpRequest.headers.set(
-        HttpHeaders.contentTypeHeader,
-        'application/json; charset=utf-8',
-      );
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
       final bodyString = jsonEncode(request.toJson());
       httpRequest.write(bodyString);
 
       final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
       final responseBody = await httpResponse.transform(utf8.decoder).join();
 
       dynamic decodedJson;
@@ -57,6 +68,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
 
       if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
         if (decodedJson is Map<String, dynamic>) {
           return UserModel.fromJson(decodedJson);
         } else {
@@ -77,17 +96,29 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         } else if (responseBody.isNotEmpty) {
           errorMessage = responseBody;
         }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
         throw Exception(errorMessage);
       }
     } on SocketException catch (e) {
-      throw Exception(
-        'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if your backend server is running on localhost:3000.',
-      );
-    } on HandshakeException catch (e) {
-      throw Exception('SSL Handshake error: $e');
+      stopwatch.stop();
+      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running on localhost:3000.';
+      ApiLogger.logError(method: 'POST', uri: uri, duration: stopwatch.elapsed, error: err);
+      throw Exception(err);
     } catch (e) {
-      if (e is Exception) rethrow;
-      throw Exception('Unexpected error: $e');
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(method: 'POST', uri: uri, duration: stopwatch.elapsed, error: e);
+      }
+      rethrow;
     }
   }
 
@@ -95,20 +126,30 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<UserModel> login(LoginRequestModel request) async {
     final endpoint = ApiPath.login;
     final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    final headers = {
+      'accept': '*/*',
+      'Content-Type': 'application/json; charset=utf-8',
+    };
+
+    ApiLogger.logRequest(
+      method: 'POST',
+      uri: uri,
+      headers: headers,
+      body: request.toJson(),
+    );
 
     try {
       final httpRequest = await _client.postUrl(uri);
-
-      httpRequest.headers.set(HttpHeaders.acceptHeader, '*/*');
-      httpRequest.headers.set(
-        HttpHeaders.contentTypeHeader,
-        'application/json; charset=utf-8',
-      );
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
       final bodyString = jsonEncode(request.toJson());
       httpRequest.write(bodyString);
 
       final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
       final responseBody = await httpResponse.transform(utf8.decoder).join();
 
       dynamic decodedJson;
@@ -119,6 +160,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
 
       if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
         if (decodedJson is Map<String, dynamic>) {
           return UserModel.fromJson(decodedJson);
         } else {
@@ -139,17 +188,29 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         } else if (responseBody.isNotEmpty) {
           errorMessage = responseBody;
         }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
         throw Exception(errorMessage);
       }
     } on SocketException catch (e) {
-      throw Exception(
-        'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if your backend server is running on localhost:3000.',
-      );
-    } on HandshakeException catch (e) {
-      throw Exception('SSL Handshake error: $e');
+      stopwatch.stop();
+      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running on localhost:3000.';
+      ApiLogger.logError(method: 'POST', uri: uri, duration: stopwatch.elapsed, error: err);
+      throw Exception(err);
     } catch (e) {
-      if (e is Exception) rethrow;
-      throw Exception('Unexpected error: $e');
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(method: 'POST', uri: uri, duration: stopwatch.elapsed, error: e);
+      }
+      rethrow;
     }
   }
 
@@ -157,14 +218,26 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<UserModel> getMe(String token) async {
     final endpoint = ApiPath.me;
     final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    final headers = {
+      'accept': '*/*',
+      'Authorization': 'Bearer $token',
+    };
+
+    ApiLogger.logRequest(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+    );
 
     try {
       final httpRequest = await _client.getUrl(uri);
-
-      httpRequest.headers.set(HttpHeaders.acceptHeader, '*/*');
-      httpRequest.headers.set(HttpHeaders.authorizationHeader, 'Bearer $token');
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
       final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
       final responseBody = await httpResponse.transform(utf8.decoder).join();
 
       dynamic decodedJson;
@@ -175,12 +248,28 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
 
       if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
         if (decodedJson is Map<String, dynamic>) {
           return UserModel.fromJson(decodedJson, token);
         } else {
           throw Exception('Invalid response format from /auth/me');
         }
       } else if (httpResponse.statusCode == 401) {
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: 401,
+          duration: stopwatch.elapsed,
+          error: 'Access token expired or unauthorized (HTTP 401)',
+          body: decodedJson ?? responseBody,
+        );
         throw TokenExpiredException('Access token expired or unauthorized (HTTP 401)');
       } else {
         String errorMessage =
@@ -193,17 +282,29 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         } else if (responseBody.isNotEmpty) {
           errorMessage = responseBody;
         }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
         throw Exception(errorMessage);
       }
     } on SocketException catch (e) {
-      throw Exception(
-        'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if your backend server is running on localhost:3000.',
-      );
-    } on HandshakeException catch (e) {
-      throw Exception('SSL Handshake error: $e');
+      stopwatch.stop();
+      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running on localhost:3000.';
+      ApiLogger.logError(method: 'GET', uri: uri, duration: stopwatch.elapsed, error: err);
+      throw Exception(err);
     } catch (e) {
-      if (e is Exception) rethrow;
-      throw Exception('Unexpected error: $e');
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(method: 'GET', uri: uri, duration: stopwatch.elapsed, error: e);
+      }
+      rethrow;
     }
   }
 
@@ -211,21 +312,30 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<TokenModel> refreshToken(RefreshTokenRequestModel request) async {
     final endpoint = ApiPath.refresh;
     final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    final headers = {
+      'accept': '*/*',
+      'Content-Type': 'application/json; charset=utf-8',
+    };
+
+    ApiLogger.logRequest(
+      method: 'POST',
+      uri: uri,
+      headers: headers,
+      body: request.toJson(),
+    );
 
     try {
       final httpRequest = await _client.postUrl(uri);
-
-      // Set request headers matching curl
-      httpRequest.headers.set(HttpHeaders.acceptHeader, '*/*');
-      httpRequest.headers.set(
-        HttpHeaders.contentTypeHeader,
-        'application/json; charset=utf-8',
-      );
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
       final bodyString = jsonEncode(request.toJson());
       httpRequest.write(bodyString);
 
       final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
       final responseBody = await httpResponse.transform(utf8.decoder).join();
 
       dynamic decodedJson;
@@ -236,6 +346,14 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
 
       if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
         if (decodedJson is Map<String, dynamic>) {
           return TokenModel.fromJson(decodedJson, request.refreshToken);
         } else {
@@ -252,17 +370,29 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
         } else if (responseBody.isNotEmpty) {
           errorMessage = responseBody;
         }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
         throw Exception(errorMessage);
       }
     } on SocketException catch (e) {
-      throw Exception(
-        'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if your backend server is running on localhost:3000.',
-      );
-    } on HandshakeException catch (e) {
-      throw Exception('SSL Handshake error: $e');
+      stopwatch.stop();
+      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running on localhost:3000.';
+      ApiLogger.logError(method: 'POST', uri: uri, duration: stopwatch.elapsed, error: err);
+      throw Exception(err);
     } catch (e) {
-      if (e is Exception) rethrow;
-      throw Exception('Unexpected error: $e');
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(method: 'POST', uri: uri, duration: stopwatch.elapsed, error: e);
+      }
+      rethrow;
     }
   }
 }
