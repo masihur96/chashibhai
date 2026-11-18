@@ -68,24 +68,36 @@ class AuthProvider extends ChangeNotifier {
   }
 
   /// Helper to convert UserEntity to AppUser
+  /// Maps to exact UserRole enum values: UserRole.farmer, UserRole.buyer, UserRole.admin
   AppUser _mapUserEntityToAppUser(UserEntity user) {
-    UserRole mappedRole = UserRole.buyer;
-    final r = user.role.trim().toUpperCase();
-    if (r == 'FARMER') {
+    UserRole mappedRole;
+    final r = user.role.trim().toLowerCase();
+    if (r == 'farmer') {
       mappedRole = UserRole.farmer;
-    } else if (r == 'ADMIN' || r == 'SUPER_ADMIN' || r == 'SUPERADMIN') {
+    } else if (r == 'admin' || r == 'super_admin' || r == 'superadmin') {
       mappedRole = UserRole.admin;
     } else {
       mappedRole = UserRole.buyer;
     }
 
+    final userName = user.name.isNotEmpty
+        ? user.name
+        : (_currentUser?.name.isNotEmpty == true
+            ? _currentUser!.name
+            : (user.phone.isNotEmpty ? user.phone : 'User'));
+
+    final userPhone = user.phone.isNotEmpty
+        ? user.phone
+        : (_currentUser?.phone ?? '');
+
     return AppUser(
       id: user.id ?? 'u_${DateTime.now().millisecondsSinceEpoch}',
-      name: user.name.isNotEmpty ? user.name : 'User',
-      phone: user.phone,
+      name: userName,
+      phone: userPhone,
       role: mappedRole,
       email: user.email,
       avatarUrl: user.avatarUrl,
+      isVerified: user.isVerified,
     );
   }
 

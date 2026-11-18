@@ -7,6 +7,7 @@ class UserEntity {
   final String? token;
   final String? refreshToken;
   final String? avatarUrl;
+  final bool isVerified;
 
   const UserEntity({
     this.id,
@@ -17,5 +18,6 @@ class UserEntity {
     this.token,
     this.refreshToken,
     this.avatarUrl,
+    this.isVerified = false,
   });
 }
