@@ -4,14 +4,13 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../auth/presentation/state/auth_provider.dart';
-import '../state/product_provider.dart';
 import '../../../group/presentation/state/group_provider.dart';
 import '../state/demand_provider.dart';
-import '../../../wallet/presentation/state/order_provider.dart';
-import '../../../account/presentation/state/app_state_provider.dart';
 import '../../../../core/models/models.dart';
+import '../../../../core/presentation/widgets/product_image_view.dart';
+import '../../../../core/utils/storage_service.dart';
 import '../../../group/presentation/views/groups_list_screen.dart';
-
+import '../../data/models/create_demand_request_model.dart';
 
 class PostDemandScreen extends StatefulWidget {
   const PostDemandScreen({super.key});
@@ -22,14 +21,19 @@ class PostDemandScreen extends StatefulWidget {
 
 class _PostDemandScreenState extends State<PostDemandScreen> {
   final _formKey = GlobalKey<FormState>();
-  String _productName = '';
-  double _quantity = 0;
-  double _callingPrice = 0;
-  String _location = '';
+
+  late final TextEditingController _nameController;
+  late final TextEditingController _quantityController;
+  late final TextEditingController _callingPriceController;
+  late final TextEditingController _locationController;
+  late final TextEditingController _imageUrlController;
+
+  String _imageUrl = 'https://cdn.example.com/demands/potato.jpg';
   List<String> _selectedBuyerIds = [];
   bool _isInit = false;
   late DateTime _expiryDate;
-  TradeType _tradeType = TradeType.negotiation;
+  TradeType _tradeType = TradeType.both;
+  bool _isSubmitting = false;
 
   // Group buying state
   bool _isGroupDemand = false;
@@ -38,15 +42,215 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
   @override
   void initState() {
     super.initState();
-    _expiryDate = DateTime.now().add(const Duration(days: 3));
+    // Default initial values pre-populated with curl specifications
+    _nameController = TextEditingController(text: 'Potatoes (Diamant)');
+    _quantityController = TextEditingController(text: '1000');
+    _callingPriceController = TextEditingController(text: '28');
+    _locationController = TextEditingController(text: 'Karwan Bazar, Dhaka');
+    _imageUrl = 'https://cdn.example.com/demands/potato.jpg';
+    _imageUrlController = TextEditingController(text: _imageUrl);
+    _tradeType = TradeType.both;
+    _expiryDate = DateTime.tryParse('2026-11-30T18:00:00Z')?.toLocal() ??
+        DateTime(2026, 11, 30, 18, 0);
+  }
+
+  @override
+  void dispose() {
+    _nameController.dispose();
+    _quantityController.dispose();
+    _callingPriceController.dispose();
+    _locationController.dispose();
+    _imageUrlController.dispose();
+    super.dispose();
+  }
+
+  void _resetToCurlDefaults() {
+    setState(() {
+      _nameController.text = 'Potatoes (Diamant)';
+      _quantityController.text = '1000';
+      _callingPriceController.text = '28';
+      _locationController.text = 'Karwan Bazar, Dhaka';
+      _imageUrl = 'https://cdn.example.com/demands/potato.jpg';
+      _imageUrlController.text = _imageUrl;
+      _tradeType = TradeType.both;
+      _expiryDate = DateTime.tryParse('2026-11-30T18:00:00Z')?.toLocal() ??
+          DateTime(2026, 11, 30, 18, 0);
+    });
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('Form reset to curl specification defaults.'),
+        duration: Duration(seconds: 2),
+      ),
+    );
+  }
+
+  Future<void> _submitDemand() async {
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
+
+    if (_isGroupDemand && _selectedGroup == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Please select a buying group first.'),
+          backgroundColor: Colors.orange,
+        ),
+      );
+      return;
+    }
+
+    setState(() => _isSubmitting = true);
+
+    try {
+      final authProvider = context.read<AuthProvider>();
+      final demandProvider = context.read<DemandProvider>();
+      String? token = authProvider.token;
+      if (token == null || token.isEmpty) {
+        try {
+          token = await StorageService().getAccessToken();
+        } catch (_) {}
+      }
+      if (!mounted) return;
+
+      final qty = double.tryParse(_quantityController.text.trim()) ?? 0;
+      final price = double.tryParse(_callingPriceController.text.trim()) ?? 0;
+
+      final request = CreateDemandRequestModel(
+        productName: _nameController.text.trim(),
+        quantity: qty,
+        callingPrice: price,
+        deliveryLocation: _locationController.text.trim(),
+        expiryTime: _expiryDate,
+        tradeType: _tradeType.name.toLowerCase(),
+        imageUrl: _imageUrl.isNotEmpty
+            ? _imageUrl
+            : 'https://cdn.example.com/demands/potato.jpg',
+      );
+
+      final demand = await demandProvider.createDemand(
+        request: request,
+        token: token,
+      );
+
+      if (!mounted) return;
+      final suffix = _isGroupDemand && _selectedGroup != null
+          ? ' via group "${_selectedGroup!.name}"'
+          : '';
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            'Demand for "${demand.productName}" posted$suffix! Farmers will now see your request.',
+          ),
+          backgroundColor: const Color(0xFF2E7D32),
+        ),
+      );
+      Navigator.pop(context, demand);
+    } catch (e) {
+      if (!mounted) return;
+      final errorMsg = e.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to publish demand: $errorMsg'),
+          backgroundColor: Colors.red,
+          duration: const Duration(seconds: 4),
+          action: SnackBarAction(
+            label: 'Demo Save',
+            textColor: Colors.white,
+            onPressed: () {
+              final offlineDemand = DemandPost(
+                id: 'd_${DateTime.now().millisecondsSinceEpoch}',
+                buyerId: context.read<AuthProvider>().currentUser?.id ?? 'u1',
+                productName: _nameController.text.trim(),
+                quantity: double.tryParse(_quantityController.text.trim()) ?? 0,
+                callingPrice: double.tryParse(_callingPriceController.text.trim()) ?? 0,
+                deliveryLocation: _locationController.text.trim(),
+                expiryTime: _expiryDate,
+                status: DemandStatus.active,
+                tradeType: _tradeType,
+                imageUrl: _imageUrl.isNotEmpty
+                    ? _imageUrl
+                    : 'https://cdn.example.com/demands/potato.jpg',
+              );
+              context.read<DemandProvider>().addDemand(offlineDemand);
+              Navigator.pop(context, offlineDemand);
+            },
+          ),
+        ),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
+    }
+  }
+
+  void _showEditImageUrlDialog(BuildContext context) {
+    _imageUrlController.text = _imageUrl;
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('Product Image URL'),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            TextField(
+              controller: _imageUrlController,
+              decoration: const InputDecoration(
+                labelText: 'Image URL',
+                hintText: 'https://...',
+                prefixIcon: Icon(Icons.link),
+              ),
+            ),
+            const SizedBox(height: 12),
+            Wrap(
+              spacing: 8,
+              children: [
+                ActionChip(
+                  label: const Text('Potato (Curl Default)'),
+                  onPressed: () {
+                    _imageUrlController.text =
+                        'https://cdn.example.com/demands/potato.jpg';
+                  },
+                ),
+                ActionChip(
+                  label: const Text('Rice'),
+                  onPressed: () {
+                    _imageUrlController.text =
+                        'https://cdn.example.com/demands/rice.jpg';
+                  },
+                ),
+              ],
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('Cancel'),
+          ),
+          ElevatedButton(
+            onPressed: () {
+              setState(() {
+                _imageUrl = _imageUrlController.text.trim();
+              });
+              Navigator.pop(ctx);
+            },
+            child: const Text('Apply'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
     final user = context.watch<AuthProvider>().currentUser;
-    final myGroups = context.watch<GroupProvider>().getMyGroups(context.watch<AuthProvider>().currentUser?.id);
+    final myGroups = context
+        .watch<GroupProvider>()
+        .getMyGroups(context.watch<AuthProvider>().currentUser?.id);
     final allGroups = context.watch<GroupProvider>().groups;
-    final openGroups = allGroups.where((g) => g.status == GroupBuyStatus.open).toList();
+    final openGroups =
+        allGroups.where((g) => g.status == GroupBuyStatus.open).toList();
 
     if (!_isInit) {
       _selectedBuyerIds = [user?.id ?? 'u1'];
@@ -63,7 +267,16 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
     ];
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Post Buying Demand')),
+      appBar: AppBar(
+        title: const Text('Post Buying Demand'),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.restore),
+            tooltip: 'Reset to Curl Defaults',
+            onPressed: _resetToCurlDefaults,
+          ),
+        ],
+      ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
         child: Form(
@@ -75,7 +288,10 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
               const SizedBox(height: 24),
               Text(
                 'Demand Type',
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               _buildDemandTypeToggle(),
@@ -92,61 +308,80 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
               const SizedBox(height: 20),
               Text(
                 'Demand Specifications',
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: _nameController,
                 decoration: const InputDecoration(
                   labelText: 'What product do you need?',
-                  hintText: 'e.g., Winter Potatoes',
+                  hintText: 'e.g., Potatoes (Diamant)',
                   prefixIcon: Icon(Icons.search),
                 ),
-                onChanged: (v) => _productName = v,
-                validator: (v) => (v == null || v.isEmpty) ? 'Required' : null,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               const SizedBox(height: 16),
               Row(
                 children: [
                   Expanded(
                     child: TextFormField(
+                      controller: _quantityController,
                       decoration: const InputDecoration(
                         labelText: 'Quantity Needed',
                         suffixText: 'KG',
                       ),
                       keyboardType: TextInputType.number,
-                      onChanged: (v) => _quantity = double.tryParse(v) ?? 0,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Required';
+                        final n = double.tryParse(v);
+                        if (n == null || n <= 0) return 'Enter quantity';
+                        return null;
+                      },
                     ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
                     child: TextFormField(
+                      controller: _callingPriceController,
                       decoration: const InputDecoration(
                         labelText: 'Calling Price',
                         prefixText: '৳ ',
                       ),
                       keyboardType: TextInputType.number,
-                      onChanged: (v) => _callingPrice = double.tryParse(v) ?? 0,
+                      validator: (v) {
+                        if (v == null || v.trim().isEmpty) return 'Required';
+                        final n = double.tryParse(v);
+                        if (n == null || n <= 0) return 'Enter price';
+                        return null;
+                      },
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 16),
               TextFormField(
+                controller: _locationController,
                 decoration: const InputDecoration(
                   labelText: 'Delivery Location',
-                  hintText: 'e.g., Kawran Bazar, Dhaka',
+                  hintText: 'e.g., Karwan Bazar, Dhaka',
                   prefixIcon: Icon(Icons.location_on_outlined),
                 ),
-                onChanged: (v) => _location = v,
+                validator: (v) => (v == null || v.trim().isEmpty) ? 'Required' : null,
               ),
               const SizedBox(height: 24),
               Text(
                 'Trade Configuration',
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               DropdownButtonFormField<TradeType>(
-                value: _tradeType,
+                initialValue: _tradeType,
                 decoration: const InputDecoration(
                   labelText: 'Trade Type',
                   prefixIcon: Icon(Icons.handshake_outlined),
@@ -162,43 +397,81 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
                 },
               ),
               const SizedBox(height: 16),
-              InkWell(
-                onTap: () {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Image selection mocked for demo.')));
-                },
-                child: Container(
-                  width: double.infinity,
-                  height: 120,
-                  decoration: BoxDecoration(
-                    color: Colors.grey.shade100,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey.shade300, style: BorderStyle.solid),
-                  ),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.add_photo_alternate_outlined, size: 40, color: Colors.grey.shade400),
-                      const SizedBox(height: 8),
-                      Text('Upload Product Image (Optional)', style: TextStyle(color: Colors.grey.shade600)),
-                    ],
-                  ),
+              // Image preview & URL configuration
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade50,
+                  borderRadius: BorderRadius.circular(14),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Row(
+                  children: [
+                    ClipRRect(
+                      borderRadius: BorderRadius.circular(8),
+                      child: ProductImageView(
+                        imageUrl: _imageUrl,
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.cover,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          const Text(
+                            'Demand Product Image',
+                            style: TextStyle(
+                              fontWeight: FontWeight.bold,
+                              fontSize: 13,
+                            ),
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            _imageUrl.isNotEmpty ? _imageUrl : 'No image URL',
+                            style: TextStyle(fontSize: 11, color: Colors.grey[700]),
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ],
+                      ),
+                    ),
+                    TextButton.icon(
+                      onPressed: () => _showEditImageUrlDialog(context),
+                      icon: const Icon(Icons.edit, size: 16),
+                      label: const Text('Change'),
+                    ),
+                  ],
                 ),
               ),
               const SizedBox(height: 24),
               Text(
                 'Timeline',
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               ListTile(
                 tileColor: Theme.of(context).colorScheme.surface,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
-                  side: BorderSide(color: Theme.of(context).colorScheme.outlineVariant),
+                  side: BorderSide(
+                    color: Theme.of(context).colorScheme.outlineVariant,
+                  ),
                 ),
-                leading: Icon(Icons.calendar_today, color: Theme.of(context).colorScheme.primary),
+                leading: Icon(
+                  Icons.calendar_today,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 title: const Text('Demand Expiry'),
-                subtitle: Text('Expires on ${DateFormat('MMM dd, yyyy').format(_expiryDate)}'),
+                subtitle: Text(
+                  'Expires on ${DateFormat('MMM dd, yyyy HH:mm').format(_expiryDate)}',
+                ),
                 trailing: const Icon(Icons.arrow_drop_down),
                 onTap: () async {
                   final selectedDate = await showDatePicker(
@@ -207,7 +480,23 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
                     firstDate: DateTime.now(),
                     lastDate: DateTime.now().add(const Duration(days: 365)),
                   );
-                  if (selectedDate != null) setState(() => _expiryDate = selectedDate);
+                  if (selectedDate != null) {
+                    if (!context.mounted) return;
+                    final selectedTime = await showTimePicker(
+                      context: context,
+                      initialTime: TimeOfDay.fromDateTime(_expiryDate),
+                    );
+                    final time = selectedTime ?? TimeOfDay.fromDateTime(_expiryDate);
+                    setState(() {
+                      _expiryDate = DateTime(
+                        selectedDate.year,
+                        selectedDate.month,
+                        selectedDate.day,
+                        time.hour,
+                        time.minute,
+                      );
+                    });
+                  }
                 },
               ),
               const SizedBox(height: 32),
@@ -215,27 +504,30 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
                 width: double.infinity,
                 height: 55,
                 child: ElevatedButton(
-                  onPressed: () {
-                    if (_formKey.currentState!.validate()) {
-                      if (_isGroupDemand && _selectedGroup == null) {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Please select a buying group first.'), backgroundColor: Colors.orange),
-                        );
-                        return;
-                      }
-                      final suffix = _isGroupDemand && _selectedGroup != null
-                          ? ' via group "${_selectedGroup!.name}"'
-                          : '';
-                      ScaffoldMessenger.of(context).showSnackBar(
-                        SnackBar(
-                          content: Text('Demand posted$suffix! Farmers will now see your request.'),
-                          backgroundColor: const Color(0xFF2E7D32),
+                  onPressed: _isSubmitting ? null : _submitDemand,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E7D32),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2.5,
+                          ),
+                        )
+                      : const Text(
+                          'Publish Demand',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
                         ),
-                      );
-                      Navigator.pop(context);
-                    }
-                  },
-                  child: const Text('Publish Demand', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                 ),
               ),
               const SizedBox(height: 16),
@@ -304,7 +596,7 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
                       final b = buyers.firstWhere((b) => b['id'] == id, orElse: () => {'name': 'Unknown'});
                       return Chip(
                         label: Text(b['name']!, style: const TextStyle(fontSize: 12)),
-                        backgroundColor: const Color(0xFF2E7D32).withOpacity(0.1),
+                        backgroundColor: const Color(0xFF2E7D32).withValues(alpha: 0.1),
                         deleteIcon: const Icon(Icons.close, size: 16),
                         onDeleted: () => setState(() => _selectedBuyerIds.remove(id)),
                       );
@@ -465,13 +757,13 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
                               margin: const EdgeInsets.only(bottom: 12),
                               padding: const EdgeInsets.all(14),
                               decoration: BoxDecoration(
-                                color: isSelected ? const Color(0xFF2E7D32).withOpacity(0.05) : Colors.white,
+                                color: isSelected ? const Color(0xFF2E7D32).withValues(alpha: 0.05) : Colors.white,
                                 borderRadius: BorderRadius.circular(14),
                                 border: Border.all(
                                   color: isSelected ? const Color(0xFF2E7D32) : Colors.grey[200]!,
                                   width: isSelected ? 1.5 : 1,
                                 ),
-                                boxShadow: [BoxShadow(color: Colors.black.withOpacity(0.04), blurRadius: 6)],
+                                boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.04), blurRadius: 6)],
                               ),
                               child: Column(
                                 crossAxisAlignment: CrossAxisAlignment.start,

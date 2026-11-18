@@ -294,6 +294,94 @@ class DemandPost {
     required this.tradeType,
     required this.imageUrl,
   });
+
+  DemandPost copyWith({
+    String? id,
+    String? buyerId,
+    String? productName,
+    double? quantity,
+    double? callingPrice,
+    String? deliveryLocation,
+    DateTime? expiryTime,
+    DemandStatus? status,
+    TradeType? tradeType,
+    String? imageUrl,
+  }) {
+    return DemandPost(
+      id: id ?? this.id,
+      buyerId: buyerId ?? this.buyerId,
+      productName: productName ?? this.productName,
+      quantity: quantity ?? this.quantity,
+      callingPrice: callingPrice ?? this.callingPrice,
+      deliveryLocation: deliveryLocation ?? this.deliveryLocation,
+      expiryTime: expiryTime ?? this.expiryTime,
+      status: status ?? this.status,
+      tradeType: tradeType ?? this.tradeType,
+      imageUrl: imageUrl ?? this.imageUrl,
+    );
+  }
+
+  factory DemandPost.fromJson(Map<String, dynamic> json) {
+    TradeType parseTradeType(dynamic val) {
+      final str = val?.toString().toLowerCase();
+      if (str == 'auction') return TradeType.auction;
+      if (str == 'both') return TradeType.both;
+      return TradeType.negotiation;
+    }
+
+    DemandStatus parseDemandStatus(dynamic val) {
+      final str = val?.toString().toLowerCase();
+      if (str == 'expired') return DemandStatus.expired;
+      if (str == 'fulfilled') return DemandStatus.fulfilled;
+      return DemandStatus.active;
+    }
+
+    DateTime parseDate(dynamic val, DateTime fallback) {
+      if (val == null) return fallback;
+      return DateTime.tryParse(val.toString()) ?? fallback;
+    }
+
+    double parseDouble(dynamic val) {
+      if (val == null) return 0.0;
+      if (val is num) return val.toDouble();
+      return double.tryParse(val.toString()) ?? 0.0;
+    }
+
+    return DemandPost(
+      id: (json['id'] ?? json['_id'] ?? 'd_${DateTime.now().millisecondsSinceEpoch}').toString(),
+      buyerId: (json['buyerId'] ?? json['buyer_id'] ?? json['userId'] ?? json['user_id'] ?? '').toString(),
+      productName: (json['productName'] ?? json['product_name'] ?? '').toString(),
+      quantity: parseDouble(json['quantity']),
+      callingPrice: parseDouble(json['callingPrice'] ?? json['calling_price']),
+      deliveryLocation: (json['deliveryLocation'] ?? json['delivery_location'] ?? '').toString(),
+      expiryTime: parseDate(json['expiryTime'] ?? json['expiry_time'], DateTime.now().add(const Duration(days: 3))),
+      status: parseDemandStatus(json['status']),
+      tradeType: parseTradeType(json['tradeType'] ?? json['trade_type']),
+      imageUrl: (json['imageUrl'] ?? json['image_url'] ?? '').toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'buyerId': buyerId,
+      'buyer_id': buyerId,
+      'productName': productName,
+      'product_name': productName,
+      'quantity': quantity,
+      'callingPrice': callingPrice,
+      'calling_price': callingPrice,
+      'deliveryLocation': deliveryLocation,
+      'delivery_location': deliveryLocation,
+      'expiryTime': expiryTime.toUtc().toIso8601String(),
+      'expiry_time': expiryTime.toUtc().toIso8601String(),
+      'status': status.name,
+      'tradeType': tradeType.name,
+      'trade_type': tradeType.name,
+      'imageUrl': imageUrl,
+      'image_url': imageUrl,
+    };
+  }
 }
 
 class DemandOffer {

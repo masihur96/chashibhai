@@ -8,6 +8,7 @@ class StorageService {
 
   static const String authBoxName = 'auth_box';
   Box? _authBox;
+  bool _isHiveInitialized = false;
   final Map<String, dynamic> _memoryFallback = {};
 
   /// Initializes Hive for Flutter and opens the auth box
@@ -15,28 +16,26 @@ class StorageService {
     try {
       await Hive.initFlutter();
       _authBox = await Hive.openBox(authBoxName);
+      _isHiveInitialized = true;
       debugPrint('📦 [HIVE] Initialized and opened box "$authBoxName" successfully.');
     } catch (e) {
       debugPrint('⚠️ [HIVE] Initialization warning: $e. Falling back to memory cache.');
     }
   }
 
-  Future<Box> _getBox() async {
+  Future<Box?> _getBox() async {
     if (_authBox != null && _authBox!.isOpen) {
       return _authBox!;
+    }
+    if (!_isHiveInitialized) {
+      return null;
     }
     try {
       _authBox = await Hive.openBox(authBoxName);
       return _authBox!;
-    } catch (_) {
-      try {
-        await Hive.initFlutter();
-        _authBox = await Hive.openBox(authBoxName);
-        return _authBox!;
-      } catch (e) {
-        debugPrint('⚠️ [HIVE] Error opening box: $e');
-        rethrow;
-      }
+    } on Object catch (e) {
+      debugPrint('⚠️ [HIVE] Warning opening box: $e. Using in-memory fallback.');
+      return null;
     }
   }
 
@@ -44,8 +43,10 @@ class StorageService {
     _memoryFallback[key] = value;
     try {
       final box = await _getBox();
-      await box.put(key, value);
-    } catch (e) {
+      if (box != null) {
+        await box.put(key, value);
+      }
+    } on Object catch (e) {
       debugPrint('⚠️ [HIVE] Error saving string ($key): $e');
     }
   }
@@ -53,9 +54,11 @@ class StorageService {
   Future<String?> getString(String key) async {
     try {
       final box = await _getBox();
-      final val = box.get(key);
-      if (val != null) return val.toString();
-    } catch (e) {
+      if (box != null) {
+        final val = box.get(key);
+        if (val != null) return val.toString();
+      }
+    } on Object catch (e) {
       debugPrint('⚠️ [HIVE] Error getting string ($key): $e');
     }
     return _memoryFallback[key] as String?;
@@ -65,8 +68,10 @@ class StorageService {
     _memoryFallback[key] = value;
     try {
       final box = await _getBox();
-      await box.put(key, value);
-    } catch (e) {
+      if (box != null) {
+        await box.put(key, value);
+      }
+    } on Object catch (e) {
       debugPrint('⚠️ [HIVE] Error saving bool ($key): $e');
     }
   }
@@ -74,10 +79,12 @@ class StorageService {
   Future<bool?> getBool(String key) async {
     try {
       final box = await _getBox();
-      final val = box.get(key);
-      if (val is bool) return val;
-      if (val is String) return val.toLowerCase() == 'true';
-    } catch (e) {
+      if (box != null) {
+        final val = box.get(key);
+        if (val is bool) return val;
+        if (val is String) return val.toLowerCase() == 'true';
+      }
+    } on Object catch (e) {
       debugPrint('⚠️ [HIVE] Error getting bool ($key): $e');
     }
     return _memoryFallback[key] as bool?;
@@ -87,8 +94,10 @@ class StorageService {
     _memoryFallback.remove(key);
     try {
       final box = await _getBox();
-      await box.delete(key);
-    } catch (e) {
+      if (box != null) {
+        await box.delete(key);
+      }
+    } on Object catch (e) {
       debugPrint('⚠️ [HIVE] Error removing key ($key): $e');
     }
   }
@@ -97,9 +106,11 @@ class StorageService {
     _memoryFallback.clear();
     try {
       final box = await _getBox();
-      await box.clear();
+      if (box != null) {
+        await box.clear();
+      }
       debugPrint('🧹 [HIVE] Cleared all data in "$authBoxName".');
-    } catch (e) {
+    } on Object catch (e) {
       debugPrint('⚠️ [HIVE] Error clearing box: $e');
     }
   }
