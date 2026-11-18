@@ -11,6 +11,7 @@ abstract class AuthRepository {
     required String phone,
     required String password,
   });
+  Future<UserEntity> getMe(String token);
   Future<UserEntity?> getProfile(String userId);
   Future<bool> changePassword(String oldPassword, String newPassword);
   Future<void> logout();

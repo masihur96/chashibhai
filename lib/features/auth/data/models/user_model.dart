@@ -11,7 +11,7 @@ class UserModel extends UserEntity {
     super.avatarUrl,
   });
 
-  factory UserModel.fromJson(Map<String, dynamic> json) {
+  factory UserModel.fromJson(Map<String, dynamic> json, [String? fallbackToken]) {
     // If response is nested inside 'data' or 'user'
     Map<String, dynamic> userMap = json;
     if (json.containsKey('data') && json['data'] is Map<String, dynamic>) {
@@ -20,15 +20,18 @@ class UserModel extends UserEntity {
       userMap = json['user'] as Map<String, dynamic>;
     }
 
-    final token = json['token'] as String? ?? 
-                  userMap['token'] as String? ?? 
-                  json['accessToken'] as String? ?? 
-                  userMap['accessToken'] as String?;
+    final token = json['token'] as String? ??
+        json['accessToken'] as String? ??
+        json['access_token'] as String? ??
+        userMap['token'] as String? ??
+        userMap['accessToken'] as String? ??
+        userMap['access_token'] as String? ??
+        fallbackToken;
 
     return UserModel(
-      id: (userMap['id'] ?? userMap['_id'])?.toString(),
-      name: (userMap['name'] ?? '').toString(),
-      phone: (userMap['phone'] ?? '').toString(),
+      id: (userMap['id'] ?? userMap['_id'] ?? userMap['sub'])?.toString(),
+      name: (userMap['name'] ?? userMap['fullName'] ?? '').toString(),
+      phone: (userMap['phone'] ?? userMap['phoneNumber'] ?? '').toString(),
       role: (userMap['role'] ?? 'BUYER').toString(),
       email: userMap['email']?.toString(),
       token: token,

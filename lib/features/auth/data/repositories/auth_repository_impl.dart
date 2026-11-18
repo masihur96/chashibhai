@@ -39,6 +39,11 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
+  Future<UserEntity> getMe(String token) async {
+    return await remoteDataSource.getMe(token);
+  }
+
+  @override
   Future<UserEntity?> getProfile(String userId) async {
     return null;
   }
