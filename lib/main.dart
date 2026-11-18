@@ -28,9 +28,12 @@ import './core/utils/localization.dart';
 import './core/widgets/language_toggle_button.dart';
 import './features/admin/presentation/views/admin_shell.dart';
 
+import './core/utils/storage_service.dart';
 import './features/splash/presentation/views/splash_screen.dart';
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  await StorageService().init();
   runApp(
     MultiProvider(
       providers: [

@@ -6,6 +6,7 @@ import '../../../../core/utils/bangla_text_renderer.dart';
 import '../../../../core/utils/localization.dart';
 import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
+import '../../../auth/presentation/views/login_screen.dart';
 import '../state/app_state_provider.dart';
 import './edit_profile_screen.dart';
 
@@ -291,10 +292,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     ),
                     const SizedBox(height: 12),
 
-                    // Logout Button
+                    // Logout Button - Cleans Hive data and navigates to LoginScreen
                     OutlinedButton.icon(
                       onPressed: () async {
                         await authProvider.logout();
+                        if (context.mounted) {
+                          Navigator.of(context).pushAndRemoveUntil(
+                            MaterialPageRoute(builder: (_) => const LoginScreen()),
+                            (route) => false,
+                          );
+                        }
                       },
                       icon: const Icon(Icons.logout_rounded, color: Colors.redAccent),
                       label: Text(

@@ -220,19 +220,21 @@ class _AdminShellState extends State<AdminShell> {
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    onTap: () {
+                    onTap: () async {
                       Navigator.pop(context); // Close drawer
 
-                      // Clear the current user from state
-                      context.read<AuthProvider>().setCurrentUser(null);
+                      // Clean Hive data and clear auth session
+                      await context.read<AuthProvider>().logout();
 
-                      // Navigate back to the login screen and clear navigation history
-                      Navigator.of(context).pushAndRemoveUntil(
-                        MaterialPageRoute(
-                          builder: (context) => const LoginScreen(),
-                        ),
-                        (route) => false,
-                      );
+                      if (context.mounted) {
+                        // Navigate back to the login screen and clear navigation history
+                        Navigator.of(context).pushAndRemoveUntil(
+                          MaterialPageRoute(
+                            builder: (context) => const LoginScreen(),
+                          ),
+                          (route) => false,
+                        );
+                      }
 
                       ScaffoldMessenger.of(context).showSnackBar(
                         const SnackBar(

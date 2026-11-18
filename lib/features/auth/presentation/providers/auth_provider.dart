@@ -101,28 +101,31 @@ class AuthProvider extends ChangeNotifier {
     );
   }
 
-  /// Attempts to automatically restore authenticated session on app startup
+  /// Checks Hive for stored access token, fetches current user by this token via /users/me,
+  /// and restores the authenticated session if valid.
   Future<bool> tryAutoLogin() async {
     try {
-      final savedToken = await StorageService().getString('auth_token');
+      final savedToken = await StorageService().getAccessToken();
       if (savedToken != null && savedToken.isNotEmpty) {
-        debugPrint('[AUTH] Stored token found, restoring session via /auth/me...');
+        debugPrint('🔍 [HIVE] Found access token in Hive storage. Fetching user via /users/me...');
+        _token = savedToken;
+        _refreshToken = await StorageService().getRefreshToken();
         final meUser = await fetchCurrentUser(savedToken);
         return meUser != null;
       }
     } catch (e) {
-      debugPrint('[AUTH] Auto-login attempt failed: $e');
+      debugPrint('⚠️ [HIVE] Auto-login error: $e');
     }
     return false;
   }
 
-  /// Generates a new access token using the stored refresh token via POST /api/v1/auth/refresh
+  /// Generates a new access token using the refresh token stored in Hive via POST /api/v1/auth/refresh
   Future<String?> refreshAccessToken() async {
     final tokenToRefresh =
-        _refreshToken ?? await StorageService().getString('refresh_token');
+        _refreshToken ?? await StorageService().getRefreshToken();
 
     if (tokenToRefresh == null || tokenToRefresh.isEmpty) {
-      debugPrint('No refresh token available to generate new access token.');
+      debugPrint('No refresh token available in Hive to generate new access token.');
       return null;
     }
 
@@ -131,23 +134,22 @@ class AuthProvider extends ChangeNotifier {
       final tokenModel = await _refreshTokenUseCase(tokenToRefresh);
 
       _token = tokenModel.accessToken;
-      await StorageService().setString('auth_token', tokenModel.accessToken);
-
-      if (tokenModel.refreshToken != null &&
-          tokenModel.refreshToken!.isNotEmpty) {
+      if (tokenModel.refreshToken != null && tokenModel.refreshToken!.isNotEmpty) {
         _refreshToken = tokenModel.refreshToken;
-        await StorageService().setString(
-          'refresh_token',
-          tokenModel.refreshToken!,
-        );
       }
 
-      debugPrint('Access token refreshed successfully.');
+      // Update tokens in Hive
+      await StorageService().saveAuthTokens(
+        accessToken: tokenModel.accessToken,
+        refreshToken: _refreshToken,
+      );
+
+      debugPrint('Access token refreshed and stored in Hive successfully.');
       notifyListeners();
       return _token;
     } catch (e) {
       debugPrint('Error refreshing access token: $e');
-      // If refresh token is expired or invalid, clear stored session
+      // If refresh token is expired or invalid, clear stored session from Hive
       if (e is TokenExpiredException ||
           e.toString().contains('401') ||
           e.toString().contains('403')) {
@@ -157,7 +159,7 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Fetches current user profile from GET /api/v1/auth/me using access token.
+  /// Fetches current user profile from GET /api/v1/users/me using access token.
   /// If the access token is expired (HTTP 401), automatically generates a new
   /// access token via /auth/refresh and retries the request seamlessly!
   Future<UserEntity?> fetchCurrentUser(String accessToken) async {
@@ -171,19 +173,19 @@ class AuthProvider extends ChangeNotifier {
       return meUser;
     } on TokenExpiredException catch (_) {
       debugPrint(
-        'Access token expired on /auth/me. Attempting token refresh...',
+        'Access token expired on /users/me. Attempting token refresh...',
       );
-      // Generate new access token using refresh token
+      // Generate new access token using refresh token stored in Hive
       final newAccessToken = await refreshAccessToken();
       if (newAccessToken != null && newAccessToken.isNotEmpty) {
         try {
-          debugPrint('Retrying /auth/me with newly generated access token...');
+          debugPrint('Retrying /users/me with newly generated access token...');
           final retriedUser = await _getMeUseCase(newAccessToken);
           _currentUser = _mapUserEntityToAppUser(retriedUser);
           notifyListeners();
           return retriedUser;
         } catch (retryError) {
-          debugPrint('Failed /auth/me after token refresh: $retryError');
+          debugPrint('Failed /users/me after token refresh: $retryError');
           return null;
         }
       }
@@ -192,7 +194,7 @@ class AuthProvider extends ChangeNotifier {
       // Check if general exception message indicates unauthorized / 401
       if (e.toString().contains('401') ||
           e.toString().toLowerCase().contains('unauthorized')) {
-        debugPrint('401 detected on /auth/me. Attempting token refresh...');
+        debugPrint('401 detected on /users/me. Attempting token refresh...');
         final newAccessToken = await refreshAccessToken();
         if (newAccessToken != null && newAccessToken.isNotEmpty) {
           try {
@@ -205,13 +207,13 @@ class AuthProvider extends ChangeNotifier {
           }
         }
       }
-      debugPrint('Error fetching /auth/me: $e');
+      debugPrint('Error fetching /users/me: $e');
       return null;
     }
   }
 
-  /// Logs in a user with phone and password via API, stores access & refresh tokens,
-  /// then immediately fetches current user via GET /auth/me with access token.
+  /// Logs in a user with phone and password via API, stores access & refresh tokens in Hive,
+  /// then immediately fetches current user via GET /api/v1/users/me with access token.
   Future<bool> login({required String phone, required String password}) async {
     _isLoading = true;
     _errorMessage = null;
@@ -223,16 +225,17 @@ class AuthProvider extends ChangeNotifier {
       final authToken = loginUser.token;
       final refToken = loginUser.refreshToken;
 
-      if (refToken != null && refToken.isNotEmpty) {
-        _refreshToken = refToken;
-        await StorageService().setString('refresh_token', refToken);
-      }
-
       if (authToken != null && authToken.isNotEmpty) {
         _token = authToken;
-        await StorageService().setString('auth_token', authToken);
+        _refreshToken = refToken;
 
-        // Fetch current user via /auth/me using the access token
+        // Keep token data into Hive
+        await StorageService().saveAuthTokens(
+          accessToken: authToken,
+          refreshToken: refToken,
+        );
+
+        // Fetch current user via /users/me using the access token
         final meUser = await fetchCurrentUser(authToken);
         if (meUser == null) {
           _currentUser = _mapUserEntityToAppUser(loginUser);
@@ -252,8 +255,8 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Registers a new user with the backend API, stores access & refresh tokens,
-  /// then fetches current user via GET /auth/me with access token.
+  /// Registers a new user with backend API, stores access & refresh tokens into Hive,
+  /// then fetches current user via GET /api/v1/users/me with access token.
   Future<bool> register({
     required String name,
     required String phone,
@@ -277,16 +280,17 @@ class AuthProvider extends ChangeNotifier {
       final authToken = regUser.token;
       final refToken = regUser.refreshToken;
 
-      if (refToken != null && refToken.isNotEmpty) {
-        _refreshToken = refToken;
-        await StorageService().setString('refresh_token', refToken);
-      }
-
       if (authToken != null && authToken.isNotEmpty) {
         _token = authToken;
-        await StorageService().setString('auth_token', authToken);
+        _refreshToken = refToken;
 
-        // Fetch current user via /auth/me using the access token
+        // Keep token data into Hive
+        await StorageService().saveAuthTokens(
+          accessToken: authToken,
+          refreshToken: refToken,
+        );
+
+        // Fetch current user via /users/me using the access token
         final meUser = await fetchCurrentUser(authToken);
         if (meUser == null) {
           _currentUser = _mapUserEntityToAppUser(regUser);
@@ -306,13 +310,13 @@ class AuthProvider extends ChangeNotifier {
     }
   }
 
-  /// Clears user session and tokens
+  /// Cleans Hive data, clears in-memory state and notifies listeners
   Future<void> logout() async {
     _token = null;
     _refreshToken = null;
     _currentUser = null;
-    await StorageService().remove('auth_token');
-    await StorageService().remove('refresh_token');
+    // Clean Hive data
+    await StorageService().clearAuthData();
     notifyListeners();
   }
 

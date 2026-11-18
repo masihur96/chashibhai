@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/utils/storage_service.dart';
 import '../../../../main.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
 
@@ -35,31 +36,41 @@ class _SplashScreenState extends State<SplashScreen>
 
     _controller.forward();
 
-    // Check for existing session using stored access token
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        context.read<AuthProvider>().tryAutoLogin();
-      }
-    });
+    // Check Hive storage and authenticate if user is already logged in
+    Future.delayed(const Duration(milliseconds: 2000), () async {
+      if (!mounted) return;
+      final authProvider = context.read<AuthProvider>();
 
-    Future.delayed(const Duration(milliseconds: 2500), () {
-      if (mounted) {
-        final authProvider = context.read<AuthProvider>();
-        if (authProvider.currentUser != null) {
+      // 1. If user is already loaded in state, navigate directly to dashboard
+      if (authProvider.currentUser != null) {
+        RoleWrapper.navigate(context, authProvider.userRole);
+        return;
+      }
+
+      // 2. Check if Hive has a saved access token
+      final hasToken = await StorageService().hasValidToken();
+      if (hasToken) {
+        final success = await authProvider.tryAutoLogin();
+        if (mounted && success && authProvider.currentUser != null) {
+          // Successfully fetched user from /users/me using Hive token, navigate to dashboard
           RoleWrapper.navigate(context, authProvider.userRole);
-        } else {
-          Navigator.of(context).pushReplacement(
-            PageRouteBuilder(
-              pageBuilder: (context, animation, secondaryAnimation) =>
-                  const AuthWrapper(),
-              transitionsBuilder:
-                  (context, animation, secondaryAnimation, child) {
-                return FadeTransition(opacity: animation, child: child);
-              },
-              transitionDuration: const Duration(milliseconds: 600),
-            ),
-          );
+          return;
         }
+      }
+
+      // 3. Otherwise, navigate to LoginScreen
+      if (mounted) {
+        Navigator.of(context).pushReplacement(
+          PageRouteBuilder(
+            pageBuilder: (context, animation, secondaryAnimation) =>
+                const AuthWrapper(),
+            transitionsBuilder:
+                (context, animation, secondaryAnimation, child) {
+              return FadeTransition(opacity: animation, child: child);
+            },
+            transitionDuration: const Duration(milliseconds: 600),
+          ),
+        );
       }
     });
   }
