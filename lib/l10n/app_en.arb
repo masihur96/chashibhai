@@ -1,0 +1,8 @@
+{
+  "@@locale": "en",
+  "appTitle": "School Management",
+  "welcome": "Welcome",
+  "settings": "Settings",
+  "profile": "Profile",
+  "logout": "Logout"
+}

@@ -1,0 +1,6 @@
+--- lib/models/school_models.dart
++++ lib/models/school_models.dart
+@@ -10,3 +10,4 @@
+   final String? email;
+   final String? logoUrl;
++  final bool isActive;
