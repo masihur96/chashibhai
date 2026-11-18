@@ -1,5 +1,9 @@
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
@@ -19,6 +23,7 @@ class AddProductScreen extends StatefulWidget {
 
 class _AddProductScreenState extends State<AddProductScreen> {
   final _formKey = GlobalKey<FormState>();
+  final ImagePicker _picker = ImagePicker();
 
   late final TextEditingController _nameController;
   late final TextEditingController _quantityController;
@@ -33,7 +38,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
   late DateTime _startTime;
   late DateTime _endTime;
 
+  // Image states
   String _imageUrl = 'https://cdn.example.com/products/rice.jpg';
+  Uint8List? _pickedImageBytes;
+  String? _pickedFilePath;
+  String? _imageBase64;
+  String _imageSourceType = 'default'; // 'default', 'camera', 'gallery', 'network'
+
   bool _isSubmitting = false;
 
   final List<String> _categoryOptions = [
@@ -93,8 +104,189 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
+  /// Picks an image from Camera or Gallery, compresses it, and encodes to Base64
+  Future<void> _pickImage(ImageSource source) async {
+    try {
+      final XFile? file = await _picker.pickImage(
+        source: source,
+        maxWidth: 1024,
+        maxHeight: 1024,
+        imageQuality: 80,
+      );
+
+      if (file == null) return;
+
+      final bytes = await file.readAsBytes();
+      final base64String = base64Encode(bytes);
+      final dataUri = 'data:image/jpeg;base64,$base64String';
+
+      setState(() {
+        _pickedImageBytes = bytes;
+        _pickedFilePath = file.path;
+        _imageBase64 = dataUri;
+        _imageUrl = file.path;
+        _imageSourceType = source == ImageSource.camera ? 'camera' : 'gallery';
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                Icon(
+                  source == ImageSource.camera ? Icons.camera_alt : Icons.photo_library,
+                  color: Colors.white,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Text(
+                  source == ImageSource.camera
+                      ? 'Photo captured successfully!'
+                      : 'Photo selected from gallery!',
+                ),
+              ],
+            ),
+            backgroundColor: const Color(0xFF2E7D32),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Failed to pick image: $e'),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  /// Opens the Bottom Sheet to choose between Camera, Gallery, or Custom URL
+  void _showImageSourceSelector() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (ctx) {
+        return SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Center(
+                  child: Container(
+                    width: 40,
+                    height: 4,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 8),
+                  child: Text(
+                    'Product Image',
+                    style: GoogleFonts.outfit(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.green.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.camera_alt_outlined, color: Color(0xFF2E7D32)),
+                  ),
+                  title: const Text('Take Photo', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Capture photo with camera'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(ImageSource.camera);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.blue.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.photo_library_outlined, color: Colors.blue),
+                  ),
+                  title: const Text('Choose from Gallery', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Select an image from device photos'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _pickImage(ImageSource.gallery);
+                  },
+                ),
+                ListTile(
+                  leading: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: Colors.orange.shade50,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.link, color: Colors.orange),
+                  ),
+                  title: const Text('Enter Image URL / Presets', style: TextStyle(fontWeight: FontWeight.w600)),
+                  subtitle: const Text('Paste a web URL or choose demo presets'),
+                  onTap: () {
+                    Navigator.pop(ctx);
+                    _showImagePickerDialog();
+                  },
+                ),
+                if (_imageSourceType != 'default') ...[
+                  const Divider(),
+                  ListTile(
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.red.shade50,
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.restart_alt, color: Colors.red),
+                    ),
+                    title: const Text('Reset to Default', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
+                    subtitle: const Text('Reset to original sample CDN image'),
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      setState(() {
+                        _imageUrl = 'https://cdn.example.com/products/rice.jpg';
+                        _pickedImageBytes = null;
+                        _pickedFilePath = null;
+                        _imageBase64 = null;
+                        _imageSourceType = 'default';
+                      });
+                    },
+                  ),
+                ],
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   void _showImagePickerDialog() {
-    final urlController = TextEditingController(text: _imageUrl);
+    final urlController = TextEditingController(
+      text: _imageUrl.startsWith('http') || _imageUrl.startsWith('assets') ? _imageUrl : '',
+    );
 
     showDialog(
       context: context,
@@ -176,7 +368,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
             onPressed: () {
               final newUrl = urlController.text.trim();
               if (newUrl.isNotEmpty) {
-                setState(() => _imageUrl = newUrl);
+                setState(() {
+                  _imageUrl = newUrl;
+                  _pickedImageBytes = null;
+                  _pickedFilePath = null;
+                  _imageBase64 = null;
+                  _imageSourceType = newUrl.startsWith('http') ? 'network' : 'preset';
+                });
               }
               Navigator.pop(ctx);
             },
@@ -217,6 +415,20 @@ class _AddProductScreenState extends State<AddProductScreen> {
         ? _customCategoryController.text.trim().toLowerCase()
         : _category.trim().toLowerCase();
 
+    // Prepare payload fields according to user curl
+    // If a device image was picked, pass base64 or path to file/image/imageUrl
+    final String effectiveImageUrl = _imageUrl.startsWith('http')
+        ? _imageUrl
+        : (_imageBase64 != null ? _imageBase64! : _imageUrl);
+
+    final String effectiveFile = _imageBase64 != null
+        ? _imageBase64!
+        : (_pickedFilePath != null ? _pickedFilePath! : 'string');
+
+    final String effectiveImage = _imageBase64 != null
+        ? _imageBase64!
+        : (_imageUrl.isNotEmpty ? _imageUrl : 'string');
+
     final request = CreateProductRequestModel(
       productName: _nameController.text.trim(),
       quantity: double.tryParse(_quantityController.text.trim()) ?? 0,
@@ -226,23 +438,40 @@ class _AddProductScreenState extends State<AddProductScreen> {
       category: finalCategory.isNotEmpty ? finalCategory : 'rice',
       startTime: _startTime,
       endTime: _endTime,
-      imageUrl: _imageUrl.trim(),
-      file: 'string',
-      image: 'string',
+      imageUrl: effectiveImageUrl,
+      file: effectiveFile,
+      image: effectiveImage,
     );
+
+    final productProvider = context.read<ProductProvider>();
+    final authProvider = context.read<AuthProvider>();
 
     try {
       // Fetch stored token if available
-      final authProvider = context.read<AuthProvider>();
       String? token = authProvider.token;
       if (token == null || token.isEmpty) {
         token = await StorageService().getAccessToken();
       }
 
-      final createdProduct = await context.read<ProductProvider>().createProduct(
-            request: request,
-            token: token,
-          );
+      final createdProduct = await productProvider.createProduct(
+        request: request,
+        token: token,
+      );
+
+      if (!mounted) return;
+
+      // If local device image was picked, retain the local path/data for immediate UI display
+      if (_pickedFilePath != null || _pickedImageBytes != null) {
+        final localProduct = createdProduct.copyWith(
+          imageUrl: _pickedFilePath ?? createdProduct.imageUrl,
+        );
+        // Replace with local copy in provider list so dashboard displays picked image
+        final products = productProvider.products;
+        final idx = products.indexWhere((p) => p.id == createdProduct.id);
+        if (idx != -1) {
+          products[idx] = localProduct;
+        }
+      }
 
       if (!mounted) return;
 
@@ -281,7 +510,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 id: 'p_${DateTime.now().millisecondsSinceEpoch}',
                 farmerId: context.read<AuthProvider>().currentUser?.id ?? 'f1',
                 productName: request.productName,
-                imageUrl: request.imageUrl,
+                imageUrl: _pickedFilePath ?? request.imageUrl,
                 quantity: request.quantity,
                 unit: request.unit,
                 minimumPrice: request.minimumPrice,
@@ -564,17 +793,39 @@ class _AddProductScreenState extends State<AddProductScreen> {
   }
 
   Widget _buildImageHeader() {
+    IconData sourceIcon;
+    String sourceLabel;
+
+    switch (_imageSourceType) {
+      case 'camera':
+        sourceIcon = Icons.camera_alt;
+        sourceLabel = 'Captured from Camera';
+        break;
+      case 'gallery':
+        sourceIcon = Icons.photo_library;
+        sourceLabel = 'Selected from Gallery';
+        break;
+      case 'network':
+        sourceIcon = Icons.cloud;
+        sourceLabel = 'Custom Web URL';
+        break;
+      default:
+        sourceIcon = Icons.image;
+        sourceLabel = 'Default Sample Image';
+    }
+
     return InkWell(
-      onTap: _showImagePickerDialog,
+      onTap: _showImageSourceSelector,
       borderRadius: BorderRadius.circular(16),
       child: Container(
-        height: 180,
+        height: 190,
         width: double.infinity,
         decoration: BoxDecoration(
           color: Colors.grey.shade100,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: Colors.grey.shade300,
+            color: _pickedImageBytes != null ? const Color(0xFF2E7D32) : Colors.grey.shade300,
+            width: _pickedImageBytes != null ? 2 : 1,
           ),
         ),
         clipBehavior: Clip.antiAlias,
@@ -583,6 +834,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
           children: [
             ProductImageView(
               imageUrl: _imageUrl,
+              imageBytes: _pickedImageBytes,
               fit: BoxFit.cover,
             ),
             Container(
@@ -591,39 +843,97 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
                   colors: [
-                    Colors.black.withOpacity(0.05),
-                    Colors.black.withOpacity(0.55),
+                    Colors.black.withOpacity(0.08),
+                    Colors.black.withOpacity(0.65),
                   ],
                 ),
               ),
             ),
+            // Top badge: source
+            Positioned(
+              top: 12,
+              left: 12,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.6),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(sourceIcon, color: Colors.white, size: 14),
+                    const SizedBox(width: 6),
+                    Text(
+                      sourceLabel,
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+            // Bottom action row
             Positioned(
               bottom: 12,
               left: 16,
               right: 16,
               child: Row(
                 children: [
-                  const Icon(Icons.add_a_photo_outlined, color: Colors.white, size: 20),
-                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32),
+                      shape: BoxShape.circle,
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.3),
+                          blurRadius: 4,
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.add_a_photo, color: Colors.white, size: 18),
+                  ),
+                  const SizedBox(width: 10),
                   Expanded(
-                    child: Text(
-                      'Tap to change photo URL',
-                      style: GoogleFonts.outfit(
-                        color: Colors.white,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text(
+                          _pickedImageBytes != null ? 'Product photo attached' : 'Upload Product Photo',
+                          style: GoogleFonts.outfit(
+                            color: Colors.white,
+                            fontWeight: FontWeight.bold,
+                            fontSize: 15,
+                          ),
+                        ),
+                        Text(
+                          'Tap to pick from gallery, camera, or URL',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.85),
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                     decoration: BoxDecoration(
-                      color: Colors.black.withOpacity(0.4),
-                      borderRadius: BorderRadius.circular(8),
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(20),
                     ),
-                    child: const Text(
-                      'Change',
-                      style: TextStyle(color: Colors.white, fontSize: 12),
+                    child: Text(
+                      _pickedImageBytes != null ? 'Change' : 'Pick Photo',
+                      style: GoogleFonts.outfit(
+                        color: const Color(0xFF2E7D32),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],
