@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
+
 import '../../../../core/models/models.dart';
 import '../../data/repositories/auth_repository_impl.dart';
 import '../../domain/entities/user_entity.dart';
@@ -18,7 +19,8 @@ class AuthProvider extends ChangeNotifier {
   final RegisterUseCase _registerUseCase;
 
   AuthProvider({RegisterUseCase? registerUseCase})
-      : _registerUseCase = registerUseCase ?? RegisterUseCase(AuthRepositoryImpl());
+    : _registerUseCase =
+          registerUseCase ?? RegisterUseCase(AuthRepositoryImpl());
 
   // Getters
   AppUser? get currentUser => _currentUser;
@@ -73,7 +75,6 @@ class AuthProvider extends ChangeNotifier {
         name: user.name,
         phone: user.phone,
         role: role.toUpperCase() == 'FARMER' ? UserRole.farmer : UserRole.buyer,
-        location: '',
       );
 
       notifyListeners();
