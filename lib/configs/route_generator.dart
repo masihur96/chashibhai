@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../features/account/presentation/views/settings_screen.dart';
 import '../features/auth/presentation/views/login_screen.dart';
+import '../features/auth/presentation/views/register_screen.dart';
 import '../features/buyer/presentation/views/buyer_home.dart';
 import '../features/farmer/presentation/views/farmer_dashboard.dart';
 import '../features/splash/presentation/views/splash_screen.dart';
@@ -12,6 +13,7 @@ class RouteGenerator {
 
   static const String splash = '/';
   static const String login = '/login';
+  static const String register = '/register';
   static const String buyerHome = '/buyer_home';
   static const String farmerDashboard = '/farmer_dashboard';
   static const String wallet = '/wallet';
@@ -23,6 +25,8 @@ class RouteGenerator {
         return MaterialPageRoute(builder: (_) => const SplashScreen());
       case login:
         return MaterialPageRoute(builder: (_) => const LoginScreen());
+      case register:
+        return MaterialPageRoute(builder: (_) => const RegisterScreen());
       case buyerHome:
         return MaterialPageRoute(builder: (_) => const BuyerHomeScreen());
       case farmerDashboard:

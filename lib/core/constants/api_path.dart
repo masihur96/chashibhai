@@ -1,32 +1,49 @@
+import 'dart:io' show Platform;
+import 'package:flutter/foundation.dart' show kIsWeb;
+
 class ApiPath {
   ApiPath._();
 
-  static const String baseUrl = 'https://api.chashibhai.com/api/v1';
+  /// Allow overriding base URL dynamically at runtime if needed
+  static String? customBaseUrl;
+
+  /// Returns the appropriate base URL:
+  /// - On Android emulator, 'http://10.0.2.2:3000/api/v1' (points to host localhost:3000)
+  /// - On iOS simulator / macOS / Web, 'http://localhost:3000/api/v1'
+  static String get baseUrl {
+    if (customBaseUrl != null && customBaseUrl!.isNotEmpty) {
+      return customBaseUrl!;
+    }
+    if (!kIsWeb && Platform.isAndroid) {
+      return 'http://10.0.2.2:3000/api/v1';
+    }
+    return 'http://localhost:3000/api/v1';
+  }
 
   // Auth endpoints
-  static const String login = '$baseUrl/auth/login';
-  static const String register = '$baseUrl/auth/register';
-  static const String sendOtp = '$baseUrl/auth/send-otp';
-  static const String verifyOtp = '$baseUrl/auth/verify-otp';
+  static String get login => '$baseUrl/auth/login';
+  static String get register => '$baseUrl/auth/register';
+  static String get sendOtp => '$baseUrl/auth/send-otp';
+  static String get verifyOtp => '$baseUrl/auth/verify-otp';
 
   // User & Profile
-  static const String userProfile = '$baseUrl/user/profile';
-  static const String updateProfile = '$baseUrl/user/update';
+  static String get userProfile => '$baseUrl/user/profile';
+  static String get updateProfile => '$baseUrl/user/update';
 
   // Products
-  static const String products = '$baseUrl/products';
-  static const String productCategories = '$baseUrl/products/categories';
+  static String get products => '$baseUrl/products';
+  static String get productCategories => '$baseUrl/products/categories';
 
   // Demands
-  static const String demands = '$baseUrl/demands';
+  static String get demands => '$baseUrl/demands';
 
   // Groups
-  static const String groups = '$baseUrl/groups';
+  static String get groups => '$baseUrl/groups';
 
   // Orders
-  static const String orders = '$baseUrl/orders';
+  static String get orders => '$baseUrl/orders';
 
   // Wallet
-  static const String wallet = '$baseUrl/wallet';
-  static const String transactions = '$baseUrl/wallet/transactions';
+  static String get wallet => '$baseUrl/wallet';
+  static String get transactions => '$baseUrl/wallet/transactions';
 }
