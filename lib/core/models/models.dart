@@ -18,6 +18,8 @@ class AppUser {
   final double rating;
   final double walletBalance;
   final bool isVerified;
+  final String? email;
+  final String? avatarUrl;
 
   AppUser({
     required this.id,
@@ -27,6 +29,8 @@ class AppUser {
     this.rating = 0.0,
     this.walletBalance = 0.0,
     this.isVerified = false,
+    this.email,
+    this.avatarUrl,
   });
 
   AppUser copyWith({
@@ -37,6 +41,8 @@ class AppUser {
     double? rating,
     double? walletBalance,
     bool? isVerified,
+    String? email,
+    String? avatarUrl,
   }) {
     return AppUser(
       id: id ?? this.id,
@@ -46,6 +52,8 @@ class AppUser {
       rating: rating ?? this.rating,
       walletBalance: walletBalance ?? this.walletBalance,
       isVerified: isVerified ?? this.isVerified,
+      email: email ?? this.email,
+      avatarUrl: avatarUrl ?? this.avatarUrl,
     );
   }
 }

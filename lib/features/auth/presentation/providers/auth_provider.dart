@@ -82,6 +82,8 @@ class AuthProvider extends ChangeNotifier {
       name: user.name.isNotEmpty ? user.name : 'User',
       phone: user.phone,
       role: mappedRole,
+      email: user.email,
+      avatarUrl: user.avatarUrl,
     );
   }
 

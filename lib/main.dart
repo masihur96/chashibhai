@@ -230,10 +230,22 @@ class RoleWrapper extends StatelessWidget {
                           color: Colors.white24,
                           shape: BoxShape.circle,
                         ),
-                        child: const CircleAvatar(
+                        child: CircleAvatar(
                           radius: 35,
                           backgroundColor: Colors.white,
-                          child: Icon(Icons.person, size: 45, color: Color(0xFF2E7D32)),
+                          backgroundImage: (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty)
+                              ? NetworkImage(user.avatarUrl!)
+                              : null,
+                          child: (user?.avatarUrl == null || user!.avatarUrl!.isEmpty)
+                              ? Text(
+                                  user?.name.isNotEmpty == true ? user!.name[0].toUpperCase() : 'U',
+                                  style: const TextStyle(
+                                    fontSize: 30,
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF2E7D32),
+                                  ),
+                                )
+                              : null,
                         ),
                       ),
                       if (user?.isVerified == true)
@@ -245,34 +257,64 @@ class RoleWrapper extends StatelessWidget {
                             border: Border.all(color: Colors.white54),
                           ),
                           child: Row(
-                            children: const [
-                              Icon(Icons.verified, color: Colors.white, size: 14),
-                              SizedBox(width: 4),
+                            children: [
+                              const Icon(Icons.verified, color: Colors.white, size: 14),
+                              const SizedBox(width: 4),
                               Text(
-                                'Verified',
-                                style: TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
+                                'verified'.tr(languageCode),
+                                style: const TextStyle(color: Colors.white, fontSize: 10, fontWeight: FontWeight.bold),
                               ),
                             ],
                           ),
                         ),
                     ],
                   ),
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 14),
                   Text(
-                    user?.name ?? 'Anonymous User',
+                    user?.name.isNotEmpty == true
+                        ? user!.name
+                        : (languageCode == 'bn' ? 'ব্যবহারকারী' : 'User'),
                     style: GoogleFonts.outfit(
                       color: Colors.white,
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-                  Text(
-                    user?.role.toString().split('.').last.toUpperCase() ?? 'USER',
-                    style: TextStyle(
-                      color: Colors.white.withOpacity(0.8),
-                      fontSize: 12,
-                      letterSpacing: 1.2,
-                      fontWeight: FontWeight.w500,
+                  if (user?.phone != null && user!.phone.isNotEmpty) ...[
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        const Icon(Icons.phone_outlined, size: 13, color: Colors.white70),
+                        const SizedBox(width: 4),
+                        Text(
+                          user.phone,
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.85),
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                  const SizedBox(height: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.18),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      user?.role == UserRole.farmer
+                          ? 'farmer'.tr(languageCode).toUpperCase()
+                          : user?.role == UserRole.admin
+                              ? 'ADMIN'
+                              : 'buyer'.tr(languageCode).toUpperCase(),
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 11,
+                        letterSpacing: 1.1,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
                   ),
                   const SizedBox(height: 12),
@@ -288,8 +330,8 @@ class RoleWrapper extends StatelessWidget {
                         const Icon(Icons.account_balance_wallet, color: Colors.white70, size: 16),
                         const SizedBox(width: 8),
                         Text(
-                          'Balance: ৳${user?.walletBalance.toStringAsFixed(2) ?? "0.00"}',
-                          style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w600),
+                          '${'wallet_balance'.tr(languageCode)}: ৳${user?.walletBalance.toStringAsFixed(2) ?? "0.00"}',
+                          style: const TextStyle(color: Colors.white, fontSize: 13, fontWeight: FontWeight.w600),
                         ),
                       ],
                     ),
