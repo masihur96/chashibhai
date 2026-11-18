@@ -1,7 +1,10 @@
 import 'package:flutter/material.dart';
-import '../../../../core/models/models.dart';
 import '../../../../core/models/mock_data.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/services/upload_service.dart';
 import '../../../farmer/data/models/create_product_request_model.dart';
+import '../../../farmer/data/repositories/farmer_repository_impl.dart';
+import '../../../farmer/domain/repositories/farmer_repository.dart';
 import '../../../farmer/domain/usecases/add_product_usecase.dart';
 
 class ProductProvider extends ChangeNotifier {
@@ -12,9 +15,13 @@ class ProductProvider extends ChangeNotifier {
   String? _errorMessage;
 
   final AddProductUseCase _addProductUseCase;
+  final FarmerRepository _farmerRepository;
 
-  ProductProvider({AddProductUseCase? addProductUseCase})
-      : _addProductUseCase = addProductUseCase ?? AddProductUseCase();
+  ProductProvider({
+    AddProductUseCase? addProductUseCase,
+    FarmerRepository? farmerRepository,
+  })  : _farmerRepository = farmerRepository ?? FarmerRepositoryImpl(),
+        _addProductUseCase = addProductUseCase ?? AddProductUseCase(farmerRepository ?? FarmerRepositoryImpl());
 
   List<Product> get products => _products;
   String get searchQuery => _searchQuery;
@@ -44,7 +51,7 @@ class ProductProvider extends ChangeNotifier {
 
   List<Product> get filteredProducts {
     final query = _searchQuery.toLowerCase();
-    
+
     return _products.where((product) {
       final matchesSearch = product.productName.toLowerCase().contains(query);
       final matchesCategory = _selectedCategory == 'All' || product.category.toLowerCase() == _selectedCategory.toLowerCase();
@@ -55,6 +62,17 @@ class ProductProvider extends ChangeNotifier {
   List<Product> getProductsByCategory(String category) {
     if (category == 'All') return _products;
     return _products.where((p) => p.category.toLowerCase() == category.toLowerCase()).toList();
+  }
+
+  /// Uploads product images using POST /api/v1/upload multipart/form-data
+  Future<List<String>> uploadImages({
+    required List<UploadFileItem> files,
+    String? token,
+  }) async {
+    return await _farmerRepository.uploadImages(
+      files: files,
+      token: token,
+    );
   }
 
   /// Creates a new product on the backend using the POST /api/v1/products API

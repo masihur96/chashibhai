@@ -1,5 +1,3 @@
-import 'dart:convert';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -9,6 +7,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/models/models.dart';
 import '../../../../core/presentation/widgets/product_image_view.dart';
+import '../../../../core/services/upload_service.dart';
 import '../../../../core/utils/storage_service.dart';
 import '../../../auth/presentation/state/auth_provider.dart';
 import '../../../buyer/presentation/state/product_provider.dart';
@@ -40,12 +39,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   // Image states
   String _imageUrl = 'https://cdn.example.com/products/rice.jpg';
-  Uint8List? _pickedImageBytes;
-  String? _pickedFilePath;
-  String? _imageBase64;
-  String _imageSourceType = 'default'; // 'default', 'camera', 'gallery', 'network'
+  final List<UploadFileItem> _selectedImages = [];
+  int _primaryImageIndex = 0;
+  String _imageSourceType =
+      'default'; // 'default', 'camera', 'gallery', 'network', 'preset'
 
   bool _isSubmitting = false;
+  String _submissionStatus = '';
 
   final List<String> _categoryOptions = [
     'rice',
@@ -104,63 +104,89 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
-  /// Picks an image from Camera or Gallery, compresses it, and encodes to Base64
+  /// Picks image(s) from Camera or Gallery for multipart upload
   Future<void> _pickImage(ImageSource source) async {
     try {
-      final XFile? file = await _picker.pickImage(
-        source: source,
-        maxWidth: 1024,
-        maxHeight: 1024,
-        imageQuality: 80,
-      );
-
-      if (file == null) return;
-
-      final bytes = await file.readAsBytes();
-      final base64String = base64Encode(bytes);
-      final dataUri = 'data:image/jpeg;base64,$base64String';
-
-      setState(() {
-        _pickedImageBytes = bytes;
-        _pickedFilePath = file.path;
-        _imageBase64 = dataUri;
-        _imageUrl = file.path;
-        _imageSourceType = source == ImageSource.camera ? 'camera' : 'gallery';
-      });
-
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Row(
-              children: [
-                Icon(
-                  source == ImageSource.camera ? Icons.camera_alt : Icons.photo_library,
-                  color: Colors.white,
-                  size: 20,
-                ),
-                const SizedBox(width: 8),
-                Text(
-                  source == ImageSource.camera
-                      ? 'Photo captured successfully!'
-                      : 'Photo selected from gallery!',
-                ),
-              ],
-            ),
-            backgroundColor: const Color(0xFF2E7D32),
-            duration: const Duration(seconds: 2),
-            behavior: SnackBarBehavior.floating,
-          ),
+      if (source == ImageSource.camera) {
+        final XFile? file = await _picker.pickImage(
+          source: ImageSource.camera,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          imageQuality: 85,
         );
+
+        if (file == null) return;
+
+        final item = await UploadFileItem.fromXFile(file);
+        setState(() {
+          _selectedImages.add(item);
+          _primaryImageIndex = _selectedImages.length - 1;
+          _imageUrl = item.path ?? '';
+          _imageSourceType = 'camera';
+        });
+
+        _showSuccessNotification('Photo captured from camera!');
+      } else {
+        // Try picking multiple images from gallery
+        try {
+          final List<XFile> pickedList = await _picker.pickMultiImage(
+            maxWidth: 1024,
+            maxHeight: 1024,
+            imageQuality: 85,
+          );
+
+          if (pickedList.isNotEmpty) {
+            final List<UploadFileItem> newItems = [];
+            for (final f in pickedList) {
+              newItems.add(await UploadFileItem.fromXFile(f));
+            }
+            setState(() {
+              _selectedImages.addAll(newItems);
+              _imageUrl = _selectedImages[_primaryImageIndex].path ?? '';
+              _imageSourceType = 'gallery';
+            });
+            _showSuccessNotification(
+              '${pickedList.length} photo(s) selected from gallery!',
+            );
+            return;
+          }
+        } catch (_) {
+          // If pickMultiImage is unsupported or throws on platform, fallback to single pickImage
+        }
+
+        // Single image picker fallback
+        final XFile? file = await _picker.pickImage(
+          source: ImageSource.gallery,
+          maxWidth: 1024,
+          maxHeight: 1024,
+          imageQuality: 85,
+        );
+
+        if (file == null) return;
+
+        final item = await UploadFileItem.fromXFile(file);
+        setState(() {
+          _selectedImages.add(item);
+          _primaryImageIndex = _selectedImages.length - 1;
+          _imageUrl = item.path ?? '';
+          _imageSourceType = 'gallery';
+        });
+
+        _showSuccessNotification('Photo selected from gallery!');
       }
     } on PlatformException catch (e) {
-      debugPrint('⚠️ [IMAGE_PICKER] PlatformException ($source): code=${e.code}, message=${e.message}');
+      debugPrint(
+        '⚠️ [IMAGE_PICKER] PlatformException ($source): code=${e.code}, message=${e.message}',
+      );
 
       // If camera is unsupported (e.g. on iOS simulator or device without camera), fall back to gallery
       if (source == ImageSource.camera) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('Camera unavailable on simulator/device. Opening Gallery instead...'),
+              content: Text(
+                'Camera unavailable on simulator/device. Opening Gallery instead...',
+              ),
               duration: Duration(seconds: 2),
             ),
           );
@@ -171,16 +197,19 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       String userFriendlyMessage;
       if (e.code == 'camera_access_denied') {
-        userFriendlyMessage = 'Camera access was denied. Please allow camera permissions in device settings.';
+        userFriendlyMessage =
+            'Camera access was denied. Please allow camera permissions in device settings.';
       } else if (e.code == 'photo_access_denied') {
-        userFriendlyMessage = 'Photo access was denied. Please allow photo gallery permissions in device settings.';
+        userFriendlyMessage =
+            'Photo access was denied. Please allow photo gallery permissions in device settings.';
       } else if (e.code.contains('channel') ||
           e.message?.contains('channel') == true ||
           e.code == 'MissingPluginException') {
         userFriendlyMessage =
             'Native plugin not registered. Since image_picker was just added, please fully stop and re-run the app (hot reload cannot register new native plugins).';
       } else {
-        userFriendlyMessage = 'Could not access device photos (${e.code}): ${e.message ?? 'Unknown error'}';
+        userFriendlyMessage =
+            'Could not access device photos (${e.code}): ${e.message ?? 'Unknown error'}';
       }
 
       if (mounted) {
@@ -191,7 +220,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
               children: [
                 const Icon(Icons.info_outline, color: Colors.orange),
                 const SizedBox(width: 8),
-                Text('Image Picker Note', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+                Text(
+                  'Image Picker Note',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+                ),
               ],
             ),
             content: Column(
@@ -200,7 +232,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
               children: [
                 Text(userFriendlyMessage),
                 const SizedBox(height: 12),
-                const Text('Would you like to select from presets or enter an image URL instead?'),
+                const Text(
+                  'Would you like to select from presets or enter an image URL instead?',
+                ),
               ],
             ),
             actions: [
@@ -236,6 +270,52 @@ class _AddProductScreenState extends State<AddProductScreen> {
     }
   }
 
+  void _showSuccessNotification(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Row(
+          children: [
+            const Icon(
+              Icons.check_circle_outline,
+              color: Colors.white,
+              size: 20,
+            ),
+            const SizedBox(width: 8),
+            Text(message),
+          ],
+        ),
+        backgroundColor: const Color(0xFF2E7D32),
+        duration: const Duration(seconds: 2),
+        behavior: SnackBarBehavior.floating,
+      ),
+    );
+  }
+
+  void _removeSelectedImage(int index) {
+    setState(() {
+      _selectedImages.removeAt(index);
+      if (_primaryImageIndex >= _selectedImages.length) {
+        _primaryImageIndex = _selectedImages.isEmpty
+            ? 0
+            : _selectedImages.length - 1;
+      }
+      if (_selectedImages.isEmpty) {
+        _imageUrl = 'https://cdn.example.com/products/rice.jpg';
+        _imageSourceType = 'default';
+      } else {
+        _imageUrl = _selectedImages[_primaryImageIndex].path ?? '';
+      }
+    });
+  }
+
+  void _setPrimaryImage(int index) {
+    setState(() {
+      _primaryImageIndex = index;
+      _imageUrl = _selectedImages[index].path ?? '';
+    });
+  }
+
   /// Opens the Bottom Sheet to choose between Camera, Gallery, or Custom URL
   void _showImageSourceSelector() {
     showModalBottomSheet(
@@ -265,7 +345,7 @@ class _AddProductScreenState extends State<AddProductScreen> {
                 Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
                   child: Text(
-                    'Product Image',
+                    'Product Images',
                     style: GoogleFonts.outfit(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
@@ -280,9 +360,15 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       color: Colors.green.shade50,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.camera_alt_outlined, color: Color(0xFF2E7D32)),
+                    child: const Icon(
+                      Icons.camera_alt_outlined,
+                      color: Color(0xFF2E7D32),
+                    ),
                   ),
-                  title: const Text('Take Photo', style: TextStyle(fontWeight: FontWeight.w600)),
+                  title: const Text(
+                    'Take Photo',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
                   subtitle: const Text('Capture photo with camera'),
                   onTap: () {
                     Navigator.pop(ctx);
@@ -296,10 +382,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       color: Colors.blue.shade50,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.photo_library_outlined, color: Colors.blue),
+                    child: const Icon(
+                      Icons.photo_library_outlined,
+                      color: Colors.blue,
+                    ),
                   ),
-                  title: const Text('Choose from Gallery', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Select an image from device photos'),
+                  title: const Text(
+                    'Choose from Gallery',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text('Select one or more photos from device'),
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickImage(ImageSource.gallery);
@@ -314,14 +406,20 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     ),
                     child: const Icon(Icons.link, color: Colors.orange),
                   ),
-                  title: const Text('Enter Image URL / Presets', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Paste a web URL or choose demo presets'),
+                  title: const Text(
+                    'Enter Image URL / Presets',
+                    style: TextStyle(fontWeight: FontWeight.w600),
+                  ),
+                  subtitle: const Text(
+                    'Paste a web URL or choose demo presets',
+                  ),
                   onTap: () {
                     Navigator.pop(ctx);
                     _showImagePickerDialog();
                   },
                 ),
-                if (_imageSourceType != 'default') ...[
+                if (_selectedImages.isNotEmpty ||
+                    _imageSourceType != 'default') ...[
                   const Divider(),
                   ListTile(
                     leading: Container(
@@ -332,15 +430,22 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       ),
                       child: const Icon(Icons.restart_alt, color: Colors.red),
                     ),
-                    title: const Text('Reset to Default', style: TextStyle(color: Colors.red, fontWeight: FontWeight.w600)),
-                    subtitle: const Text('Reset to original sample CDN image'),
+                    title: const Text(
+                      'Reset to Default',
+                      style: TextStyle(
+                        color: Colors.red,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    subtitle: const Text(
+                      'Clear selected photos and reset to sample image',
+                    ),
                     onTap: () {
                       Navigator.pop(ctx);
                       setState(() {
                         _imageUrl = 'https://cdn.example.com/products/rice.jpg';
-                        _pickedImageBytes = null;
-                        _pickedFilePath = null;
-                        _imageBase64 = null;
+                        _selectedImages.clear();
+                        _primaryImageIndex = 0;
                         _imageSourceType = 'default';
                       });
                     },
@@ -356,7 +461,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
   void _showImagePickerDialog() {
     final urlController = TextEditingController(
-      text: _imageUrl.startsWith('http') || _imageUrl.startsWith('assets') ? _imageUrl : '',
+      text: _imageUrl.startsWith('http') || _imageUrl.startsWith('assets')
+          ? _imageUrl
+          : '',
     );
 
     showDialog(
@@ -383,7 +490,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
               const SizedBox(height: 16),
               Text(
                 'Quick Presets:',
-                style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 13),
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 13,
+                ),
               ),
               const SizedBox(height: 8),
               Wrap(
@@ -394,7 +504,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     avatar: const Icon(Icons.grain, size: 16),
                     label: const Text('Boro Rice (CDN)'),
                     onPressed: () {
-                      urlController.text = 'https://cdn.example.com/products/rice.jpg';
+                      urlController.text =
+                          'https://cdn.example.com/products/rice.jpg';
                     },
                   ),
                   ActionChip(
@@ -441,10 +552,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
               if (newUrl.isNotEmpty) {
                 setState(() {
                   _imageUrl = newUrl;
-                  _pickedImageBytes = null;
-                  _pickedFilePath = null;
-                  _imageBase64 = null;
-                  _imageSourceType = newUrl.startsWith('http') ? 'network' : 'preset';
+                  _selectedImages.clear();
+                  _primaryImageIndex = 0;
+                  _imageSourceType = newUrl.startsWith('http')
+                      ? 'network'
+                      : 'preset';
                 });
               }
               Navigator.pop(ctx);
@@ -480,39 +592,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
       return;
     }
 
-    setState(() => _isSubmitting = true);
+    setState(() {
+      _isSubmitting = true;
+      _submissionStatus = _selectedImages.isNotEmpty
+          ? 'Uploading ${_selectedImages.length} image(s)...'
+          : 'Publishing listing...';
+    });
 
     final finalCategory = _isCustomCategory
         ? _customCategoryController.text.trim().toLowerCase()
         : _category.trim().toLowerCase();
-
-    // Prepare payload fields according to user curl
-    // If a device image was picked, pass base64 or path to file/image/imageUrl
-    final String effectiveImageUrl = _imageUrl.startsWith('http')
-        ? _imageUrl
-        : (_imageBase64 != null ? _imageBase64! : _imageUrl);
-
-    final String effectiveFile = _imageBase64 != null
-        ? _imageBase64!
-        : (_pickedFilePath != null ? _pickedFilePath! : 'string');
-
-    final String effectiveImage = _imageBase64 != null
-        ? _imageBase64!
-        : (_imageUrl.isNotEmpty ? _imageUrl : 'string');
-
-    final request = CreateProductRequestModel(
-      productName: _nameController.text.trim(),
-      quantity: double.tryParse(_quantityController.text.trim()) ?? 0,
-      unit: _unit,
-      minimumPrice: double.tryParse(_priceController.text.trim()) ?? 0,
-      tradeType: _getTradeTypeString(_tradeType),
-      category: finalCategory.isNotEmpty ? finalCategory : 'rice',
-      startTime: _startTime,
-      endTime: _endTime,
-      imageUrl: effectiveImageUrl,
-      file: effectiveFile,
-      image: effectiveImage,
-    );
 
     final productProvider = context.read<ProductProvider>();
     final authProvider = context.read<AuthProvider>();
@@ -524,6 +613,59 @@ class _AddProductScreenState extends State<AddProductScreen> {
         token = await StorageService().getAccessToken();
       }
 
+      List<String> uploadedImageUrls = [];
+
+      // 1. Upload local images via POST /api/v1/upload if any are selected
+      if (_selectedImages.isNotEmpty) {
+        debugPrint(
+          '🚀 [ADD_PRODUCT] Uploading ${_selectedImages.length} images to /api/v1/upload...',
+        );
+        setState(
+          () => _submissionStatus =
+              'Uploading ${_selectedImages.length} image(s)...',
+        );
+
+        try {
+          uploadedImageUrls = await productProvider.uploadImages(
+            files: _selectedImages,
+            token: token,
+          );
+          debugPrint(
+            '✅ [ADD_PRODUCT] Image upload response URLs: $uploadedImageUrls',
+          );
+        } catch (uploadError) {
+          debugPrint('⚠️ [ADD_PRODUCT] Image upload failed: $uploadError');
+          throw Exception('Image upload failed: $uploadError');
+        }
+      }
+
+      setState(() => _submissionStatus = 'Creating product listing...');
+
+      // 2. Prepare effective image URLs
+      final String effectiveImageUrl;
+      final List<String> effectiveImageUrls;
+
+      if (uploadedImageUrls.isNotEmpty) {
+        effectiveImageUrl = uploadedImageUrls.first;
+        effectiveImageUrls = uploadedImageUrls;
+      } else {
+        effectiveImageUrl = _imageUrl;
+        effectiveImageUrls = [_imageUrl];
+      }
+
+      final request = CreateProductRequestModel(
+        productName: _nameController.text.trim(),
+        quantity: double.tryParse(_quantityController.text.trim()) ?? 0,
+        unit: _unit,
+        minimumPrice: double.tryParse(_priceController.text.trim()) ?? 0,
+        tradeType: _getTradeTypeString(_tradeType),
+        category: finalCategory.isNotEmpty ? finalCategory : 'rice',
+        startTime: _startTime,
+        endTime: _endTime,
+        imageUrl: effectiveImageUrl,
+        imageUrls: effectiveImageUrls,
+      );
+
       final createdProduct = await productProvider.createProduct(
         request: request,
         token: token,
@@ -531,20 +673,20 @@ class _AddProductScreenState extends State<AddProductScreen> {
 
       if (!mounted) return;
 
-      // If local device image was picked, retain the local path/data for immediate UI display
-      if (_pickedFilePath != null || _pickedImageBytes != null) {
+      // Retain local image reference in provider's memory product if local photo was chosen
+      if (_selectedImages.isNotEmpty) {
         final localProduct = createdProduct.copyWith(
-          imageUrl: _pickedFilePath ?? createdProduct.imageUrl,
+          imageUrl:
+              _selectedImages[_primaryImageIndex].path ??
+              createdProduct.imageUrl,
+          imageUrls: effectiveImageUrls,
         );
-        // Replace with local copy in provider list so dashboard displays picked image
         final products = productProvider.products;
         final idx = products.indexWhere((p) => p.id == createdProduct.id);
         if (idx != -1) {
           products[idx] = localProduct;
         }
       }
-
-      if (!mounted) return;
 
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
@@ -553,7 +695,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
               const Icon(Icons.check_circle, color: Colors.white),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('Product "${createdProduct.productName}" listed successfully!'),
+                child: Text(
+                  'Product "${createdProduct.productName}" listed successfully!',
+                ),
               ),
             ],
           ),
@@ -580,15 +724,21 @@ class _AddProductScreenState extends State<AddProductScreen> {
               final offlineProduct = Product(
                 id: 'p_${DateTime.now().millisecondsSinceEpoch}',
                 farmerId: context.read<AuthProvider>().currentUser?.id ?? 'f1',
-                productName: request.productName,
-                imageUrl: _pickedFilePath ?? request.imageUrl,
-                quantity: request.quantity,
-                unit: request.unit,
-                minimumPrice: request.minimumPrice,
+                productName: _nameController.text.trim(),
+                imageUrl: _selectedImages.isNotEmpty
+                    ? (_selectedImages[_primaryImageIndex].path ?? _imageUrl)
+                    : _imageUrl,
+                imageUrls: _selectedImages.isNotEmpty
+                    ? _selectedImages.map((i) => i.path ?? '').toList()
+                    : [_imageUrl],
+                quantity: double.tryParse(_quantityController.text.trim()) ?? 0,
+                unit: _unit,
+                minimumPrice:
+                    double.tryParse(_priceController.text.trim()) ?? 0,
                 tradeType: _tradeType,
-                startTime: request.startTime,
-                endTime: request.endTime,
-                category: request.category,
+                startTime: _startTime,
+                endTime: _endTime,
+                category: finalCategory.isNotEmpty ? finalCategory : 'rice',
                 status: 'active',
               );
               context.read<ProductProvider>().addProduct(offlineProduct);
@@ -599,7 +749,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
       );
     } finally {
       if (mounted) {
-        setState(() => _isSubmitting = false);
+        setState(() {
+          _isSubmitting = false;
+          _submissionStatus = '';
+        });
       }
     }
   }
@@ -623,11 +776,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              _buildImageHeader(),
+              _buildImageSection(),
               const SizedBox(height: 24),
               Text(
                 'Product Details',
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -636,10 +792,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   labelText: 'Product Name',
                   hintText: 'e.g., Boro Rice',
                   prefixIcon: Icon(Icons.shopping_basket_outlined),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  ),
                 ),
-                validator: (v) =>
-                    (v == null || v.trim().isEmpty) ? 'Please enter product name' : null,
+                validator: (v) => (v == null || v.trim().isEmpty)
+                    ? 'Please enter product name'
+                    : null,
               ),
               const SizedBox(height: 16),
               Row(
@@ -652,7 +811,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       decoration: const InputDecoration(
                         labelText: 'Category',
                         prefixIcon: Icon(Icons.category_outlined),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                        ),
                       ),
                       items: _categoryOptions.map((cat) {
                         return DropdownMenuItem<String>(
@@ -683,10 +844,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         decoration: const InputDecoration(
                           labelText: 'Custom Category',
                           hintText: 'e.g., rice',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.all(Radius.circular(12)),
+                          ),
                         ),
                         validator: (v) {
-                          if (_isCustomCategory && (v == null || v.trim().isEmpty)) {
+                          if (_isCustomCategory &&
+                              (v == null || v.trim().isEmpty)) {
                             return 'Enter category';
                           }
                           return null;
@@ -705,11 +869,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       decoration: InputDecoration(
                         labelText: 'Quantity',
                         suffixText: _unit,
-                        border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                        border: const OutlineInputBorder(
+                          borderRadius: BorderRadius.all(Radius.circular(12)),
+                        ),
                       ),
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                      ),
                       validator: (v) {
-                        if (v == null || v.trim().isEmpty) return 'Enter quantity';
+                        if (v == null || v.trim().isEmpty)
+                          return 'Enter quantity';
                         final num = double.tryParse(v);
                         if (num == null || num <= 0) return 'Invalid quantity';
                         return null;
@@ -727,18 +896,22 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     },
                     dropdownMenuEntries: ['KG', 'Tons', 'Monds', 'Bag']
                         .map<DropdownMenuEntry<String>>((String value) {
-                      return DropdownMenuEntry<String>(
-                        value: value,
-                        label: value,
-                      );
-                    }).toList(),
+                          return DropdownMenuEntry<String>(
+                            value: value,
+                            label: value,
+                          );
+                        })
+                        .toList(),
                   ),
                 ],
               ),
               const SizedBox(height: 24),
               Text(
                 'Trade Configuration',
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               SegmentedButton<TradeType>(
@@ -770,9 +943,13 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       ? 'Minimum Bid Price'
                       : 'Minimum Price / Asking Price',
                   prefixText: '৳ ',
-                  border: const OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(12))),
+                  border: const OutlineInputBorder(
+                    borderRadius: BorderRadius.all(Radius.circular(12)),
+                  ),
                 ),
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                keyboardType: const TextInputType.numberWithOptions(
+                  decimal: true,
+                ),
                 validator: (v) {
                   if (v == null || v.trim().isEmpty) return 'Enter price';
                   final num = double.tryParse(v);
@@ -783,7 +960,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
               const SizedBox(height: 24),
               Text(
                 'Schedule Listing',
-                style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                style: GoogleFonts.outfit(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
               ),
               const SizedBox(height: 12),
               Card(
@@ -797,7 +977,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   child: Column(
                     children: [
                       ListTile(
-                        leading: const Icon(Icons.play_circle_outline, color: Color(0xFF2E7D32)),
+                        leading: const Icon(
+                          Icons.play_circle_outline,
+                          color: Color(0xFF2E7D32),
+                        ),
                         title: const Text('Start Time'),
                         subtitle: Text(dateFormat.format(_startTime)),
                         trailing: const Icon(Icons.edit_calendar, size: 20),
@@ -810,7 +993,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       ),
                       const Divider(height: 1, indent: 16, endIndent: 16),
                       ListTile(
-                        leading: const Icon(Icons.stop_circle_outlined, color: Colors.orange),
+                        leading: const Icon(
+                          Icons.stop_circle_outlined,
+                          color: Colors.orange,
+                        ),
                         title: const Text('End Time'),
                         subtitle: Text(dateFormat.format(_endTime)),
                         trailing: const Icon(Icons.edit_calendar, size: 20),
@@ -839,13 +1025,29 @@ class _AddProductScreenState extends State<AddProductScreen> {
                   ),
                   onPressed: _isSubmitting ? null : _submitProduct,
                   child: _isSubmitting
-                      ? const SizedBox(
-                          width: 24,
-                          height: 24,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2.5,
-                            color: Colors.white,
-                          ),
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            const SizedBox(
+                              width: 20,
+                              height: 20,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: Colors.white,
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Text(
+                              _submissionStatus.isNotEmpty
+                                  ? _submissionStatus
+                                  : 'Publishing...',
+                              style: GoogleFonts.outfit(
+                                fontSize: 15,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
                         )
                       : Text(
                           'Publish Listing',
@@ -863,27 +1065,174 @@ class _AddProductScreenState extends State<AddProductScreen> {
     );
   }
 
+  Widget _buildImageSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _buildImageHeader(),
+        if (_selectedImages.isNotEmpty) ...[
+          const SizedBox(height: 12),
+          _buildThumbnailsList(),
+        ],
+      ],
+    );
+  }
+
+  Widget _buildThumbnailsList() {
+    return SizedBox(
+      height: 80,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        itemCount: _selectedImages.length + 1,
+        separatorBuilder: (_, __) => const SizedBox(width: 10),
+        itemBuilder: (context, index) {
+          if (index == _selectedImages.length) {
+            // Add More Button
+            return InkWell(
+              onTap: _showImageSourceSelector,
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                width: 72,
+                height: 72,
+                decoration: BoxDecoration(
+                  color: Colors.green.shade50,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(
+                    color: const Color(0xFF2E7D32).withOpacity(0.5),
+                  ),
+                ),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    const Icon(
+                      Icons.add_photo_alternate_outlined,
+                      color: Color(0xFF2E7D32),
+                      size: 24,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Add',
+                      style: GoogleFonts.outfit(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: const Color(0xFF2E7D32),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          }
+
+          final isPrimary = index == _primaryImageIndex;
+          final item = _selectedImages[index];
+
+          return Stack(
+            clipBehavior: Clip.none,
+            children: [
+              InkWell(
+                onTap: () => _setPrimaryImage(index),
+                borderRadius: BorderRadius.circular(12),
+                child: Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isPrimary
+                          ? const Color(0xFF2E7D32)
+                          : Colors.grey.shade300,
+                      width: isPrimary ? 2.5 : 1,
+                    ),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: Image.memory(
+                    item.bytes,
+                    fit: BoxFit.cover,
+                    width: 72,
+                    height: 72,
+                  ),
+                ),
+              ),
+              if (isPrimary)
+                Positioned(
+                  bottom: 2,
+                  left: 2,
+                  right: 2,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(vertical: 1),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: const Text(
+                      'COVER',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ),
+              Positioned(
+                top: -6,
+                right: -6,
+                child: InkWell(
+                  onTap: () => _removeSelectedImage(index),
+                  child: Container(
+                    padding: const EdgeInsets.all(3),
+                    decoration: const BoxDecoration(
+                      color: Colors.red,
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(
+                      Icons.close,
+                      color: Colors.white,
+                      size: 13,
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          );
+        },
+      ),
+    );
+  }
+
   Widget _buildImageHeader() {
     IconData sourceIcon;
     String sourceLabel;
 
-    switch (_imageSourceType) {
-      case 'camera':
-        sourceIcon = Icons.camera_alt;
-        sourceLabel = 'Captured from Camera';
-        break;
-      case 'gallery':
-        sourceIcon = Icons.photo_library;
-        sourceLabel = 'Selected from Gallery';
-        break;
-      case 'network':
-        sourceIcon = Icons.cloud;
-        sourceLabel = 'Custom Web URL';
-        break;
-      default:
-        sourceIcon = Icons.image;
-        sourceLabel = 'Default Sample Image';
+    if (_selectedImages.isNotEmpty) {
+      sourceIcon = Icons.photo_library;
+      sourceLabel =
+          '${_selectedImages.length} photo${_selectedImages.length > 1 ? 's' : ''} attached';
+    } else {
+      switch (_imageSourceType) {
+        case 'camera':
+          sourceIcon = Icons.camera_alt;
+          sourceLabel = 'Captured from Camera';
+          break;
+        case 'gallery':
+          sourceIcon = Icons.photo_library;
+          sourceLabel = 'Selected from Gallery';
+          break;
+        case 'network':
+          sourceIcon = Icons.cloud;
+          sourceLabel = 'Custom Web URL';
+          break;
+        default:
+          sourceIcon = Icons.image;
+          sourceLabel = 'Default Sample Image';
+      }
     }
+
+    final Uint8List? activeImageBytes = _selectedImages.isNotEmpty
+        ? _selectedImages[_primaryImageIndex].bytes
+        : null;
 
     return InkWell(
       onTap: _showImageSourceSelector,
@@ -895,8 +1244,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
           color: Colors.grey.shade100,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: _pickedImageBytes != null ? const Color(0xFF2E7D32) : Colors.grey.shade300,
-            width: _pickedImageBytes != null ? 2 : 1,
+            color: activeImageBytes != null
+                ? const Color(0xFF2E7D32)
+                : Colors.grey.shade300,
+            width: activeImageBytes != null ? 2 : 1,
           ),
         ),
         clipBehavior: Clip.antiAlias,
@@ -904,8 +1255,8 @@ class _AddProductScreenState extends State<AddProductScreen> {
           fit: StackFit.expand,
           children: [
             ProductImageView(
-              imageUrl: _imageUrl,
-              imageBytes: _pickedImageBytes,
+              imageUrl: activeImageBytes != null ? '' : _imageUrl,
+              imageBytes: activeImageBytes,
               fit: BoxFit.cover,
             ),
             Container(
@@ -925,7 +1276,10 @@ class _AddProductScreenState extends State<AddProductScreen> {
               top: 12,
               left: 12,
               child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 5,
+                ),
                 decoration: BoxDecoration(
                   color: Colors.black.withOpacity(0.6),
                   borderRadius: BorderRadius.circular(20),
@@ -966,7 +1320,11 @@ class _AddProductScreenState extends State<AddProductScreen> {
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.add_a_photo, color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.add_a_photo,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                   const SizedBox(width: 10),
                   Expanded(
@@ -975,7 +1333,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                       mainAxisSize: MainAxisSize.min,
                       children: [
                         Text(
-                          _pickedImageBytes != null ? 'Product photo attached' : 'Upload Product Photo',
+                          _selectedImages.isNotEmpty
+                              ? '${_selectedImages.length} photo${_selectedImages.length > 1 ? 's' : ''} ready to upload'
+                              : 'Upload Product Photo',
                           style: GoogleFonts.outfit(
                             color: Colors.white,
                             fontWeight: FontWeight.bold,
@@ -983,7 +1343,9 @@ class _AddProductScreenState extends State<AddProductScreen> {
                           ),
                         ),
                         Text(
-                          'Tap to pick from gallery, camera, or URL',
+                          _selectedImages.isNotEmpty
+                              ? 'Tap to add more photos or change'
+                              : 'Tap to pick from gallery, camera, or URL',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.85),
                             fontSize: 12,
@@ -993,13 +1355,16 @@ class _AddProductScreenState extends State<AddProductScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 6,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white,
                       borderRadius: BorderRadius.circular(20),
                     ),
                     child: Text(
-                      _pickedImageBytes != null ? 'Change' : 'Pick Photo',
+                      _selectedImages.isNotEmpty ? 'Manage' : 'Pick Photo',
                       style: GoogleFonts.outfit(
                         color: const Color(0xFF2E7D32),
                         fontWeight: FontWeight.bold,

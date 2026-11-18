@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../../../configs/network/api_logger.dart';
 import '../../../../core/constants/api_path.dart';
 import '../../../../core/models/models.dart';
+import '../../../../core/services/upload_service.dart';
 import '../../../../core/utils/storage_service.dart';
 import '../models/create_product_request_model.dart';
 
@@ -12,18 +13,36 @@ abstract class FarmerRemoteDataSource {
     required CreateProductRequestModel request,
     String? token,
   });
+
+  Future<List<String>> uploadImages({
+    required List<UploadFileItem> files,
+    String? token,
+  });
 }
 
 class FarmerRemoteDataSourceImpl implements FarmerRemoteDataSource {
   final HttpClient _client;
+  final UploadService _uploadService;
 
   /// Default fallback token from user curl specification
   static const String defaultFallbackToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MmY2ODM5YS01ZDBjLTQwYTctYmQ5Mi1hNTA4MGNkOGIwNzAiLCJwaG9uZSI6Ijg4MDE3NDA3MTkyMDUiLCJlbWFpbCI6IiIsInJvbGUiOiJmYXJtZXIiLCJpYXQiOjE3OTUwMTYwNzMsImV4cCI6MTc5NTAxNjk3M30.R_asblBCluelVCEcIPveOiojYkgQawjzVfup2qyCMw4';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MmY2ODM5YS01ZDBjLTQwYTctYmQ5Mi1hNTA4MGNkOGIwNzAiLCJwaG9uZSI6Ijg4MDE3NDA3MTkyMDUiLCJlbWFpbCI6IiIsInJvbGUiOiJmYXJtZXIiLCJpYXQiOjE3OTUwMTgxNTMsImV4cCI6MTc5NTAxOTA1M30.RS_3yAvrKK79heeVSxEnF5qUprg0B1JVSudMO3zA5Yo';
 
-  FarmerRemoteDataSourceImpl({HttpClient? client})
-      : _client = client ?? HttpClient() {
+  FarmerRemoteDataSourceImpl({HttpClient? client, UploadService? uploadService})
+      : _client = client ?? HttpClient(),
+        _uploadService = uploadService ?? UploadService(client: client) {
     _client.connectionTimeout = const Duration(seconds: 15);
+  }
+
+  @override
+  Future<List<String>> uploadImages({
+    required List<UploadFileItem> files,
+    String? token,
+  }) async {
+    return await _uploadService.uploadFiles(
+      items: files,
+      token: token,
+    );
   }
 
   @override

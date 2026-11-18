@@ -20,6 +20,15 @@ class ApiPath {
     return 'http://localhost:3000/api/v1';
   }
 
+  /// Returns origin (e.g. 'http://localhost:3000' or 'http://10.0.2.2:3000')
+  static String get serverOrigin {
+    final uri = Uri.parse(baseUrl);
+    return '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
+  }
+
+  // Upload endpoint
+  static String get upload => '$baseUrl/upload';
+
   // Auth endpoints
   static String get login => '$baseUrl/auth/login';
   static String get register => '$baseUrl/auth/register';

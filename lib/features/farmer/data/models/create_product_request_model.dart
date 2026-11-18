@@ -8,8 +8,7 @@ class CreateProductRequestModel {
   final DateTime startTime;
   final DateTime endTime;
   final String imageUrl;
-  final String file;
-  final String image;
+  final List<String>? imageUrls;
 
   const CreateProductRequestModel({
     required this.productName,
@@ -21,13 +20,22 @@ class CreateProductRequestModel {
     required this.startTime,
     required this.endTime,
     required this.imageUrl,
-    this.file = 'string',
-    this.image = 'string',
+    this.imageUrls,
   });
 
   Map<String, dynamic> toJson() {
     final startTimeIso = startTime.toUtc().toIso8601String();
     final endTimeIso = endTime.toUtc().toIso8601String();
+
+    final urls = (imageUrls != null && imageUrls!.isNotEmpty)
+        ? imageUrls!
+        : (imageUrl.isNotEmpty && imageUrl != 'string'
+              ? [imageUrl]
+              : <String>[]);
+
+    final primaryUrl = imageUrl.isNotEmpty
+        ? imageUrl
+        : (urls.isNotEmpty ? urls.first : '');
 
     return {
       'productName': productName,
@@ -43,26 +51,56 @@ class CreateProductRequestModel {
       'start_time': startTimeIso,
       'endTime': endTimeIso,
       'end_time': endTimeIso,
-      'imageUrl': imageUrl,
-      'image_url': imageUrl,
-      'file': file,
-      'image': image,
+      'imageUrl': primaryUrl,
+      'image_url': primaryUrl,
+      'imageUrls': urls,
+      'image_urls': urls,
     };
   }
 
   factory CreateProductRequestModel.fromJson(Map<String, dynamic> json) {
+    List<String>? parsedUrls;
+    if (json['imageUrls'] is List) {
+      parsedUrls = (json['imageUrls'] as List)
+          .map((e) => e.toString())
+          .toList();
+    } else if (json['image_urls'] is List) {
+      parsedUrls = (json['image_urls'] as List)
+          .map((e) => e.toString())
+          .toList();
+    }
+
+    final primaryUrl =
+        (json['imageUrl'] ??
+                json['image_url'] ??
+                (parsedUrls != null && parsedUrls.isNotEmpty
+                    ? parsedUrls.first
+                    : ''))
+            .toString();
+
     return CreateProductRequestModel(
-      productName: (json['productName'] ?? json['product_name'] ?? '').toString(),
+      productName: (json['productName'] ?? json['product_name'] ?? '')
+          .toString(),
       quantity: (json['quantity'] as num?)?.toDouble() ?? 0.0,
       unit: (json['unit'] ?? 'KG').toString(),
-      minimumPrice: ((json['minimumPrice'] ?? json['minimum_price']) as num?)?.toDouble() ?? 0.0,
+      minimumPrice:
+          ((json['minimumPrice'] ?? json['minimum_price']) as num?)
+              ?.toDouble() ??
+          0.0,
       tradeType: (json['tradeType'] ?? json['trade_type'] ?? 'both').toString(),
       category: (json['category'] ?? '').toString(),
-      startTime: DateTime.tryParse((json['startTime'] ?? json['start_time'])?.toString() ?? '') ?? DateTime.now(),
-      endTime: DateTime.tryParse((json['endTime'] ?? json['end_time'])?.toString() ?? '') ?? DateTime.now().add(const Duration(days: 7)),
-      imageUrl: (json['imageUrl'] ?? json['image_url'] ?? '').toString(),
-      file: (json['file'] ?? 'string').toString(),
-      image: (json['image'] ?? 'string').toString(),
+      startTime:
+          DateTime.tryParse(
+            (json['startTime'] ?? json['start_time'])?.toString() ?? '',
+          ) ??
+          DateTime.now(),
+      endTime:
+          DateTime.tryParse(
+            (json['endTime'] ?? json['end_time'])?.toString() ?? '',
+          ) ??
+          DateTime.now().add(const Duration(days: 7)),
+      imageUrl: primaryUrl,
+      imageUrls: parsedUrls,
     );
   }
 }

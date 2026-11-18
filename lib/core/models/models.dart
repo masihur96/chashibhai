@@ -67,6 +67,7 @@ class Product {
   final String farmerId;
   final String productName;
   final String imageUrl;
+  final List<String> imageUrls;
   final double quantity; // In KG or Tons
   final String unit;
   final double minimumPrice;
@@ -81,6 +82,7 @@ class Product {
     required this.farmerId,
     required this.productName,
     required this.imageUrl,
+    this.imageUrls = const [],
     required this.quantity,
     this.unit = 'KG',
     required this.minimumPrice,
@@ -96,6 +98,7 @@ class Product {
     String? farmerId,
     String? productName,
     String? imageUrl,
+    List<String>? imageUrls,
     double? quantity,
     String? unit,
     double? minimumPrice,
@@ -110,6 +113,7 @@ class Product {
       farmerId: farmerId ?? this.farmerId,
       productName: productName ?? this.productName,
       imageUrl: imageUrl ?? this.imageUrl,
+      imageUrls: imageUrls ?? this.imageUrls,
       quantity: quantity ?? this.quantity,
       unit: unit ?? this.unit,
       minimumPrice: minimumPrice ?? this.minimumPrice,
@@ -140,11 +144,30 @@ class Product {
       return double.tryParse(val.toString()) ?? 0.0;
     }
 
+    List<String> parseUrls(dynamic val) {
+      if (val is List) {
+        return val
+            .map((e) => e.toString())
+            .where((s) => s.isNotEmpty && s != 'string')
+            .toList();
+      }
+      return [];
+    }
+
+    final parsedUrls = parseUrls(json['imageUrls'] ?? json['image_urls'] ?? json['images']);
+    final primaryImg = (json['imageUrl'] ??
+            json['image_url'] ??
+            (json['image'] != null && json['image'] != 'string' ? json['image'] : null) ??
+            (json['file'] != null && json['file'] != 'string' ? json['file'] : null) ??
+            (parsedUrls.isNotEmpty ? parsedUrls.first : ''))
+        .toString();
+
     return Product(
       id: (json['id'] ?? json['_id'] ?? 'p_${DateTime.now().millisecondsSinceEpoch}').toString(),
       farmerId: (json['farmerId'] ?? json['farmer_id'] ?? json['userId'] ?? json['user_id'] ?? '').toString(),
       productName: (json['productName'] ?? json['product_name'] ?? json['name'] ?? '').toString(),
-      imageUrl: (json['imageUrl'] ?? json['image_url'] ?? (json['image'] != null && json['image'] != 'string' ? json['image'] : null) ?? (json['file'] != null && json['file'] != 'string' ? json['file'] : null) ?? '').toString(),
+      imageUrl: primaryImg,
+      imageUrls: parsedUrls.isNotEmpty ? parsedUrls : (primaryImg.isNotEmpty ? [primaryImg] : const []),
       quantity: parseDouble(json['quantity']),
       unit: (json['unit'] ?? 'KG').toString(),
       minimumPrice: parseDouble(json['minimumPrice'] ?? json['minimum_price']),
@@ -170,6 +193,8 @@ class Product {
         break;
     }
 
+    final effectiveUrls = imageUrls.isNotEmpty ? imageUrls : (imageUrl.isNotEmpty ? [imageUrl] : <String>[]);
+
     return {
       'id': id,
       'farmerId': farmerId,
@@ -189,6 +214,9 @@ class Product {
       'end_time': endTime.toUtc().toIso8601String(),
       'imageUrl': imageUrl,
       'image_url': imageUrl,
+      'imageUrls': effectiveUrls,
+      'image_urls': effectiveUrls,
+      'images': effectiveUrls,
       'status': status,
     };
   }

@@ -1,5 +1,7 @@
 import 'dart:convert';
 import 'dart:io';
+
+import 'package:chashibhai/core/constants/api_path.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -52,7 +54,9 @@ class ProductImageView extends StatelessWidget {
     else if (imageUrl.startsWith('data:image')) {
       try {
         final commaIndex = imageUrl.indexOf(',');
-        final base64Str = commaIndex != -1 ? imageUrl.substring(commaIndex + 1) : imageUrl;
+        final base64Str = commaIndex != -1
+            ? imageUrl.substring(commaIndex + 1)
+            : imageUrl;
         final decodedBytes = base64Decode(base64Str.trim());
         imageWidget = Image.memory(
           decodedBytes,
@@ -66,7 +70,8 @@ class ProductImageView extends StatelessWidget {
       }
     }
     // 3. Network URL (http/https)
-    else if (imageUrl.startsWith('http://') || imageUrl.startsWith('https://')) {
+    else if (imageUrl.startsWith('http://') ||
+        imageUrl.startsWith('https://')) {
       imageWidget = Image.network(
         imageUrl,
         width: width,
@@ -90,7 +95,7 @@ class ProductImageView extends StatelessWidget {
         },
       );
     }
-    // 4. Local File path on device
+    // 4. Local File path on device or backend relative path
     else if (!kIsWeb &&
         (imageUrl.startsWith('/') ||
             imageUrl.startsWith('file://') ||
@@ -100,6 +105,16 @@ class ProductImageView extends StatelessWidget {
       if (file.existsSync()) {
         imageWidget = Image.file(
           file,
+          width: width,
+          height: height,
+          fit: fit,
+          errorBuilder: (context, error, stackTrace) => fallbackWidget,
+        );
+      } else if (imageUrl.startsWith('/')) {
+        // Might be a relative backend path like /uploads/...
+        final fullNetworkUrl = '${ApiPath.serverOrigin}$imageUrl';
+        imageWidget = Image.network(
+          fullNetworkUrl,
           width: width,
           height: height,
           fit: fit,
