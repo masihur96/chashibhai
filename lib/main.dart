@@ -25,6 +25,7 @@ import './features/account/presentation/views/support_screen.dart';
 import './features/account/presentation/views/about_screen.dart';
 import './features/group/presentation/views/groups_list_screen.dart';
 import './core/utils/localization.dart';
+import './core/widgets/language_toggle_button.dart';
 import './features/admin/presentation/views/admin_shell.dart';
 
 import './features/splash/presentation/views/splash_screen.dart';
@@ -359,6 +360,26 @@ class RoleWrapper extends StatelessWidget {
                       Navigator.pop(context);
                       Navigator.push(context, MaterialPageRoute(builder: (context) => const AboutScreen()));
                     },
+                  ),
+                  const Divider(indent: 20, endIndent: 20, height: 24),
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            const Icon(Icons.language_rounded, color: Color(0xFF2E7D32), size: 24),
+                            const SizedBox(width: 16),
+                            Text(
+                              'language'.tr(languageCode),
+                              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
+                            ),
+                          ],
+                        ),
+                        const LanguageToggleButton(compact: true),
+                      ],
+                    ),
                   ),
                 ],
               ),

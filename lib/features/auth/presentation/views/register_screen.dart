@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import '../../../../core/utils/localization.dart';
+import '../../../../core/widgets/language_toggle_button.dart';
+import '../../../account/presentation/state/app_state_provider.dart';
 import '../providers/auth_provider.dart';
 import './login_screen.dart';
 
@@ -33,7 +36,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
     super.dispose();
   }
 
-  Future<void> _handleRegister() async {
+  Future<void> _handleRegister(String languageCode) async {
     // Clear any previous error
     context.read<AuthProvider>().clearError();
 
@@ -61,7 +64,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               const SizedBox(width: 12),
               Expanded(
                 child: Text(
-                  'নিবন্ধন সফল হয়েছে! (${_selectedRole == "FARMER" ? "কৃষক" : "ক্রেতা"})\nRegistration successful!',
+                  'registration_success'.tr(languageCode),
                   style: const TextStyle(fontWeight: FontWeight.w500),
                 ),
               ),
@@ -101,8 +104,13 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final languageCode = context.watch<AppStateProvider>().appLocale;
     final authProvider = context.watch<AuthProvider>();
     final isLoading = authProvider.isLoading;
+
+    final roleTitle = _selectedRole == 'FARMER'
+        ? 'farmer'.tr(languageCode)
+        : 'buyer'.tr(languageCode);
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -114,6 +122,12 @@ class _RegisterScreenState extends State<RegisterScreen> {
           icon: const Icon(Icons.arrow_back_ios_new_rounded),
           onPressed: () => Navigator.maybePop(context),
         ),
+        actions: const [
+          Padding(
+            padding: EdgeInsets.only(right: 16),
+            child: LanguageToggleButton(compact: false),
+          ),
+        ],
       ),
       body: SafeArea(
         child: SingleChildScrollView(
@@ -125,7 +139,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
               children: [
                 // Header
                 Text(
-                  'Create Account',
+                  'create_account'.tr(languageCode),
                   style: GoogleFonts.outfit(
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
@@ -134,7 +148,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Join ChashiBhai to buy, sell, and grow together.',
+                  'join_community'.tr(languageCode),
                   style: TextStyle(
                     fontSize: 14,
                     color: Colors.grey.shade600,
@@ -144,7 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
 
                 // Role Selection
                 Text(
-                  'Select Your Role (আপনার ভূমিকা নির্বাচন করুন)',
+                  'select_role'.tr(languageCode),
                   style: GoogleFonts.outfit(
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -156,8 +170,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   children: [
                     Expanded(
                       child: _RoleCard(
-                        title: 'Farmer',
-                        subtitle: 'কৃষক',
+                        title: 'farmer'.tr(languageCode),
+                        subtitle: 'farmer_desc'.tr(languageCode),
                         roleValue: 'FARMER',
                         icon: Icons.agriculture_rounded,
                         isSelected: _selectedRole == 'FARMER',
@@ -167,8 +181,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                     const SizedBox(width: 14),
                     Expanded(
                       child: _RoleCard(
-                        title: 'Buyer',
-                        subtitle: 'পাইকারি ক্রেতা',
+                        title: 'buyer'.tr(languageCode),
+                        subtitle: 'buyer_desc'.tr(languageCode),
                         roleValue: 'BUYER',
                         icon: Icons.storefront_rounded,
                         isSelected: _selectedRole == 'BUYER',
@@ -216,8 +230,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   enabled: !isLoading,
                   textCapitalization: TextCapitalization.words,
                   decoration: InputDecoration(
-                    labelText: 'Full Name (পুরো নাম)',
-                    hintText: 'e.g. Chashi Bhai FARMER',
+                    labelText: 'full_name'.tr(languageCode),
+                    hintText: 'full_name_hint'.tr(languageCode),
                     prefixIcon: const Icon(Icons.person_outline_rounded),
                     filled: true,
                     fillColor: Colors.grey.shade50,
@@ -236,10 +250,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your full name';
+                      return 'enter_name'.tr(languageCode);
                     }
                     if (value.trim().length < 2) {
-                      return 'Name must be at least 2 characters';
+                      return 'enter_name'.tr(languageCode);
                     }
                     return null;
                   },
@@ -252,8 +266,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   enabled: !isLoading,
                   keyboardType: TextInputType.phone,
                   decoration: InputDecoration(
-                    labelText: 'Phone Number (ফোন নম্বর)',
-                    hintText: '01XXXXXXXXX',
+                    labelText: 'phone_number'.tr(languageCode),
+                    hintText: 'phone_hint'.tr(languageCode),
                     prefixIcon: const Icon(Icons.phone_outlined),
                     filled: true,
                     fillColor: Colors.grey.shade50,
@@ -272,11 +286,11 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.trim().isEmpty) {
-                      return 'Please enter your phone number';
+                      return 'enter_phone'.tr(languageCode);
                     }
                     final cleanPhone = value.replaceAll(RegExp(r'\s+'), '');
                     if (cleanPhone.length < 11) {
-                      return 'Phone number must be at least 11 digits';
+                      return 'phone_min_digits'.tr(languageCode);
                     }
                     return null;
                   },
@@ -289,8 +303,8 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   enabled: !isLoading,
                   obscureText: _obscurePassword,
                   decoration: InputDecoration(
-                    labelText: 'Password (পাসওয়ার্ড)',
-                    hintText: 'e.g. Letmein123!',
+                    labelText: 'password'.tr(languageCode),
+                    hintText: 'password_hint'.tr(languageCode),
                     prefixIcon: const Icon(Icons.lock_outline_rounded),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -316,10 +330,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please enter a password';
+                      return 'enter_password'.tr(languageCode);
                     }
                     if (value.length < 6) {
-                      return 'Password must be at least 6 characters';
+                      return 'password_min_chars'.tr(languageCode);
                     }
                     return null;
                   },
@@ -332,7 +346,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   enabled: !isLoading,
                   obscureText: _obscureConfirmPassword,
                   decoration: InputDecoration(
-                    labelText: 'Confirm Password (পাসওয়ার্ড নিশ্চিত করুন)',
+                    labelText: 'confirm_password'.tr(languageCode),
                     prefixIcon: const Icon(Icons.lock_outline_rounded),
                     suffixIcon: IconButton(
                       icon: Icon(
@@ -358,10 +372,10 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   ),
                   validator: (value) {
                     if (value == null || value.isEmpty) {
-                      return 'Please confirm your password';
+                      return 'confirm_password'.tr(languageCode);
                     }
                     if (value != _passwordController.text) {
-                      return 'Passwords do not match';
+                      return 'passwords_dont_match'.tr(languageCode);
                     }
                     return null;
                   },
@@ -373,7 +387,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   width: double.infinity,
                   height: 54,
                   child: ElevatedButton(
-                    onPressed: isLoading ? null : _handleRegister,
+                    onPressed: isLoading ? null : () => _handleRegister(languageCode),
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2E7D32),
                       foregroundColor: Colors.white,
@@ -393,7 +407,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                             ),
                           )
                         : Text(
-                            'Register as ${_selectedRole == "FARMER" ? "Farmer" : "Buyer"}',
+                            '${'register_button'.tr(languageCode)} ($roleTitle)',
                             style: GoogleFonts.outfit(
                               fontSize: 17,
                               fontWeight: FontWeight.w600,
@@ -408,7 +422,7 @@ class _RegisterScreenState extends State<RegisterScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     Text(
-                      'Already have an account? ',
+                      '${'already_have_account'.tr(languageCode)} ',
                       style: TextStyle(color: Colors.grey.shade700, fontSize: 14),
                     ),
                     GestureDetector(
@@ -418,9 +432,9 @@ class _RegisterScreenState extends State<RegisterScreen> {
                           MaterialPageRoute(builder: (_) => const LoginScreen()),
                         );
                       },
-                      child: const Text(
-                        'Login (লগইন করুন)',
-                        style: TextStyle(
+                      child: Text(
+                        'login_link'.tr(languageCode),
+                        style: const TextStyle(
                           color: Color(0xFF2E7D32),
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -503,6 +517,7 @@ class _RoleCard extends StatelessWidget {
                 fontSize: 12,
                 color: isSelected ? Colors.white.withOpacity(0.85) : Colors.grey.shade600,
               ),
+              textAlign: TextAlign.center,
             ),
           ],
         ),

@@ -18,6 +18,7 @@ import './notification_screen.dart';
 import '../../../group/presentation/views/groups_list_screen.dart';
 import '../../../group/presentation/views/group_detail_screen.dart';
 import '../../../../core/utils/localization.dart';
+import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/models/models.dart';
 import '../../../account/presentation/views/profile_screen.dart';
 import './buyer_orders_screen.dart';
@@ -351,22 +352,33 @@ class _HomeTab extends StatelessWidget {
               ),
             ],
           ),
-          Stack(
+          Row(
             children: [
-              IconButton(
-                icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                onPressed: () {
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationScreen()));
-                },
+              const LanguageToggleButton(
+                compact: true,
+                activeColor: Colors.white,
+                backgroundColor: Colors.white24,
+                inactiveColor: Colors.white70,
               ),
-              Positioned(
-                right: 12,
-                top: 12,
-                child: Container(
-                  width: 8,
-                  height: 8,
-                  decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
-                ),
+              const SizedBox(width: 4),
+              Stack(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                    onPressed: () {
+                      Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationScreen()));
+                    },
+                  ),
+                  Positioned(
+                    right: 12,
+                    top: 12,
+                    child: Container(
+                      width: 8,
+                      height: 8,
+                      decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
+                    ),
+                  ),
+                ],
               ),
             ],
           ),

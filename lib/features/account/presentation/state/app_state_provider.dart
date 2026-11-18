@@ -7,10 +7,19 @@ class AppStateProvider extends ChangeNotifier {
   List<AppNotification> _notifications = MockData.demoNotifications;
 
   String get appLocale => _appLocale;
+  bool get isBangla => _appLocale == 'bn';
+  bool get isEnglish => _appLocale == 'en';
   List<AppNotification> get notifications => _notifications;
 
   void setAppLocale(String locale) {
-    _appLocale = locale;
+    if (_appLocale != locale) {
+      _appLocale = locale;
+      notifyListeners();
+    }
+  }
+
+  void toggleLocale() {
+    _appLocale = _appLocale == 'en' ? 'bn' : 'en';
     notifyListeners();
   }
 

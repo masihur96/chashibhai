@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 class AppTranslations {
   static const Map<String, Map<String, String>> translations = {
     'en': {
+      // General & App Title
       'app_title': 'ChashiBhai',
       'available_supplies': 'Available Supplies',
       'view_all': 'View All',
@@ -26,13 +27,58 @@ class AppTranslations {
       'payment_received': 'Payment Received',
       'price_alert': 'Price Alert',
       'welcome_promo': 'Welcome to ChashiBhai!',
+      'home': 'Home',
+      'orders': 'Orders',
+      'logout': 'Logout',
+      'english': 'English',
+      'bangla': 'Bangla',
+
+      // Categories
       'cat_all': 'All',
       'cat_veg': 'Vegetables',
       'cat_fruits': 'Fruits',
       'cat_grains': 'Grains',
       'cat_spices': 'Spices',
+
+      // Auth & Registration
+      'create_account': 'Create Account',
+      'join_community': 'Join ChashiBhai to buy, sell, and grow together.',
+      'select_role': 'Select Your Role',
+      'farmer': 'Farmer',
+      'buyer': 'Buyer',
+      'farmer_desc': 'Produces & sells harvest',
+      'buyer_desc': 'Purchases in bulk',
+      'full_name': 'Full Name',
+      'full_name_hint': 'e.g. Chashi Bhai',
+      'phone_number': 'Phone Number',
+      'phone_hint': '01XXXXXXXXX',
+      'password': 'Password',
+      'password_hint': 'e.g. Letmein123!',
+      'confirm_password': 'Confirm Password',
+      'register_button': 'Register',
+      'already_have_account': 'Already have an account?',
+      'login_link': 'Login',
+      'registration_success': 'Registration successful!',
+      'passwords_dont_match': 'Passwords do not match',
+      'enter_name': 'Please enter your full name',
+      'enter_phone': 'Please enter your phone number',
+      'phone_min_digits': 'Phone number must be at least 11 digits',
+      'enter_password': 'Please enter a password',
+      'password_min_chars': 'Password must be at least 6 characters',
+
+      // Login
+      'welcome_back': 'Welcome to ChashiBhai',
+      'login_subtitle': 'Your trusted B2B agri marketplace. Login to continue trading.',
+      'send_otp': 'Send OTP',
+      'dont_have_account': "Don't have an account?",
+      'register_now': 'Register now',
+      'login_biometric': 'Login with Biometric',
+      'or': 'OR',
+      'enter_phone_error': 'Please enter your phone number',
+      'login_success_biometric': 'Login successful via biometric!',
     },
     'bn': {
+      // General & App Title
       'app_title': 'চাষীভাই',
       'available_supplies': 'উপলব্ধ পণ্যসমূহ',
       'view_all': 'সব দেখুন',
@@ -56,23 +102,68 @@ class AppTranslations {
       'payment_received': 'পেমেন্ট গ্রহণ করা হয়েছে',
       'price_alert': 'মূল্য সতর্কতা',
       'welcome_promo': 'চাষীভাই-এ স্বাগতম!',
+      'home': 'হোম',
+      'orders': 'অর্ডারসমূহ',
+      'logout': 'লগআউট',
+      'english': 'ইংরেজি',
+      'bangla': 'বাংলা',
+
+      // Categories
       'cat_all': 'সব',
       'cat_veg': 'শাকসবজি',
       'cat_fruits': 'ফলমূল',
       'cat_grains': 'শস্যদানা',
       'cat_spices': 'মসলা',
+
+      // Auth & Registration
+      'create_account': 'অ্যাকাউন্ট তৈরি করুন',
+      'join_community': 'পণ্য কেনাবেচা ও অগ্রগতির জন্য চাষীভাইয়ে যোগ দিন।',
+      'select_role': 'আপনার ভূমিকা নির্বাচন করুন',
+      'farmer': 'কৃষক',
+      'buyer': 'পাইকারি ক্রেতা',
+      'farmer_desc': 'ফসল উৎপাদন ও বিক্রয়',
+      'buyer_desc': 'পাইকারি ক্রয়',
+      'full_name': 'পুরো নাম',
+      'full_name_hint': 'যেমন: চাষী ভাই',
+      'phone_number': 'ফোন নম্বর',
+      'phone_hint': '০১XXXXXXXXX',
+      'password': 'পাসওয়ার্ড',
+      'password_hint': 'যেমন: Letmein123!',
+      'confirm_password': 'পাসওয়ার্ড নিশ্চিত করুন',
+      'register_button': 'নিবন্ধন করুন',
+      'already_have_account': 'ইতিমধ্যে অ্যাকাউন্ট আছে?',
+      'login_link': 'লগইন করুন',
+      'registration_success': 'নিবন্ধন সফল হয়েছে!',
+      'passwords_dont_match': 'পাসওয়ার্ড দুটি মেলেনি',
+      'enter_name': 'অনুগ্রহ করে আপনার পুরো নাম লিখুন',
+      'enter_phone': 'অনুগ্রহ করে ফোন নম্বর লিখুন',
+      'phone_min_digits': 'ফোন নম্বর কমপক্ষে ১১ ডিজিটের হতে হবে',
+      'enter_password': 'অনুগ্রহ করে পাসওয়ার্ড দিন',
+      'password_min_chars': 'পাসওয়ার্ড কমপক্ষে ৬ অক্ষরের হতে হবে',
+
+      // Login
+      'welcome_back': 'চাষীভাইয়ে স্বাগতম',
+      'login_subtitle': 'আপনার বিশ্বস্ত কৃষি মার্কেটপ্লেস। লেনদেন চালিয়ে যেতে লগইন করুন।',
+      'send_otp': 'ওটিপি পাঠান',
+      'dont_have_account': 'অ্যাকাউন্ট নেই?',
+      'register_now': 'নিবন্ধন করুন',
+      'login_biometric': 'বায়োমেট্রিক দিয়ে লগইন',
+      'or': 'অথবা',
+      'enter_phone_error': 'অনুগ্রহ করে আপনার ফোন নম্বর লিখুন',
+      'login_success_biometric': 'বায়োমেট্রিক দিয়ে সফলভাবে লগইন হয়েছে!',
     },
   };
 
-  static String translate(BuildContext context, String key) {
-    // This is a simplified helper. In a full app, we'd use a provider or InheritedWidget.
-    // For now, we'll provide a way to access it via context later or through a provider.
-    return translations['en']?[key] ?? key;
+  static String translate(BuildContext context, String key, [String? locale]) {
+    final effectiveLocale = locale ?? 'en';
+    return translations[effectiveLocale]?[key] ?? translations['en']?[key] ?? key;
   }
 }
 
 extension LocalizationExtension on String {
   String tr(String locale) {
-    return AppTranslations.translations[locale]?[this] ?? this;
+    return AppTranslations.translations[locale]?[this] ?? 
+           AppTranslations.translations['en']?[this] ?? 
+           this;
   }
 }

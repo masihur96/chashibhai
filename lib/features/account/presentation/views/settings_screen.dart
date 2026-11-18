@@ -129,7 +129,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Widget _buildLanguageTile(String languageCode) {
-    final languageName = languageCode == 'en' ? 'English' : 'বাংলা (Bangla)';
+    final languageName = languageCode == 'en' ? 'English' : 'বাংলা';
 
     return Container(
       color: Colors.white,
@@ -156,12 +156,12 @@ class _SettingsScreenState extends State<SettingsScreen> {
             mainAxisSize: MainAxisSize.min,
             children: [
               Text(
-                'Select Language',
+                'language'.tr(currentLocale),
                 style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
               ),
               const SizedBox(height: 20),
               _buildLanguageOption(context, 'English', 'en', currentLocale == 'en'),
-              _buildLanguageOption(context, 'বাংলা (Bangla)', 'bn', currentLocale == 'bn'),
+              _buildLanguageOption(context, 'বাংলা', 'bn', currentLocale == 'bn'),
               const SizedBox(height: 20),
             ],
           ),
