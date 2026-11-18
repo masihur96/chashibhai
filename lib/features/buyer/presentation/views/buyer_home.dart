@@ -4,20 +4,22 @@ import '../../../auth/presentation/state/auth_provider.dart';
 import '../state/product_provider.dart';
 import '../../../group/presentation/state/group_provider.dart';
 import '../state/demand_provider.dart';
-import '../../../wallet/presentation/state/order_provider.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
 import '../../../../core/presentation/widgets/product_card.dart';
+import '../../../../core/presentation/widgets/demand_card.dart';
 import '../../../../core/presentation/widgets/custom_search_bar.dart';
 import '../../../../core/presentation/widgets/filter_chips_list.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import './product_details.dart';
 import './post_demand_screen.dart';
+import './my_demands_screen.dart';
 import './category_products_screen.dart';
 import './notification_screen.dart';
 import '../../../group/presentation/views/groups_list_screen.dart';
 import '../../../group/presentation/views/group_detail_screen.dart';
 import '../../../../core/utils/localization.dart';
+import '../../../../core/utils/storage_service.dart';
 import '../../../../core/widgets/language_toggle_button.dart';
 import '../../../../core/models/models.dart';
 import '../../../account/presentation/views/profile_screen.dart';
@@ -32,6 +34,7 @@ class BuyerHomeScreen extends StatefulWidget {
 
 class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   int _currentIndex = 0;
+  final GlobalKey<_HomeTabState> _homeTabKey = GlobalKey<_HomeTabState>();
 
   @override
   Widget build(BuildContext context) {
@@ -42,7 +45,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
       body: IndexedStack(
         index: _currentIndex,
         children: [
-          _HomeTab(),
+          _HomeTab(key: _homeTabKey),
           const GroupsListScreen(),
           const BuyerOrdersScreen(),
           const ProfileScreen(),
@@ -79,11 +82,12 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
               label: 'Post a New Demand',
               child: FloatingActionButton.extended(
                 heroTag: null,
-                onPressed: () {
-                  Navigator.push(
+                onPressed: () async {
+                  await Navigator.push(
                     context,
                     MaterialPageRoute(builder: (context) => const PostDemandScreen()),
                   );
+                  _homeTabKey.currentState?.fetchMyDemands();
                 },
                 backgroundColor: Theme.of(context).colorScheme.primary,
                 label: const Text('Call Price (Demand)', style: TextStyle(color: Colors.white)),
@@ -97,143 +101,401 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
 
 // ─── Home Tab ────────────────────────────────────────────────────────────────
 
-class _HomeTab extends StatelessWidget {
+class _HomeTab extends StatefulWidget {
+  const _HomeTab({super.key});
+
+  @override
+  State<_HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<_HomeTab> {
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      fetchMyDemands();
+    });
+  }
+
+  Future<void> fetchMyDemands() async {
+    try {
+      final authProvider = context.read<AuthProvider>();
+      String? token = authProvider.token;
+      if (token == null || token.isEmpty) {
+        try {
+          token = await StorageService().getAccessToken();
+        } catch (_) {}
+      }
+      if (!mounted) return;
+
+      await context.read<DemandProvider>().fetchMyDemands(
+        page: 1,
+        limit: 10,
+        search: 'Potato',
+        productName: 'Potato',
+        minPrice: 20,
+        maxPrice: 50,
+        tradeType: 'both',
+        status: 'active',
+        token: token,
+      );
+    } catch (e) {
+      debugPrint('⚠️ [BUYER_HOME] fetchMyDemands error: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     final languageCode = context.watch<AppStateProvider>().appLocale;
     final products = context.watch<ProductProvider>().filteredProducts;
     final selectedCategory = context.watch<ProductProvider>().selectedCategory;
     final myGroups = context.watch<GroupProvider>().getMyGroups(context.watch<AuthProvider>().currentUser?.id);
+    final demandProvider = context.watch<DemandProvider>();
 
     return Column(
       children: [
         _buildHeader(context),
         Expanded(
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 800),
-              child: ListView(
-                padding: const EdgeInsets.all(16),
-                children: [
-              CustomSearchBar(
-                hintText: 'search_placeholder'.tr(languageCode),
-                onChanged: (value) => context.read<ProductProvider>().setSearchQuery(value),
-              ),
-              const SizedBox(height: 20),
-              FilterChipsList(
-                categories: const ['All', 'Vegetables', 'Fruits', 'Grains', 'Spices'],
-                selectedCategory: selectedCategory,
-                onSelected: (category) => context.read<ProductProvider>().setSelectedCategory(category),
-                languageCode: languageCode,
-                categoryTranslationKeys: const {
-                  'All': 'cat_all',
-                  'Vegetables': 'cat_veg',
-                  'Fruits': 'cat_fruits',
-                  'Grains': 'cat_grains',
-                  'Spices': 'cat_spices',
-                },
-              ),
-              const SizedBox(height: 20),
-
-              // My Groups strip
-              if (myGroups.isNotEmpty) ...[
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          child: RefreshIndicator(
+            onRefresh: () async {
+              await fetchMyDemands();
+            },
+            child: Center(
+              child: ConstrainedBox(
+                constraints: const BoxConstraints(maxWidth: 800),
+                child: ListView(
+                  physics: const AlwaysScrollableScrollPhysics(),
+                  padding: const EdgeInsets.all(16),
                   children: [
-                    Text(
-                      'My Buying Groups',
-                      style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                    CustomSearchBar(
+                      hintText: 'search_placeholder'.tr(languageCode),
+                      onChanged: (value) => context.read<ProductProvider>().setSearchQuery(value),
                     ),
-                    TextButton(
-                      onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupsListScreen())),
-                      child: const Text('View all'),
+                    const SizedBox(height: 20),
+                    FilterChipsList(
+                      categories: const ['All', 'Vegetables', 'Fruits', 'Grains', 'Spices'],
+                      selectedCategory: selectedCategory,
+                      onSelected: (category) => context.read<ProductProvider>().setSelectedCategory(category),
+                      languageCode: languageCode,
+                      categoryTranslationKeys: const {
+                        'All': 'cat_all',
+                        'Vegetables': 'cat_veg',
+                        'Fruits': 'cat_fruits',
+                        'Grains': 'cat_grains',
+                        'Spices': 'cat_spices',
+                      },
                     ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  height: 110,
-                  child: ListView.builder(
-                    scrollDirection: Axis.horizontal,
-                    itemCount: myGroups.length,
-                    itemBuilder: (context, index) {
-                      return _buildGroupChip(context, myGroups[index]);
-                    },
-                  ),
-                ),
-                const SizedBox(height: 10),
-              ] else ...[
-                _buildJoinGroupBanner(context),
-                const SizedBox(height: 20),
-              ],
+                    const SizedBox(height: 20),
 
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'available_supplies'.tr(languageCode),
-                    style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
-                  ),
-                  TextButton(
-                    onPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => CategoryProductsScreen(category: selectedCategory),
+                    // My Groups strip
+                    if (myGroups.isNotEmpty) ...[
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Text(
+                            'My Buying Groups',
+                            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                          ),
+                          TextButton(
+                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupsListScreen())),
+                            child: const Text('View all'),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        height: 110,
+                        child: ListView.builder(
+                          scrollDirection: Axis.horizontal,
+                          itemCount: myGroups.length,
+                          itemBuilder: (context, index) {
+                            return _buildGroupChip(context, myGroups[index]);
+                          },
                         ),
-                      );
-                    },
-                    child: Text('view_all'.tr(languageCode)),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 12),
-              if (products.isEmpty)
-                Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 40),
-                    child: Column(
+                      ),
+                      const SizedBox(height: 10),
+                    ] else ...[
+                      _buildJoinGroupBanner(context),
+                      const SizedBox(height: 20),
+                    ],
+
+                    // ─── My Demands Section ───
+                    _buildMyDemandsSection(context, demandProvider, languageCode),
+                    const SizedBox(height: 20),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        Icon(Icons.search_off, size: 60, color: Colors.grey[400]),
-                        const SizedBox(height: 16),
                         Text(
-                          'no_products'.tr(languageCode),
-                          style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                          'available_supplies'.tr(languageCode),
+                          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                        ),
+                        TextButton(
+                          onPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => CategoryProductsScreen(category: selectedCategory),
+                              ),
+                            );
+                          },
+                          child: Text('view_all'.tr(languageCode)),
                         ),
                       ],
                     ),
-                  ),
-                )
-              else
-                GridView.builder(
-                  shrinkWrap: true,
-                  physics: const NeverScrollableScrollPhysics(),
-                  gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                    crossAxisCount: 2,
-                    childAspectRatio: 0.65,
-                    crossAxisSpacing: 12,
-                    mainAxisSpacing: 12,
-                  ),
-                  itemCount: products.length,
-                  itemBuilder: (context, index) {
-                    return ProductCard(
-                      product: products[index],
-                      currencyFormat: NumberFormat.currency(symbol: '৳', decimalDigits: 0),
-                      onTap: () {
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => ProductDetailsScreen(product: products[index]),
+                    const SizedBox(height: 12),
+                    if (products.isEmpty)
+                      Center(
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(vertical: 40),
+                          child: Column(
+                            children: [
+                              Icon(Icons.search_off, size: 60, color: Colors.grey[400]),
+                              const SizedBox(height: 16),
+                              Text(
+                                'no_products'.tr(languageCode),
+                                style: TextStyle(color: Colors.grey[600], fontSize: 16),
+                              ),
+                            ],
                           ),
-                        );
-                      },
-                    );
-                  },
+                        ),
+                      )
+                    else
+                      GridView.builder(
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                          crossAxisCount: 2,
+                          childAspectRatio: 0.65,
+                          crossAxisSpacing: 12,
+                          mainAxisSpacing: 12,
+                        ),
+                        itemCount: products.length,
+                        itemBuilder: (context, index) {
+                          return ProductCard(
+                            product: products[index],
+                            currencyFormat: NumberFormat.currency(symbol: '৳', decimalDigits: 0),
+                            onTap: () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => ProductDetailsScreen(product: products[index]),
+                                ),
+                              );
+                            },
+                          );
+                        },
+                      ),
+                  ],
                 ),
-            ],
+              ),
+            ),
           ),
         ),
-        ),)
+      ],
+    );
+  }
+
+  Widget _buildFilterPill(String label, IconData icon) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade100,
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: Colors.grey.shade700),
+          const SizedBox(width: 4),
+          Text(
+            label,
+            style: TextStyle(
+              fontSize: 11,
+              color: Colors.grey.shade800,
+              fontWeight: FontWeight.w500,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMyDemandsSection(
+    BuildContext context,
+    DemandProvider demandProvider,
+    String languageCode,
+  ) {
+    final myDemands = demandProvider.myDemands;
+    final isLoading = demandProvider.isMyDemandsLoading;
+    final error = demandProvider.myDemandsError;
+    final currencyFormat = NumberFormat.currency(symbol: '৳', decimalDigits: 0);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Row(
+              children: [
+                Text(
+                  'My Demands',
+                  style: GoogleFonts.outfit(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                if (!isLoading)
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Theme.of(context).colorScheme.primaryContainer,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${myDemands.length}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.bold,
+                        color: Theme.of(context).colorScheme.onPrimaryContainer,
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+            TextButton.icon(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const MyDemandsScreen()),
+                );
+              },
+              icon: const Icon(Icons.arrow_forward, size: 14),
+              label: const Text('View all'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        // Active curl filters indicators
+        Wrap(
+          spacing: 6,
+          runSpacing: 4,
+          children: [
+            _buildFilterPill('Potato', Icons.search),
+            _buildFilterPill('৳20 - ৳50', Icons.attach_money),
+            _buildFilterPill('Trade: Both', Icons.handshake_outlined),
+            _buildFilterPill('Active', Icons.check_circle_outline),
+          ],
+        ),
+        const SizedBox(height: 12),
+        if (isLoading)
+          const Center(
+            child: Padding(
+              padding: EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                children: [
+                  SizedBox(
+                    width: 24,
+                    height: 24,
+                    child: CircularProgressIndicator(strokeWidth: 2.5),
+                  ),
+                  SizedBox(height: 8),
+                  Text(
+                    'Fetching your active demands...',
+                    style: TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                ],
+              ),
+            ),
+          )
+        else if (error != null)
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.red.shade50,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.red.shade200),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.error_outline, color: Colors.red, size: 20),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Failed to load demands: $error',
+                    style: const TextStyle(fontSize: 12, color: Colors.red),
+                  ),
+                ),
+                TextButton(
+                  onPressed: fetchMyDemands,
+                  child: const Text('Retry'),
+                ),
+              ],
+            ),
+          )
+        else if (myDemands.isEmpty)
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.grey.shade50,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: Colors.grey.shade200),
+            ),
+            child: Column(
+              children: [
+                Icon(Icons.campaign_outlined, size: 40, color: Colors.grey[400]),
+                const SizedBox(height: 8),
+                const Text(
+                  'No active demands found for Potato (৳20 - ৳50)',
+                  style: TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  'Post your purchase requirements so farmers can submit offers.',
+                  style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (_) => const PostDemandScreen()),
+                    ).then((_) => fetchMyDemands());
+                  },
+                  icon: const Icon(Icons.add, size: 16),
+                  label: const Text('Post Potato Demand'),
+                  style: OutlinedButton.styleFrom(
+                    visualDensity: VisualDensity.compact,
+                  ),
+                ),
+              ],
+            ),
+          )
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: myDemands.length,
+            itemBuilder: (context, index) {
+              final demand = myDemands[index];
+              return DemandCard(
+                demand: demand,
+                currencyFormat: currencyFormat,
+                onTap: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(builder: (_) => const MyDemandsScreen()),
+                  );
+                },
+              );
+            },
+          ),
       ],
     );
   }
@@ -250,31 +512,32 @@ class _HomeTab extends StatelessWidget {
           color: Theme.of(context).colorScheme.primary,
           borderRadius: BorderRadius.circular(16),
         ),
-            child: Column(children: [
-              Row(children: [
-                const Icon(Icons.groups, color: Colors.white, size: 16),
-                const SizedBox(width: 6),
-                Expanded(
-                  child: Text(group.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
-                ),
-              ]),
-              const SizedBox(height: 4),
-              Text(group.productName, style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
-              const Spacer(),
-              ClipRRect(
-                borderRadius: BorderRadius.circular(4),
-                child: LinearProgressIndicator(
-                  value: progress.clamp(0.0, 1.0),
-                  minHeight: 5,
-                  backgroundColor: Colors.white.withOpacity(0.3),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
-                ),
+        child: Column(
+          children: [
+            Row(children: [
+              const Icon(Icons.groups, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(group.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
               ),
-              const SizedBox(height: 4),
-              Text('${(progress * 100).toInt()}% filled', style: const TextStyle(color: Colors.white70, fontSize: 10)),
-            ],)
+            ]),
+            const SizedBox(height: 4),
+            Text(group.productName, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+            const Spacer(),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(4),
+              child: LinearProgressIndicator(
+                value: progress.clamp(0.0, 1.0),
+                minHeight: 5,
+                backgroundColor: Colors.white.withValues(alpha: 0.3),
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text('${(progress * 100).toInt()}% filled', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+          ],
         ),
-
+      ),
     );
   }
 
@@ -327,65 +590,64 @@ class _HomeTab extends StatelessWidget {
             bottomRight: Radius.circular(30),
           ),
         ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-        children: [
-          IconButton(
-            icon: const Icon(Icons.menu, color: Colors.white),
-            onPressed: () {
-              ScaffoldState? scaffold = Scaffold.maybeOf(context);
-              if (scaffold == null || !scaffold.hasDrawer) {
-                scaffold = context.findRootAncestorStateOfType<ScaffoldState>();
-              }
-              scaffold?.openDrawer();
-            },
-          ),
-          Column(
-            children: [
-              Text('Current City', style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 12)),
-              const Row(
-                children: [
-                  Icon(Icons.location_on, color: Colors.white, size: 14),
-                  SizedBox(width: 4),
-                  Text('Dhaka, BD', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
-                ],
-              ),
-            ],
-          ),
-          Row(
-            children: [
-              const LanguageToggleButton(
-                compact: true,
-                activeColor: Colors.white,
-                backgroundColor: Colors.white24,
-                inactiveColor: Colors.white70,
-              ),
-              const SizedBox(width: 4),
-              Stack(
-                children: [
-                  IconButton(
-                    icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-                    onPressed: () {
-                      Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationScreen()));
-                    },
-                  ),
-                  Positioned(
-                    right: 12,
-                    top: 12,
-                    child: Container(
-                      width: 8,
-                      height: 8,
-                      decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            IconButton(
+              icon: const Icon(Icons.menu, color: Colors.white),
+              onPressed: () {
+                ScaffoldState? scaffold = Scaffold.maybeOf(context);
+                if (scaffold == null || !scaffold.hasDrawer) {
+                  scaffold = context.findRootAncestorStateOfType<ScaffoldState>();
+                }
+                scaffold?.openDrawer();
+              },
+            ),
+            Column(
+              children: [
+                Text('Current City', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+                const Row(
+                  children: [
+                    Icon(Icons.location_on, color: Colors.white, size: 14),
+                    SizedBox(width: 4),
+                    Text('Dhaka, BD', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                  ],
+                ),
+              ],
+            ),
+            Row(
+              children: [
+                const LanguageToggleButton(
+                  compact: true,
+                  activeColor: Colors.white,
+                  backgroundColor: Colors.white24,
+                  inactiveColor: Colors.white70,
+                ),
+                const SizedBox(width: 4),
+                Stack(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                      onPressed: () {
+                        Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationScreen()));
+                      },
                     ),
-                  ),
-                ],
-              ),
-            ],
-          ),
-        ],
-      ),)
+                    Positioned(
+                      right: 12,
+                      top: 12,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
     );
   }
-
-  // Removed _buildSearchBar and _buildCategories as they use reusable core widgets
 }

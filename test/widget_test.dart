@@ -1,30 +1,36 @@
-// This is a basic Flutter widget test.
-//
-// To perform an interaction with a widget in your test, use the WidgetTester
-// utility in the flutter_test package. For example, you can send tap and scroll
-// gestures. You can also use WidgetTester to find child widgets in the widget
-// tree, read text, and verify that the values of widget properties are correct.
-
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-
+import 'package:provider/provider.dart';
+import 'package:chashibhai/features/account/presentation/state/app_state_provider.dart';
+import 'package:chashibhai/features/account/presentation/state/review_provider.dart';
+import 'package:chashibhai/features/auth/presentation/state/auth_provider.dart';
+import 'package:chashibhai/features/buyer/presentation/state/demand_provider.dart';
+import 'package:chashibhai/features/buyer/presentation/state/product_provider.dart';
+import 'package:chashibhai/features/group/presentation/state/group_provider.dart';
+import 'package:chashibhai/features/wallet/presentation/state/order_provider.dart';
 import 'package:chashibhai/main.dart';
 
 void main() {
-  testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+  testWidgets('App root smoke test', (WidgetTester tester) async {
+    await tester.pumpWidget(
+      MultiProvider(
+        providers: [
+          ChangeNotifierProvider(create: (_) => AuthProvider()),
+          ChangeNotifierProvider(create: (_) => ProductProvider()),
+          ChangeNotifierProvider(create: (_) => GroupProvider()),
+          ChangeNotifierProvider(create: (_) => DemandProvider()),
+          ChangeNotifierProvider(create: (_) => OrderProvider()),
+          ChangeNotifierProvider(create: (_) => AppStateProvider()),
+          ChangeNotifierProvider(create: (_) => ReviewProvider()),
+        ],
+        child: const MyApp(),
+      ),
+    );
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
+    // Pump past splash screen's 2-second delay
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
 
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify app builds
+    expect(find.byType(MyApp), findsOneWidget);
   });
 }

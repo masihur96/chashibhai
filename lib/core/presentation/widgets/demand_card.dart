@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import '../../../../core/models/models.dart';
+import './product_image_view.dart';
 import './status_badge.dart';
 
 class DemandCard extends StatelessWidget {
@@ -32,8 +33,8 @@ class DemandCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
                 child: Hero(
                   tag: demand.id,
-                  child: Image.asset(
-                    demand.imageUrl,
+                  child: ProductImageView(
+                    imageUrl: demand.imageUrl,
                     width: 80,
                     height: 80,
                     fit: BoxFit.cover,
@@ -58,7 +59,9 @@ class DemandCard extends StatelessWidget {
                             Container(
                               padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                               decoration: BoxDecoration(
-                                color: demand.tradeType == TradeType.auction ? Colors.orange.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
+                                color: demand.tradeType == TradeType.auction
+                                    ? Colors.orange.withValues(alpha: 0.1)
+                                    : Colors.blue.withValues(alpha: 0.1),
                                 borderRadius: BorderRadius.circular(4),
                               ),
                               child: Text(

@@ -12,4 +12,16 @@ abstract class BuyerRepository {
     required List<UploadFileItem> files,
     String? token,
   });
+
+  Future<List<DemandPost>> getMyDemands({
+    int page = 1,
+    int limit = 10,
+    String? search,
+    String? productName,
+    double? minPrice,
+    double? maxPrice,
+    String? tradeType,
+    String? status,
+    String? token,
+  });
 }

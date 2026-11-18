@@ -51,6 +51,7 @@ class ApiPath {
 
   // Demands
   static String get demands => '$baseUrl/demands';
+  static String get myDemands => '$baseUrl/demands/my';
 
   // Groups
   static String get groups => '$baseUrl/groups';

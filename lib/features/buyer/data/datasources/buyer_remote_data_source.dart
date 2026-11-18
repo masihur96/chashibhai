@@ -18,6 +18,18 @@ abstract class BuyerRemoteDataSource {
     required List<UploadFileItem> files,
     String? token,
   });
+
+  Future<List<DemandPost>> getMyDemands({
+    int page = 1,
+    int limit = 10,
+    String? search,
+    String? productName,
+    double? minPrice,
+    double? maxPrice,
+    String? tradeType,
+    String? status,
+    String? token,
+  });
 }
 
 class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
@@ -197,6 +209,206 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
       if (e is! Exception) {
         ApiLogger.logError(
           method: 'POST',
+          uri: uri,
+          duration: stopwatch.elapsed,
+          error: e,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<DemandPost>> getMyDemands({
+    int page = 1,
+    int limit = 10,
+    String? search,
+    String? productName,
+    double? minPrice,
+    double? maxPrice,
+    String? tradeType,
+    String? status,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.myDemands;
+    final baseUri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    final queryParameters = <String, String>{
+      'page': page.toString(),
+      'limit': limit.toString(),
+    };
+
+    if (search != null && search.isNotEmpty) {
+      queryParameters['search'] = search;
+    }
+    if (productName != null && productName.isNotEmpty) {
+      queryParameters['productName'] = productName;
+      queryParameters['product_name'] = productName;
+    }
+    if (minPrice != null) {
+      queryParameters['minPrice'] = minPrice.toString();
+      queryParameters['min_price'] = minPrice.toString();
+    }
+    if (maxPrice != null) {
+      queryParameters['maxPrice'] = maxPrice.toString();
+      queryParameters['max_price'] = maxPrice.toString();
+    }
+    if (tradeType != null && tradeType.isNotEmpty) {
+      queryParameters['tradeType'] = tradeType;
+      queryParameters['trade_type'] = tradeType;
+    }
+    if (status != null && status.isNotEmpty) {
+      queryParameters['status'] = status;
+    }
+
+    final uri = baseUri.replace(queryParameters: queryParameters);
+
+    // Resolve bearer token: explicit param -> StorageService -> default fallback token
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = await StorageService().getAccessToken();
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultFallbackToken;
+    }
+
+    final headers = {
+      'accept': '*/*',
+      'Authorization': 'Bearer $resolvedToken',
+    };
+
+    ApiLogger.logRequest(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+    );
+
+    try {
+      final httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        final List<DemandPost> demands = [];
+        if (decodedJson is Map<String, dynamic>) {
+          final data = decodedJson['data'];
+          if (data is List) {
+            for (final item in data) {
+              if (item is Map<String, dynamic>) {
+                demands.add(DemandPost.fromJson(item));
+              }
+            }
+          } else if (decodedJson['demands'] is List) {
+            for (final item in decodedJson['demands']) {
+              if (item is Map<String, dynamic>) {
+                demands.add(DemandPost.fromJson(item));
+              }
+            }
+          }
+        } else if (decodedJson is List) {
+          for (final item in decodedJson) {
+            if (item is Map<String, dynamic>) {
+              demands.add(DemandPost.fromJson(item));
+            }
+          }
+        }
+        return demands;
+      } else if (httpResponse.statusCode == 401) {
+        // Attempt to refresh token if a refresh token is saved in Hive
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await getMyDemands(
+              page: page,
+              limit: limit,
+              search: search,
+              productName: productName,
+              minPrice: minPrice,
+              maxPrice: maxPrice,
+              tradeType: tradeType,
+              status: status,
+              token: refreshedToken,
+            );
+          }
+        }
+
+        String errorMessage = 'Unauthorized or token expired';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      } else {
+        String errorMessage =
+            'Failed to fetch demands (Status code ${httpResponse.statusCode})';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['message']?.toString() ??
+              decodedJson['error']?.toString() ??
+              decodedJson['detail']?.toString() ??
+              errorMessage;
+        } else if (responseBody.isNotEmpty) {
+          errorMessage = responseBody;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      }
+    } on SocketException catch (e) {
+      stopwatch.stop();
+      final err =
+          'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running.';
+      ApiLogger.logError(
+        method: 'GET',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: err,
+      );
+      throw Exception(err);
+    } catch (e) {
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(
+          method: 'GET',
           uri: uri,
           duration: stopwatch.elapsed,
           error: e,
