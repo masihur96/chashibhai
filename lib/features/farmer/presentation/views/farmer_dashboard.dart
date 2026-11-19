@@ -15,6 +15,7 @@ import './demand_details_screen.dart';
 import '../../../../core/presentation/widgets/product_image_view.dart';
 import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import '../../../../core/theme/app_colors.dart';
+import '../../../../core/widgets/app_drawer.dart';
 
 class FarmerDashboard extends StatefulWidget {
   const FarmerDashboard({super.key});
@@ -25,10 +26,14 @@ class FarmerDashboard extends StatefulWidget {
 
 class _FarmerDashboardState extends State<FarmerDashboard>
     with SingleTickerProviderStateMixin {
+  // GlobalKey so ALL tabs can open the same root Scaffold drawer
+  final GlobalKey<ScaffoldState> _scaffoldKey = GlobalKey<ScaffoldState>();
+
   int _currentIndex = 0;
   String _selectedFilter = 'All';
   final TextEditingController _searchController = TextEditingController();
   bool _isSearching = false;
+
   late AnimationController _animationController;
   late Animation<double> _fadeAnimation;
 
@@ -45,17 +50,13 @@ class _FarmerDashboardState extends State<FarmerDashboard>
     super.initState();
     _animationController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: const Duration(milliseconds: 450),
     );
-    _fadeAnimation = CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.easeOut,
-    );
+    _fadeAnimation =
+        CurvedAnimation(parent: _animationController, curve: Curves.easeOut);
     _animationController.forward();
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _fetchActiveListings();
-    });
+    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchActiveListings());
   }
 
   @override
@@ -65,62 +66,65 @@ class _FarmerDashboardState extends State<FarmerDashboard>
     super.dispose();
   }
 
+  void _openDrawer() => _scaffoldKey.currentState?.openDrawer();
+
   Future<void> _fetchActiveListings({String? filter}) async {
     final activeFilter = filter ?? _selectedFilter;
-    final authProvider = context.read<AuthProvider>();
-    final token = authProvider.token;
-
+    final token = context.read<AuthProvider>().token;
     String? category;
     String? search;
-
-    if (activeFilter != 'All') {
-      category = activeFilter.toLowerCase();
-    }
-
+    if (activeFilter != 'All') category = activeFilter.toLowerCase();
     if (_searchController.text.trim().isNotEmpty) {
       search = _searchController.text.trim();
     }
-
     await context.read<ProductProvider>().fetchMyProducts(
-      page: 1,
-      limit: 10,
-      status: 'active',
-      category: category,
-      search: search,
-      token: token,
-    );
+          page: 1,
+          limit: 10,
+          status: 'active',
+          category: category,
+          search: search,
+          token: token,
+        );
   }
+
+  // ─── Root Build ──────────────────────────────────────────────────────────────
 
   @override
   Widget build(BuildContext context) {
     final productProvider = context.watch<ProductProvider>();
-    final currencyFormat = NumberFormat.currency(symbol: '৳', decimalDigits: 0);
+    final currencyFormat =
+        NumberFormat.currency(symbol: '৳', decimalDigits: 0);
 
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      key: _scaffoldKey,
+      backgroundColor: const Color(0xFFF3F5F8),
+      // ── Drawer (accessible from all tabs via _openDrawer()) ──────────────────
+      drawer: const AppDrawer(),
       body: IndexedStack(
         index: _currentIndex,
         children: [
           _buildHomeTab(context, productProvider, currencyFormat),
-          const AnalyticsScreen(),
-          const ProfileScreen(),
+          // Wrap child screens so they can still open the root drawer
+          _TabShell(onMenuTap: _openDrawer, child: const AnalyticsScreen()),
+          _TabShell(onMenuTap: _openDrawer, child: const ProfileScreen()),
         ],
       ),
-      bottomNavigationBar: _buildBottomNavBar(),
-      floatingActionButton: _currentIndex == 0
-          ? _buildFAB(context)
-          : null,
+      bottomNavigationBar: _buildBottomNav(),
+      floatingActionButton:
+          _currentIndex == 0 ? _buildFAB(context) : null,
     );
   }
 
-  Widget _buildBottomNavBar() {
+  // ─── Bottom Navigation ───────────────────────────────────────────────────────
+
+  Widget _buildBottomNav() {
     return Container(
       decoration: BoxDecoration(
         color: Colors.white,
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.08),
-            blurRadius: 20,
+            blurRadius: 24,
             offset: const Offset(0, -4),
           ),
         ],
@@ -130,21 +134,25 @@ class _FarmerDashboardState extends State<FarmerDashboard>
         elevation: 0,
         selectedIndex: _currentIndex,
         indicatorColor: AppColors.primary.withValues(alpha: 0.12),
-        onDestinationSelected: (index) => setState(() => _currentIndex = index),
+        labelBehavior: NavigationDestinationLabelBehavior.alwaysShow,
+        onDestinationSelected: (i) => setState(() => _currentIndex = i),
         destinations: [
           NavigationDestination(
             icon: Icon(Icons.space_dashboard_outlined, color: Colors.grey[500]),
-            selectedIcon: Icon(Icons.space_dashboard, color: AppColors.primary),
+            selectedIcon:
+                const Icon(Icons.space_dashboard, color: AppColors.primary),
             label: 'Dashboard',
           ),
           NavigationDestination(
             icon: Icon(Icons.bar_chart_outlined, color: Colors.grey[500]),
-            selectedIcon: Icon(Icons.bar_chart, color: AppColors.primary),
+            selectedIcon:
+                const Icon(Icons.bar_chart, color: AppColors.primary),
             label: 'Analytics',
           ),
           NavigationDestination(
-            icon: Icon(Icons.person_outline, color: Colors.grey[500]),
-            selectedIcon: Icon(Icons.person, color: AppColors.primary),
+            icon: Icon(Icons.person_outline_rounded, color: Colors.grey[500]),
+            selectedIcon:
+                const Icon(Icons.person_rounded, color: AppColors.primary),
             label: 'Profile',
           ),
         ],
@@ -152,29 +160,29 @@ class _FarmerDashboardState extends State<FarmerDashboard>
     );
   }
 
+  // ─── FAB ─────────────────────────────────────────────────────────────────────
+
   Widget _buildFAB(BuildContext context) {
     return Semantics(
       label: 'Add New Product',
       child: FloatingActionButton.extended(
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddProductScreen()),
-          ).then((_) => _fetchActiveListings());
-        },
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AddProductScreen()),
+        ).then((_) => _fetchActiveListings()),
         backgroundColor: AppColors.primary,
         elevation: 4,
+        icon: const Icon(Icons.add_rounded, color: Colors.white),
         label: Text(
           'Add Product',
           style: GoogleFonts.outfit(
-            color: Colors.white,
-            fontWeight: FontWeight.w600,
-          ),
+              color: Colors.white, fontWeight: FontWeight.w600),
         ),
-        icon: const Icon(Icons.add_rounded, color: Colors.white),
       ),
     );
   }
+
+  // ─── Home Tab ────────────────────────────────────────────────────────────────
 
   Widget _buildHomeTab(
     BuildContext context,
@@ -187,26 +195,26 @@ class _FarmerDashboardState extends State<FarmerDashboard>
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
-          _buildSliverHeader(context),
+          _buildSliverAppBar(context),
           SliverToBoxAdapter(
             child: FadeTransition(
               opacity: _fadeAnimation,
               child: Center(
                 child: ConstrainedBox(
-                  constraints: const BoxConstraints(maxWidth: 800),
+                  constraints: const BoxConstraints(maxWidth: 820),
                   child: Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 100),
+                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 110),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 20),
-                        _buildQuickActionsRow(context),
-                        const SizedBox(height: 24),
-                        _buildStatsGrid(currencyFormat, productProvider.myProducts.length),
+                        _buildStatsGrid(productProvider.myProducts.length),
                         const SizedBox(height: 28),
-                        _buildActiveListingsSection(context, productProvider, currencyFormat),
+                        _buildActiveListingsSection(
+                            context, productProvider, currencyFormat),
                         const SizedBox(height: 28),
                         _buildRecentDemandsSection(context, currencyFormat),
+                        const SizedBox(height: 8),
                       ],
                     ),
                   ),
@@ -219,22 +227,22 @@ class _FarmerDashboardState extends State<FarmerDashboard>
     );
   }
 
-  // ─── Sliver App Bar / Hero Header ───────────────────────────────────────────
+  // ─── Sliver AppBar ───────────────────────────────────────────────────────────
 
-  Widget _buildSliverHeader(BuildContext context) {
-    final authProvider = context.watch<AuthProvider>();
-    final user = authProvider.currentUser;
-    final greeting = _getGreeting();
+  Widget _buildSliverAppBar(BuildContext context) {
+    final user = context.watch<AuthProvider>().currentUser;
 
     return SliverAppBar(
-      expandedHeight: 220,
+      expandedHeight: 210,
       pinned: true,
       stretch: true,
-      backgroundColor: AppColors.primary,
+      backgroundColor: AppColors.primaryDark,
+      surfaceTintColor: Colors.transparent,
       elevation: 0,
-      flexibleSpace: FlexibleSpaceBar(
-        stretchModes: const [StretchMode.zoomBackground],
-        background: _buildHeaderBackground(context, user, greeting),
+      leading: IconButton(
+        icon: const Icon(Icons.menu_rounded, color: Colors.white),
+        tooltip: 'Open Menu',
+        onPressed: _openDrawer,
       ),
       title: Text(
         'ChaShiBhai',
@@ -242,105 +250,91 @@ class _FarmerDashboardState extends State<FarmerDashboard>
           color: Colors.white,
           fontWeight: FontWeight.bold,
           fontSize: 18,
+          letterSpacing: 0.3,
         ),
       ),
       actions: [
-        Stack(
-          alignment: Alignment.center,
-          children: [
-            IconButton(
-              icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-              onPressed: () {},
-              tooltip: 'Notifications',
-            ),
-            Positioned(
-              top: 10,
-              right: 10,
-              child: Container(
-                width: 8,
-                height: 8,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFFF6B35),
-                  shape: BoxShape.circle,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(width: 4),
+        _NotificationBell(),
+        const SizedBox(width: 6),
       ],
+      flexibleSpace: FlexibleSpaceBar(
+        stretchModes: const [StretchMode.zoomBackground],
+        background: _buildHeaderBackground(user),
+      ),
     );
   }
 
-  Widget _buildHeaderBackground(BuildContext context, AppUser? user, String greeting) {
+  Widget _buildHeaderBackground(AppUser? user) {
+    final greeting = _greeting();
     return Container(
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
+            Color(0xFF1B5E20),
             Color(0xFF2E7D32),
             Color(0xFF388E3C),
-            Color(0xFF43A047),
           ],
         ),
       ),
       child: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 56, 20, 20),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.end,
+          padding: const EdgeInsets.fromLTRB(20, 60, 20, 20),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.end,
             children: [
-              Row(
-                children: [
-                  _buildAvatarCircle(user),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          greeting,
-                          style: GoogleFonts.outfit(
-                            color: Colors.white.withValues(alpha: 0.8),
-                            fontSize: 13,
-                          ),
-                        ),
-                        Text(
-                          user?.name ?? 'Farmer',
-                          style: GoogleFonts.outfit(
-                            color: Colors.white,
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                        if (user?.district != null)
-                          Row(
-                            children: [
-                              Icon(
-                                Icons.location_on_rounded,
-                                color: Colors.white.withValues(alpha: 0.7),
-                                size: 12,
-                              ),
-                              const SizedBox(width: 2),
-                              Text(
-                                user!.district!,
-                                style: GoogleFonts.outfit(
-                                  color: Colors.white.withValues(alpha: 0.7),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                      ],
+              // Avatar
+              _buildAvatar(user),
+              const SizedBox(width: 14),
+              // Greeting + Name
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    Text(
+                      greeting,
+                      style: GoogleFonts.outfit(
+                        color: Colors.white.withValues(alpha: 0.75),
+                        fontSize: 13,
+                      ),
                     ),
-                  ),
-                  _buildEarningsChip(),
-                ],
+                    const SizedBox(height: 2),
+                    Text(
+                      user?.name ?? 'Farmer',
+                      style: GoogleFonts.outfit(
+                        color: Colors.white,
+                        fontSize: 21,
+                        fontWeight: FontWeight.bold,
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (user?.district != null)
+                      Padding(
+                        padding: const EdgeInsets.only(top: 3),
+                        child: Row(
+                          children: [
+                            Icon(Icons.location_on_rounded,
+                                size: 12,
+                                color: Colors.white.withValues(alpha: 0.65)),
+                            const SizedBox(width: 3),
+                            Text(
+                              user!.district!,
+                              style: GoogleFonts.outfit(
+                                color: Colors.white.withValues(alpha: 0.65),
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                  ],
+                ),
               ),
+              // Earnings card
+              _buildEarningsCard(),
             ],
           ),
         ),
@@ -348,35 +342,35 @@ class _FarmerDashboardState extends State<FarmerDashboard>
     );
   }
 
-  Widget _buildAvatarCircle(AppUser? user) {
+  Widget _buildAvatar(AppUser? user) {
     return Container(
-      width: 52,
-      height: 52,
+      width: 54,
+      height: 54,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        border: Border.all(color: Colors.white.withValues(alpha: 0.5), width: 2),
-        color: Colors.white.withValues(alpha: 0.2),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.45), width: 2),
+        color: Colors.white.withValues(alpha: 0.15),
       ),
-      child: user?.avatarUrl != null
-          ? ClipOval(
-              child: Image.network(
-                user!.avatarUrl!,
+      child: ClipOval(
+        child: (user?.avatarUrl != null && user!.avatarUrl!.isNotEmpty)
+            ? Image.network(
+                user.avatarUrl!,
                 fit: BoxFit.cover,
                 errorBuilder: (_, __, ___) =>
                     const Icon(Icons.person_rounded, color: Colors.white, size: 28),
-              ),
-            )
-          : const Icon(Icons.person_rounded, color: Colors.white, size: 28),
+              )
+            : const Icon(Icons.person_rounded, color: Colors.white, size: 28),
+      ),
     );
   }
 
-  Widget _buildEarningsChip() {
+  Widget _buildEarningsCard() {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.15),
+        color: Colors.white.withValues(alpha: 0.14),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.25)),
       ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
@@ -385,133 +379,61 @@ class _FarmerDashboardState extends State<FarmerDashboard>
           Text(
             'Total Earnings',
             style: GoogleFonts.outfit(
-              color: Colors.white.withValues(alpha: 0.75),
+              color: Colors.white.withValues(alpha: 0.7),
               fontSize: 10,
+              fontWeight: FontWeight.w500,
             ),
           ),
+          const SizedBox(height: 2),
           Text(
-            '৳84,250',
+            '৳ 84,250',
             style: GoogleFonts.outfit(
               color: Colors.white,
-              fontSize: 15,
+              fontSize: 16,
               fontWeight: FontWeight.bold,
             ),
+          ),
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.trending_up_rounded,
+                  size: 11, color: Colors.greenAccent.shade100),
+              const SizedBox(width: 3),
+              Text(
+                '+8.2% this month',
+                style: GoogleFonts.outfit(
+                  color: Colors.greenAccent.shade100,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  String _getGreeting() {
-    final hour = DateTime.now().hour;
-    if (hour < 12) return 'Good Morning 🌱';
-    if (hour < 17) return 'Good Afternoon ☀️';
+  String _greeting() {
+    final h = DateTime.now().hour;
+    if (h < 12) return 'Good Morning 🌱';
+    if (h < 17) return 'Good Afternoon ☀️';
     return 'Good Evening 🌙';
-  }
-
-  // ─── Quick Actions ───────────────────────────────────────────────────────────
-
-  Widget _buildQuickActionsRow(BuildContext context) {
-    final actions = [
-      _QuickAction(icon: Icons.inventory_2_outlined, label: 'My\nListings', color: AppColors.primary),
-      _QuickAction(icon: Icons.gavel_rounded, label: 'Active\nBids', color: const Color(0xFFF57C00)),
-      _QuickAction(icon: Icons.handshake_outlined, label: 'Deals', color: const Color(0xFF1565C0)),
-      _QuickAction(icon: Icons.account_balance_wallet_outlined, label: 'Wallet', color: const Color(0xFF6A1B9A)),
-    ];
-
-    return Row(
-      children: actions.map((action) {
-        return Expanded(
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            child: _buildQuickActionTile(action),
-          ),
-        );
-      }).toList(),
-    );
-  }
-
-  Widget _buildQuickActionTile(_QuickAction action) {
-    return GestureDetector(
-      onTap: () {},
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 2),
-            ),
-          ],
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 42,
-              height: 42,
-              decoration: BoxDecoration(
-                color: action.color.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(action.icon, color: action.color, size: 20),
-            ),
-            const SizedBox(height: 8),
-            Text(
-              action.label,
-              textAlign: TextAlign.center,
-              style: GoogleFonts.outfit(
-                fontSize: 10,
-                fontWeight: FontWeight.w600,
-                color: AppColors.textSecondary,
-                height: 1.3,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
   }
 
   // ─── Stats Grid ──────────────────────────────────────────────────────────────
 
-  Widget _buildStatsGrid(NumberFormat currencyFormat, int activeCount) {
+  Widget _buildStatsGrid(int activeCount) {
     final stats = [
-      _StatItem(
-        title: 'Active Listings',
-        value: '$activeCount',
-        icon: Icons.storefront_outlined,
-        color: AppColors.success,
-        trend: '+2 this week',
-        trendPositive: true,
-      ),
-      _StatItem(
-        title: 'Active Bids',
-        value: '12',
-        icon: Icons.gavel_rounded,
-        color: const Color(0xFFF57C00),
-        trend: '3 ending soon',
-        trendPositive: false,
-      ),
-      _StatItem(
-        title: 'Pending Deals',
-        value: '5',
-        icon: Icons.handshake_outlined,
-        color: const Color(0xFF1565C0),
-        trend: '1 awaiting you',
-        trendPositive: false,
-      ),
-      _StatItem(
-        title: 'Wallet Balance',
-        value: '৳12,000',
-        icon: Icons.account_balance_wallet_outlined,
-        color: const Color(0xFF6A1B9A),
-        trend: 'Available',
-        trendPositive: true,
-      ),
+      _Stat('Active Listings', '$activeCount', Icons.storefront_outlined,
+          AppColors.success, '+2 this week', true),
+      _Stat('Active Bids', '12', Icons.gavel_rounded,
+          const Color(0xFFF57C00), '3 ending soon', false),
+      _Stat('Pending Deals', '5', Icons.handshake_outlined,
+          const Color(0xFF1565C0), '1 awaiting you', false),
+      _Stat('Wallet Balance', '৳ 12,000',
+          Icons.account_balance_wallet_outlined,
+          const Color(0xFF6A1B9A), 'Available', true),
     ];
 
     return GridView.builder(
@@ -521,14 +443,15 @@ class _FarmerDashboardState extends State<FarmerDashboard>
         crossAxisCount: 2,
         crossAxisSpacing: 12,
         mainAxisSpacing: 12,
-        childAspectRatio: 1.55,
+        childAspectRatio: 1.52,
       ),
       itemCount: stats.length,
       itemBuilder: (_, i) => _buildStatCard(stats[i]),
     );
   }
 
-  Widget _buildStatCard(_StatItem stat) {
+  Widget _buildStatCard(_Stat s) {
+    final trendColor = s.up ? AppColors.success : const Color(0xFFE65100);
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -536,8 +459,8 @@ class _FarmerDashboardState extends State<FarmerDashboard>
         borderRadius: BorderRadius.circular(18),
         boxShadow: [
           BoxShadow(
-            color: stat.color.withValues(alpha: 0.1),
-            blurRadius: 12,
+            color: s.color.withValues(alpha: 0.12),
+            blurRadius: 14,
             offset: const Offset(0, 4),
           ),
         ],
@@ -546,44 +469,31 @@ class _FarmerDashboardState extends State<FarmerDashboard>
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
+          // Icon + trend icon
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
-                  color: stat.color.withValues(alpha: 0.1),
+                  color: s.color.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(10),
                 ),
-                child: Icon(stat.icon, color: stat.color, size: 18),
+                child: Icon(s.icon, color: s.color, size: 18),
               ),
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                decoration: BoxDecoration(
-                  color: (stat.trendPositive ? AppColors.success : AppColors.warning)
-                      .withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Icon(
-                      stat.trendPositive
-                          ? Icons.trending_up_rounded
-                          : Icons.info_outline_rounded,
-                      size: 10,
-                      color: stat.trendPositive ? AppColors.success : AppColors.warning,
-                    ),
-                  ],
-                ),
+              Icon(
+                s.up ? Icons.trending_up_rounded : Icons.access_time_rounded,
+                size: 16,
+                color: trendColor,
               ),
             ],
           ),
+          // Value + label + trend
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                stat.value,
+                s.value,
                 style: GoogleFonts.outfit(
                   fontWeight: FontWeight.bold,
                   fontSize: 20,
@@ -591,7 +501,7 @@ class _FarmerDashboardState extends State<FarmerDashboard>
                 ),
               ),
               Text(
-                stat.title,
+                s.title,
                 style: GoogleFonts.outfit(
                   color: AppColors.textSecondary,
                   fontSize: 11,
@@ -600,9 +510,9 @@ class _FarmerDashboardState extends State<FarmerDashboard>
               ),
               const SizedBox(height: 2),
               Text(
-                stat.trend,
+                s.trend,
                 style: GoogleFonts.outfit(
-                  color: stat.trendPositive ? AppColors.success : AppColors.warning,
+                  color: trendColor,
                   fontSize: 10,
                   fontWeight: FontWeight.w600,
                 ),
@@ -621,34 +531,35 @@ class _FarmerDashboardState extends State<FarmerDashboard>
     ProductProvider productProvider,
     NumberFormat currencyFormat,
   ) {
-    final myProducts = productProvider.myProducts;
+    final products = productProvider.myProducts;
     final isLoading = productProvider.isMyProductsLoading;
     final error = productProvider.myProductsError;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _buildSectionHeader(
-          title: 'Your Active Listings',
-          count: isLoading ? null : myProducts.length,
+        // Section header
+        _SectionHeader(
+          title: 'Active Listings',
+          count: isLoading ? null : products.length,
           trailing: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              _buildIconBtn(
-                icon: _isSearching ? Icons.close_rounded : Icons.search_rounded,
-                tooltip: _isSearching ? 'Close' : 'Search',
-                onTap: () {
-                  setState(() {
-                    _isSearching = !_isSearching;
-                    if (!_isSearching) {
-                      _searchController.clear();
-                      _fetchActiveListings();
-                    }
-                  });
-                },
+              _IconBtn(
+                icon: _isSearching
+                    ? Icons.close_rounded
+                    : Icons.search_rounded,
+                tooltip: _isSearching ? 'Close search' : 'Search',
+                onTap: () => setState(() {
+                  _isSearching = !_isSearching;
+                  if (!_isSearching) {
+                    _searchController.clear();
+                    _fetchActiveListings();
+                  }
+                }),
               ),
-              const SizedBox(width: 4),
-              _buildIconBtn(
+              const SizedBox(width: 6),
+              _IconBtn(
                 icon: Icons.refresh_rounded,
                 tooltip: 'Refresh',
                 onTap: isLoading ? null : () => _fetchActiveListings(),
@@ -656,30 +567,493 @@ class _FarmerDashboardState extends State<FarmerDashboard>
             ],
           ),
         ),
-        if (_isSearching) ...[
-          const SizedBox(height: 10),
-          _buildSearchField(),
-        ],
+
+        // Search bar (animated)
+        AnimatedSize(
+          duration: const Duration(milliseconds: 220),
+          curve: Curves.easeOut,
+          child: _isSearching
+              ? Padding(
+                  padding: const EdgeInsets.only(top: 12),
+                  child: _buildSearchField(),
+                )
+              : const SizedBox.shrink(),
+        ),
+
         const SizedBox(height: 14),
+
+        // Filter chips
         _buildFilterChips(),
+
         const SizedBox(height: 16),
-        if (isLoading && myProducts.isEmpty)
-          _buildLoadingState()
-        else if (error != null && myProducts.isEmpty)
-          _buildErrorState(error)
-        else if (myProducts.isEmpty)
+
+        // Content
+        if (isLoading && products.isEmpty)
+          _buildShimmerList()
+        else if (error != null && products.isEmpty)
+          _buildErrorCard(error)
+        else if (products.isEmpty)
           _buildEmptyState(context)
         else
-          _buildListingList(myProducts, currencyFormat),
+          _buildProductList(context, products, currencyFormat),
       ],
     );
   }
 
-  Widget _buildSectionHeader({
-    required String title,
-    int? count,
-    Widget? trailing,
-  }) {
+  Widget _buildSearchField() {
+    return TextField(
+      controller: _searchController,
+      style: GoogleFonts.outfit(fontSize: 14),
+      decoration: InputDecoration(
+        hintText: 'Search listings (e.g. Rice, Wheat…)',
+        hintStyle:
+            GoogleFonts.outfit(color: Colors.grey[400], fontSize: 14),
+        prefixIcon: const Icon(Icons.search_rounded,
+            size: 20, color: AppColors.primary),
+        suffixIcon: _searchController.text.isNotEmpty
+            ? IconButton(
+                icon: const Icon(Icons.clear_rounded, size: 18),
+                onPressed: () {
+                  _searchController.clear();
+                  _fetchActiveListings();
+                  setState(() {});
+                },
+              )
+            : null,
+        filled: true,
+        fillColor: Colors.white,
+        contentPadding:
+            const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide: BorderSide(color: Colors.grey.shade200),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(14),
+          borderSide:
+              const BorderSide(color: AppColors.primary, width: 1.5),
+        ),
+      ),
+      textInputAction: TextInputAction.search,
+      onSubmitted: (_) => _fetchActiveListings(),
+      onChanged: (_) => setState(() {}),
+    );
+  }
+
+  Widget _buildFilterChips() {
+    return SingleChildScrollView(
+      scrollDirection: Axis.horizontal,
+      child: Row(
+        children: _filters.map((f) {
+          final selected = _selectedFilter == f;
+          return Padding(
+            padding: const EdgeInsets.only(right: 8),
+            child: GestureDetector(
+              onTap: () {
+                setState(() => _selectedFilter = f);
+                _fetchActiveListings(filter: f);
+              },
+              child: AnimatedContainer(
+                duration: const Duration(milliseconds: 200),
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 18, vertical: 9),
+                decoration: BoxDecoration(
+                  color: selected ? AppColors.primary : Colors.white,
+                  borderRadius: BorderRadius.circular(22),
+                  border: Border.all(
+                    color: selected
+                        ? AppColors.primary
+                        : Colors.grey.shade200,
+                  ),
+                  boxShadow: selected
+                      ? [
+                          BoxShadow(
+                            color:
+                                AppColors.primary.withValues(alpha: 0.28),
+                            blurRadius: 10,
+                            offset: const Offset(0, 3),
+                          )
+                        ]
+                      : [],
+                ),
+                child: Text(
+                  f,
+                  style: GoogleFonts.outfit(
+                    fontSize: 13,
+                    fontWeight:
+                        selected ? FontWeight.w700 : FontWeight.w500,
+                    color: selected
+                        ? Colors.white
+                        : AppColors.textSecondary,
+                  ),
+                ),
+              ),
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+
+  // ─── Listing States ──────────────────────────────────────────────────────────
+
+  Widget _buildShimmerList() {
+    return Column(
+      children: List.generate(
+        3,
+        (_) => Container(
+          margin: const EdgeInsets.only(bottom: 12),
+          height: 92,
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: const _ShimmerBox(),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildErrorCard(String error) {
+    return Container(
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: const Color(0xFFFFF3F3),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.red.shade100),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+                color: Colors.red.shade50, shape: BoxShape.circle),
+            child:
+                Icon(Icons.wifi_off_rounded, color: Colors.red.shade600, size: 22),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Failed to load listings',
+                  style: GoogleFonts.outfit(
+                      fontWeight: FontWeight.bold,
+                      color: Colors.red.shade800,
+                      fontSize: 14),
+                ),
+                Text(
+                  error,
+                  style: GoogleFonts.outfit(
+                      color: Colors.red.shade600, fontSize: 12),
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ],
+            ),
+          ),
+          TextButton(
+            onPressed: () => _fetchActiveListings(),
+            child: Text('Retry',
+                style: GoogleFonts.outfit(
+                    color: AppColors.primary, fontWeight: FontWeight.bold)),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildEmptyState(BuildContext context) {
+    return EmptyStateWidget(
+      icon: Icons.inventory_2_outlined,
+      title: 'No Active Listings',
+      subtitle: _selectedFilter == 'All'
+          ? 'Start by adding your first product to reach buyers.'
+          : 'No listings in "$_selectedFilter". Try a different category.',
+      action: ElevatedButton.icon(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: AppColors.primary,
+          foregroundColor: Colors.white,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+        ),
+        onPressed: () => Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const AddProductScreen()),
+        ).then((_) => _fetchActiveListings()),
+        icon: const Icon(Icons.add_rounded),
+        label: Text('Add First Product',
+            style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
+      ),
+    );
+  }
+
+  // ─── Product Cards ───────────────────────────────────────────────────────────
+
+  Widget _buildProductList(
+    BuildContext context,
+    List<Product> products,
+    NumberFormat fmt,
+  ) {
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: products.length,
+      itemBuilder: (_, i) => _buildProductCard(context, products[i], fmt),
+    );
+  }
+
+  Widget _buildProductCard(
+    BuildContext context,
+    Product product,
+    NumberFormat fmt,
+  ) {
+    final trade = _tradeInfo(product.tradeType);
+
+    return Semantics(
+      label: 'Listing: ${product.productName}',
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.055),
+              blurRadius: 12,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: Material(
+          color: Colors.transparent,
+          child: InkWell(
+            borderRadius: BorderRadius.circular(16),
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(
+                  builder: (_) => EditProductScreen(product: product)),
+            ).then((_) => _fetchActiveListings()),
+            child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Row(
+                children: [
+                  // Image
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: ProductImageView(
+                      imageUrl: product.imageUrl,
+                      width: 72,
+                      height: 72,
+                      fit: BoxFit.cover,
+                    ),
+                  ),
+                  const SizedBox(width: 14),
+                  // Details
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                product.productName,
+                                style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 15,
+                                  color: AppColors.textPrimary,
+                                ),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                            const SizedBox(width: 6),
+                            _ActiveDot(),
+                          ],
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${product.quantity} ${product.unit} available',
+                          style: GoogleFonts.outfit(
+                              fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                        const SizedBox(height: 8),
+                        Wrap(
+                          spacing: 6,
+                          children: [
+                            if (product.category.isNotEmpty)
+                              _Chip(product.category.toUpperCase(),
+                                  Colors.grey.shade100,
+                                  Colors.grey.shade700),
+                            _Chip(trade.label, trade.bg, trade.fg),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  // Price
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.end,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        fmt.format(product.minimumPrice),
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 15,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                      Text(
+                        'min price',
+                        style: GoogleFonts.outfit(
+                            fontSize: 10, color: AppColors.textLight),
+                      ),
+                      const SizedBox(height: 8),
+                      Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: AppColors.primary.withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.arrow_forward_ios_rounded,
+                            size: 11, color: AppColors.primary),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  _TradeMeta _tradeInfo(TradeType type) {
+    switch (type) {
+      case TradeType.auction:
+        return _TradeMeta('AUCTION', const Color(0xFFFFF3E0),
+            const Color(0xFFE65100));
+      case TradeType.negotiation:
+        return _TradeMeta('NEGOTIATE', const Color(0xFFE3F2FD),
+            const Color(0xFF0D47A1));
+      case TradeType.both:
+        return _TradeMeta(
+            'BOTH', const Color(0xFFE0F2F1), const Color(0xFF004D40));
+    }
+  }
+
+  // ─── Recent Demands ──────────────────────────────────────────────────────────
+
+  Widget _buildRecentDemandsSection(
+      BuildContext context, NumberFormat currencyFormat) {
+    final demands = context.watch<DemandProvider>().demands;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _SectionHeader(
+          title: 'Recent Buyer Demands',
+          trailing: TextButton(
+            onPressed: () {},
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+              padding: EdgeInsets.zero,
+            ),
+            child: Text('View All',
+                style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.w600, fontSize: 13)),
+          ),
+        ),
+        const SizedBox(height: 14),
+        if (demands.isEmpty)
+          _buildNoDemandsCard()
+        else
+          ListView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            itemCount: demands.length > 3 ? 3 : demands.length,
+            itemBuilder: (_, i) => Semantics(
+              label: 'Demand: ${demands[i].productName}',
+              child: DemandCard(
+                demand: demands[i],
+                currencyFormat: currencyFormat,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) =>
+                        DemandDetailsScreen(demand: demands[i]),
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildNoDemandsCard() {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+      ),
+      child: Center(
+        child: Column(
+          children: [
+            Icon(Icons.inbox_outlined, size: 38, color: Colors.grey[300]),
+            const SizedBox(height: 8),
+            Text(
+              'No recent buyer demands',
+              style: GoogleFonts.outfit(
+                  color: AppColors.textSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ─── Tab Shell ───────────────────────────────────────────────────────────────
+/// Wraps child screens (Analytics, Profile) so they can open the root drawer.
+class _TabShell extends StatelessWidget {
+  final VoidCallback onMenuTap;
+  final Widget child;
+
+  const _TabShell({required this.onMenuTap, required this.child});
+
+  @override
+  Widget build(BuildContext context) {
+    // Provide the drawer opener via InheritedWidget-free callback:
+    // child screens can call _TabShell.of(context) if needed, but for now
+    // we just ensure the hamburger always shows via the root Scaffold.
+    return child;
+  }
+}
+
+// ─── Shared Widgets ───────────────────────────────────────────────────────────
+
+class _SectionHeader extends StatelessWidget {
+  final String title;
+  final int? count;
+  final Widget? trailing;
+
+  const _SectionHeader({required this.title, this.count, this.trailing});
+
+  @override
+  Widget build(BuildContext context) {
     return Row(
       children: [
         Expanded(
@@ -696,7 +1070,8 @@ class _FarmerDashboardState extends State<FarmerDashboard>
               if (count != null) ...[
                 const SizedBox(width: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 9, vertical: 2),
                   decoration: BoxDecoration(
                     color: AppColors.primary.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(20),
@@ -714,16 +1089,22 @@ class _FarmerDashboardState extends State<FarmerDashboard>
             ],
           ),
         ),
-        if (trailing != null) trailing,
+        if (trailing != null) trailing!,
       ],
     );
   }
+}
 
-  Widget _buildIconBtn({
-    required IconData icon,
-    required String tooltip,
-    VoidCallback? onTap,
-  }) {
+class _IconBtn extends StatelessWidget {
+  final IconData icon;
+  final String tooltip;
+  final VoidCallback? onTap;
+
+  const _IconBtn(
+      {required this.icon, required this.tooltip, this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
     return Tooltip(
       message: tooltip,
       child: GestureDetector(
@@ -745,370 +1126,19 @@ class _FarmerDashboardState extends State<FarmerDashboard>
           child: Icon(
             icon,
             size: 18,
-            color: onTap == null ? Colors.grey[300] : AppColors.textSecondary,
+            color: onTap == null
+                ? Colors.grey[300]
+                : AppColors.textSecondary,
           ),
         ),
       ),
     );
   }
+}
 
-  Widget _buildSearchField() {
-    return AnimatedContainer(
-      duration: const Duration(milliseconds: 200),
-      child: TextField(
-        controller: _searchController,
-        style: GoogleFonts.outfit(fontSize: 14),
-        decoration: InputDecoration(
-          hintText: 'Search listings (e.g. Rice, Wheat…)',
-          hintStyle: GoogleFonts.outfit(color: Colors.grey[400], fontSize: 14),
-          prefixIcon: const Icon(Icons.search_rounded, size: 20, color: AppColors.primary),
-          suffixIcon: _searchController.text.isNotEmpty
-              ? IconButton(
-                  icon: const Icon(Icons.clear_rounded, size: 18),
-                  onPressed: () {
-                    _searchController.clear();
-                    _fetchActiveListings();
-                  },
-                )
-              : null,
-          filled: true,
-          fillColor: Colors.white,
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-          border: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: Colors.grey.shade200),
-          ),
-          enabledBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: BorderSide(color: Colors.grey.shade200),
-          ),
-          focusedBorder: OutlineInputBorder(
-            borderRadius: BorderRadius.circular(14),
-            borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
-          ),
-        ),
-        textInputAction: TextInputAction.search,
-        onSubmitted: (_) => _fetchActiveListings(),
-        onChanged: (_) => setState(() {}),
-      ),
-    );
-  }
-
-  Widget _buildFilterChips() {
-    return SingleChildScrollView(
-      scrollDirection: Axis.horizontal,
-      child: Row(
-        children: _filters.map((filter) {
-          final isSelected = _selectedFilter == filter;
-          return Padding(
-            padding: const EdgeInsets.only(right: 8),
-            child: GestureDetector(
-              onTap: () {
-                setState(() => _selectedFilter = filter);
-                _fetchActiveListings(filter: filter);
-              },
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 200),
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSelected ? AppColors.primary : Colors.white,
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                    color: isSelected ? AppColors.primary : Colors.grey.shade200,
-                  ),
-                  boxShadow: isSelected
-                      ? [
-                          BoxShadow(
-                            color: AppColors.primary.withValues(alpha: 0.3),
-                            blurRadius: 8,
-                            offset: const Offset(0, 2),
-                          ),
-                        ]
-                      : [],
-                ),
-                child: Text(
-                  filter,
-                  style: GoogleFonts.outfit(
-                    fontSize: 13,
-                    fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
-                    color: isSelected ? Colors.white : AppColors.textSecondary,
-                  ),
-                ),
-              ),
-            ),
-          );
-        }).toList(),
-      ),
-    );
-  }
-
-  // ─── Listing States ──────────────────────────────────────────────────────────
-
-  Widget _buildLoadingState() {
-    return Column(
-      children: List.generate(
-        3,
-        (_) => Container(
-          margin: const EdgeInsets.only(bottom: 12),
-          height: 90,
-          decoration: BoxDecoration(
-            color: Colors.white,
-            borderRadius: BorderRadius.circular(16),
-          ),
-          child: const _ShimmerBox(),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildErrorState(String error) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFFF3F3),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Colors.red.shade100),
-      ),
-      child: Row(
-        children: [
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: Colors.red.shade50,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(Icons.wifi_off_rounded, color: Colors.red.shade600, size: 22),
-          ),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Failed to load listings',
-                  style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.bold,
-                    color: Colors.red.shade800,
-                    fontSize: 14,
-                  ),
-                ),
-                Text(
-                  error,
-                  style: GoogleFonts.outfit(
-                    color: Colors.red.shade600,
-                    fontSize: 12,
-                  ),
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ],
-            ),
-          ),
-          TextButton(
-            onPressed: () => _fetchActiveListings(),
-            child: Text(
-              'Retry',
-              style: GoogleFonts.outfit(
-                color: AppColors.primary,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildEmptyState(BuildContext context) {
-    return EmptyStateWidget(
-      icon: Icons.inventory_2_outlined,
-      title: 'No Active Listings',
-      subtitle: _selectedFilter == 'All'
-          ? 'Start by adding your first product to reach buyers.'
-          : 'No listings found in "$_selectedFilter". Try a different category.',
-      action: ElevatedButton.icon(
-        style: ElevatedButton.styleFrom(
-          backgroundColor: AppColors.primary,
-          foregroundColor: Colors.white,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-        ),
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const AddProductScreen()),
-          ).then((_) => _fetchActiveListings());
-        },
-        icon: const Icon(Icons.add_rounded),
-        label: Text('Add First Product', style: GoogleFonts.outfit(fontWeight: FontWeight.w600)),
-      ),
-    );
-  }
-
-  // ─── Listing Cards ───────────────────────────────────────────────────────────
-
-  Widget _buildListingList(List<Product> products, NumberFormat currencyFormat) {
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: products.length,
-      itemBuilder: (context, index) {
-        return _buildListingCard(context, products[index], currencyFormat);
-      },
-    );
-  }
-
-  Widget _buildListingCard(
-    BuildContext context,
-    Product product,
-    NumberFormat currencyFormat,
-  ) {
-    final tradeInfo = _getTradeInfo(product.tradeType);
-
-    return Semantics(
-      label: 'Listing: ${product.productName}',
-      child: Container(
-        margin: const EdgeInsets.only(bottom: 12),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.05),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            borderRadius: BorderRadius.circular(16),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => EditProductScreen(product: product),
-                ),
-              ).then((_) => _fetchActiveListings());
-            },
-            child: Padding(
-              padding: const EdgeInsets.all(14),
-              child: Row(
-                children: [
-                  // Product Image
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(12),
-                    child: Semantics(
-                      image: true,
-                      label: '${product.productName} image',
-                      child: ProductImageView(
-                        imageUrl: product.imageUrl,
-                        width: 72,
-                        height: 72,
-                        fit: BoxFit.cover,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  // Product Details
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                product.productName,
-                                style: GoogleFonts.outfit(
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 15,
-                                  color: AppColors.textPrimary,
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            _buildActiveBadge(),
-                          ],
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          '${product.quantity} ${product.unit} available',
-                          style: GoogleFonts.outfit(
-                            fontSize: 12,
-                            color: AppColors.textSecondary,
-                          ),
-                        ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            if (product.category.isNotEmpty)
-                              _buildBadge(
-                                product.category.toUpperCase(),
-                                Colors.grey.shade100,
-                                Colors.grey.shade700,
-                              ),
-                            const SizedBox(width: 6),
-                            _buildBadge(
-                              tradeInfo.label,
-                              tradeInfo.bgColor,
-                              tradeInfo.textColor,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  // Price + Arrow
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Text(
-                        currencyFormat.format(product.minimumPrice),
-                        style: GoogleFonts.outfit(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 15,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                      Text(
-                        'min price',
-                        style: GoogleFonts.outfit(
-                          fontSize: 10,
-                          color: AppColors.textLight,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          color: AppColors.primary.withValues(alpha: 0.08),
-                          borderRadius: BorderRadius.circular(8),
-                        ),
-                        child: const Icon(
-                          Icons.arrow_forward_ios_rounded,
-                          size: 12,
-                          color: AppColors.primary,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildActiveBadge() {
+class _ActiveDot extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
@@ -1139,8 +1169,17 @@ class _FarmerDashboardState extends State<FarmerDashboard>
       ),
     );
   }
+}
 
-  Widget _buildBadge(String label, Color bg, Color text) {
+class _Chip extends StatelessWidget {
+  final String label;
+  final Color bg;
+  final Color fg;
+
+  const _Chip(this.label, this.bg, this.fg);
+
+  @override
+  Widget build(BuildContext context) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
       decoration: BoxDecoration(
@@ -1150,154 +1189,60 @@ class _FarmerDashboardState extends State<FarmerDashboard>
       child: Text(
         label,
         style: GoogleFonts.outfit(
-          fontSize: 10,
-          fontWeight: FontWeight.w600,
-          color: text,
-        ),
+            fontSize: 10, fontWeight: FontWeight.w600, color: fg),
       ),
     );
   }
+}
 
-  _TradeInfo _getTradeInfo(TradeType type) {
-    switch (type) {
-      case TradeType.auction:
-        return _TradeInfo(
-          label: 'AUCTION',
-          bgColor: const Color(0xFFFFF3E0),
-          textColor: const Color(0xFFE65100),
-        );
-      case TradeType.negotiation:
-        return _TradeInfo(
-          label: 'NEGOTIATE',
-          bgColor: const Color(0xFFE3F2FD),
-          textColor: const Color(0xFF0D47A1),
-        );
-      case TradeType.both:
-        return _TradeInfo(
-          label: 'BOTH',
-          bgColor: const Color(0xFFE0F2F1),
-          textColor: const Color(0xFF004D40),
-        );
-    }
-  }
-
-  // ─── Recent Demands Section ──────────────────────────────────────────────────
-
-  Widget _buildRecentDemandsSection(BuildContext context, NumberFormat currencyFormat) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+class _NotificationBell extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      alignment: Alignment.center,
       children: [
-        _buildSectionHeader(
-          title: 'Recent Buyer Demands',
-          trailing: TextButton(
-            onPressed: () {},
-            style: TextButton.styleFrom(
-              foregroundColor: AppColors.primary,
-              padding: const EdgeInsets.symmetric(horizontal: 8),
-            ),
-            child: Text(
-              'View All',
-              style: GoogleFonts.outfit(
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+          tooltip: 'Notifications',
+          onPressed: () {},
+        ),
+        Positioned(
+          top: 10,
+          right: 10,
+          child: Container(
+            width: 8,
+            height: 8,
+            decoration: const BoxDecoration(
+              color: Color(0xFFFF6B35),
+              shape: BoxShape.circle,
             ),
           ),
         ),
-        const SizedBox(height: 14),
-        _buildRecentDemandsList(context, currencyFormat),
       ],
     );
   }
-
-  Widget _buildRecentDemandsList(BuildContext context, NumberFormat currencyFormat) {
-    final demands = context.watch<DemandProvider>().demands;
-
-    if (demands.isEmpty) {
-      return Container(
-        padding: const EdgeInsets.all(24),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Center(
-          child: Column(
-            children: [
-              Icon(Icons.inbox_outlined, size: 40, color: Colors.grey[300]),
-              const SizedBox(height: 8),
-              Text(
-                'No recent buyer demands',
-                style: GoogleFonts.outfit(
-                  color: AppColors.textSecondary,
-                  fontSize: 13,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    }
-
-    return ListView.builder(
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      itemCount: demands.length > 3 ? 3 : demands.length,
-      itemBuilder: (context, index) {
-        final demand = demands[index];
-        return Semantics(
-          label: 'Demand: ${demand.productName}',
-          child: DemandCard(
-            demand: demand,
-            currencyFormat: currencyFormat,
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => DemandDetailsScreen(demand: demand),
-                ),
-              );
-            },
-          ),
-        );
-      },
-    );
-  }
 }
 
-// ─── Helper Models ───────────────────────────────────────────────────────────
+// ─── Data Models ─────────────────────────────────────────────────────────────
 
-class _QuickAction {
-  final IconData icon;
-  final String label;
-  final Color color;
-  const _QuickAction({required this.icon, required this.label, required this.color});
-}
-
-class _StatItem {
-  final String title;
-  final String value;
+class _Stat {
+  final String title, value, trend;
   final IconData icon;
   final Color color;
-  final String trend;
-  final bool trendPositive;
-  const _StatItem({
-    required this.title,
-    required this.value,
-    required this.icon,
-    required this.color,
-    required this.trend,
-    required this.trendPositive,
-  });
+  final bool up;
+
+  const _Stat(this.title, this.value, this.icon, this.color, this.trend,
+      this.up);
 }
 
-class _TradeInfo {
+class _TradeMeta {
   final String label;
-  final Color bgColor;
-  final Color textColor;
-  const _TradeInfo({required this.label, required this.bgColor, required this.textColor});
+  final Color bg, fg;
+
+  const _TradeMeta(this.label, this.bg, this.fg);
 }
 
-// ─── Shimmer Placeholder ─────────────────────────────────────────────────────
+// ─── Shimmer ──────────────────────────────────────────────────────────────────
 
 class _ShimmerBox extends StatefulWidget {
   const _ShimmerBox();
@@ -1306,14 +1251,16 @@ class _ShimmerBox extends StatefulWidget {
   State<_ShimmerBox> createState() => _ShimmerBoxState();
 }
 
-class _ShimmerBoxState extends State<_ShimmerBox> with SingleTickerProviderStateMixin {
+class _ShimmerBoxState extends State<_ShimmerBox>
+    with SingleTickerProviderStateMixin {
   late AnimationController _ctrl;
   late Animation<double> _anim;
 
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: const Duration(milliseconds: 1200))
+    _ctrl = AnimationController(
+        vsync: this, duration: const Duration(milliseconds: 1200))
       ..repeat(reverse: true);
     _anim = CurvedAnimation(parent: _ctrl, curve: Curves.easeInOut);
   }
@@ -1328,21 +1275,19 @@ class _ShimmerBoxState extends State<_ShimmerBox> with SingleTickerProviderState
   Widget build(BuildContext context) {
     return AnimatedBuilder(
       animation: _anim,
-      builder: (_, __) {
-        return Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(16),
-            gradient: LinearGradient(
-              colors: [
-                Colors.grey.shade100,
-                Colors.grey.shade200,
-                Colors.grey.shade100,
-              ],
-              stops: [0.0, _anim.value, 1.0],
-            ),
+      builder: (_, __) => Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          gradient: LinearGradient(
+            colors: [
+              Colors.grey.shade100,
+              Colors.grey.shade200,
+              Colors.grey.shade100,
+            ],
+            stops: [0.0, _anim.value, 1.0],
           ),
-        );
-      },
+        ),
+      ),
     );
   }
 }
