@@ -67,4 +67,6 @@ class ApiPath {
 
   // Admin
   static String get adminDashboard => '$baseUrl/admin/dashboard';
+  static String get adminUsers => '$baseUrl/admin/users';
+  static String adminUserById(String id) => '$baseUrl/admin/users/$id';
 }

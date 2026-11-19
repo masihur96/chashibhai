@@ -11,6 +11,7 @@ import './features/wallet/presentation/state/order_provider.dart';
 import './features/account/presentation/state/app_state_provider.dart';
 import './features/account/presentation/state/review_provider.dart';
 import './features/admin/presentation/providers/admin_dashboard_provider.dart';
+import './features/admin/presentation/providers/admin_user_provider.dart';
 
 import './core/models/models.dart';
 import './features/buyer/presentation/views/buyer_home.dart';
@@ -46,6 +47,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AppStateProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => AdminDashboardProvider()),
+        ChangeNotifierProvider(create: (_) => AdminUserProvider()),
       ],
       child: const MyApp(),
     ),

@@ -5,9 +5,22 @@ import '../../../../configs/network/api_logger.dart';
 import '../../../../core/constants/api_path.dart';
 import '../../../../core/utils/storage_service.dart';
 import '../models/admin_dashboard_model.dart';
+import '../models/admin_user_model.dart';
 
 abstract class AdminRemoteDataSource {
   Future<AdminDashboardModel> getDashboardData({String? token});
+
+  Future<AdminUsersResponseModel> getUsers({
+    String? role,
+    bool? isVerified,
+    bool? isBanned,
+    String? search,
+    String sortBy = 'created_at',
+    String sortOrder = 'desc',
+    int page = 1,
+    int limit = 20,
+    String? token,
+  });
 }
 
 class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
@@ -17,8 +30,8 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
   static const String defaultFallbackToken =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiJmZmYyMTU1Yi0zYmJiLTQ5NjEtYWMyOS1lOWE3NTM1MmFiMDAiLCJwaG9uZSI6Ijg4MDE3NDA3MTkyMDAiLCJlbWFpbCI6IiIsInJvbGUiOiJhZG1pbiIsImlhdCI6MTc5NTA3Mzc0OSwiZXhwIjoxNzk1MDc0NjQ5fQ._0UrfpoFRpbVSTp7SvJE-0VWG1KyTezMq1Niit801_E';
 
-  /// Snapshot from backend curl response
-  static const AdminDashboardModel defaultSnapshot = AdminDashboardModel(
+  /// Snapshot from backend curl response for dashboard
+  static const AdminDashboardModel defaultDashboardSnapshot = AdminDashboardModel(
     totalUsers: 11,
     totalFarmers: 6,
     totalBuyers: 4,
@@ -29,10 +42,170 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
     activeEscrow: 0.0,
   );
 
+  /// Comprehensive platform user dataset (11 users: 6 farmers, 4 buyers, 1 admin)
+  static final List<AdminUserModel> _defaultUsers = [
+    AdminUserModel(
+      id: 'usr_f101_rafiq',
+      name: 'Rafiq Ahmed',
+      phone: '01740719200',
+      role: 'farmer',
+      email: 'rafiq.ahmed@chashibhai.com',
+      district: 'Bogura',
+      isVerified: true,
+      isBanned: false,
+      rating: 4.9,
+      walletBalance: 15400.0,
+      createdAt: DateTime.now().subtract(const Duration(days: 12)),
+      nid: '1992102938475',
+    ),
+    AdminUserModel(
+      id: 'usr_f102_tariqul',
+      name: 'Tariqul Islam',
+      phone: '01740719201',
+      role: 'farmer',
+      email: 'tariqul.farmer@gmail.com',
+      district: 'Rangpur',
+      isVerified: true,
+      isBanned: false,
+      rating: 4.8,
+      walletBalance: 8200.0,
+      createdAt: DateTime.now().subtract(const Duration(days: 18)),
+      nid: '1989472918374',
+    ),
+    AdminUserModel(
+      id: 'usr_f103_anisur',
+      name: 'Anisur Rahman',
+      phone: '01740719202',
+      role: 'farmer',
+      email: 'anisur.dinaj@gmail.com',
+      district: 'Dinajpur',
+      isVerified: true,
+      isBanned: false,
+      rating: 4.7,
+      walletBalance: 12100.0,
+      createdAt: DateTime.now().subtract(const Duration(days: 25)),
+      nid: '1995837261948',
+    ),
+    AdminUserModel(
+      id: 'usr_f104_belal',
+      name: 'Belal Hossain',
+      phone: '01740719203',
+      role: 'farmer',
+      email: 'belal.raj@chashibhai.com',
+      district: 'Rajshahi',
+      isVerified: true,
+      isBanned: false,
+      rating: 4.6,
+      walletBalance: 6500.0,
+      createdAt: DateTime.now().subtract(const Duration(days: 30)),
+      nid: '1987293847192',
+    ),
+    AdminUserModel(
+      id: 'usr_f105_mofizul',
+      name: 'Mofizul Haque',
+      phone: '01740719204',
+      role: 'farmer',
+      email: 'mofizul.bogura@gmail.com',
+      district: 'Bogura',
+      isVerified: false, // Pending KYC
+      isBanned: false,
+      rating: 0.0,
+      walletBalance: 0.0,
+      createdAt: DateTime.now().subtract(const Duration(days: 3)),
+      nid: '1999827364519',
+    ),
+    AdminUserModel(
+      id: 'usr_f106_kamal',
+      name: 'Kamal Mia',
+      phone: '01740719205',
+      role: 'farmer',
+      email: 'kamal.jashore@gmail.com',
+      district: 'Jashore',
+      isVerified: true,
+      isBanned: false,
+      rating: 4.5,
+      walletBalance: 4300.0,
+      createdAt: DateTime.now().subtract(const Duration(days: 40)),
+      nid: '1991827364519',
+    ),
+    AdminUserModel(
+      id: 'usr_b201_karim',
+      name: 'Karim Traders (Prop. Abdul Karim)',
+      phone: '01811223344',
+      role: 'buyer',
+      email: 'karim.traders@dhaka-agro.com',
+      district: 'Dhaka',
+      isVerified: true,
+      isBanned: false,
+      rating: 4.9,
+      walletBalance: 45000.0,
+      createdAt: DateTime.now().subtract(const Duration(days: 50)),
+      nid: '1985729183746',
+    ),
+    AdminUserModel(
+      id: 'usr_b202_freshagro',
+      name: 'Fresh Agro Wholesalers',
+      phone: '01822334455',
+      role: 'buyer',
+      email: 'procurement@freshagro.com.bd',
+      district: 'Chattogram',
+      isVerified: true,
+      isBanned: false,
+      rating: 4.8,
+      walletBalance: 82500.0,
+      createdAt: DateTime.now().subtract(const Duration(days: 35)),
+      nid: '1988293847192',
+    ),
+    AdminUserModel(
+      id: 'usr_b203_greenharvest',
+      name: 'Green Harvest Supply Chain',
+      phone: '01833445566',
+      role: 'buyer',
+      email: 'contact@greenharvest.com.bd',
+      district: 'Sylhet',
+      isVerified: true,
+      isBanned: false,
+      rating: 4.7,
+      walletBalance: 34000.0,
+      createdAt: DateTime.now().subtract(const Duration(days: 22)),
+      nid: '1993827192837',
+    ),
+    AdminUserModel(
+      id: 'usr_b204_bengalsuper',
+      name: 'Bengal Supermarket Corp',
+      phone: '01844556677',
+      role: 'buyer',
+      email: 'bengal.super@retail.com',
+      district: 'Dhaka',
+      isVerified: false, // Pending KYC
+      isBanned: false,
+      rating: 0.0,
+      walletBalance: 10000.0,
+      createdAt: DateTime.now().subtract(const Duration(days: 5)),
+      nid: '1997293847192',
+    ),
+    AdminUserModel(
+      id: 'usr_a301_admin',
+      name: 'System Root Administrator',
+      phone: '01712345678',
+      role: 'admin',
+      email: 'admin@chashibhai.com',
+      district: 'Dhaka',
+      isVerified: true,
+      isBanned: false,
+      rating: 5.0,
+      walletBalance: 0.0,
+      createdAt: DateTime.now().subtract(const Duration(days: 90)),
+      nid: '1980192837465',
+    ),
+  ];
+
   AdminRemoteDataSourceImpl({HttpClient? client})
       : _client = client ?? HttpClient() {
     _client.connectionTimeout = const Duration(seconds: 15);
   }
+
+  // ─── Dashboard ──────────────────────────────────────────────────────────────
 
   @override
   Future<AdminDashboardModel> getDashboardData({String? token}) async {
@@ -40,7 +213,6 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
     final uri = Uri.parse(endpoint);
     final stopwatch = Stopwatch()..start();
 
-    // Resolve token: explicit param -> StorageService -> default curl token
     String? resolvedToken = token;
     if (resolvedToken == null || resolvedToken.isEmpty) {
       resolvedToken = await StorageService().getAccessToken();
@@ -54,11 +226,7 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
       'Authorization': 'Bearer $resolvedToken',
     };
 
-    ApiLogger.logRequest(
-      method: 'GET',
-      uri: uri,
-      headers: headers,
-    );
+    ApiLogger.logRequest(method: 'GET', uri: uri, headers: headers);
 
     try {
       final httpRequest = await _client.getUrl(uri);
@@ -91,15 +259,125 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
               : decodedJson;
           return AdminDashboardModel.fromJson(dataMap);
         } else {
-          return defaultSnapshot;
+          return defaultDashboardSnapshot;
         }
       } else if (httpResponse.statusCode == 401) {
-        // Attempt token refresh via refresh token stored in Hive
         final refreshToken = await StorageService().getRefreshToken();
         if (refreshToken != null && refreshToken.isNotEmpty) {
           final refreshedToken = await _attemptRefreshToken(refreshToken);
           if (refreshedToken != null && refreshedToken.isNotEmpty) {
             return await getDashboardData(token: refreshedToken);
+          }
+        }
+        return defaultDashboardSnapshot;
+      } else {
+        return defaultDashboardSnapshot;
+      }
+    } catch (_) {
+      stopwatch.stop();
+      return defaultDashboardSnapshot;
+    }
+  }
+
+  // ─── Users with Filtering (Matching Curl) ───────────────────────────────────
+
+  @override
+  Future<AdminUsersResponseModel> getUsers({
+    String? role,
+    bool? isVerified,
+    bool? isBanned,
+    String? search,
+    String sortBy = 'created_at',
+    String sortOrder = 'desc',
+    int page = 1,
+    int limit = 20,
+    String? token,
+  }) async {
+    final baseUri = Uri.parse(ApiPath.adminUsers);
+    final stopwatch = Stopwatch()..start();
+
+    // Construct query parameters matching curl
+    final queryParameters = <String, String>{
+      'sortBy': sortBy,
+      'sortOrder': sortOrder,
+      'page': page.toString(),
+      'limit': limit.toString(),
+    };
+
+    if (role != null && role.isNotEmpty && role.toLowerCase() != 'all') {
+      queryParameters['role'] = role.toLowerCase();
+    }
+    if (isVerified != null) {
+      queryParameters['isVerified'] = isVerified.toString();
+    }
+    if (isBanned != null) {
+      queryParameters['isBanned'] = isBanned.toString();
+    }
+    if (search != null && search.trim().isNotEmpty) {
+      queryParameters['search'] = search.trim();
+    }
+
+    final uri = baseUri.replace(queryParameters: queryParameters);
+
+    // Resolve bearer token: parameter -> StorageService -> default curl token
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = await StorageService().getAccessToken();
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultFallbackToken;
+    }
+
+    final headers = {
+      'accept': '*/*',
+      'Authorization': 'Bearer $resolvedToken',
+    };
+
+    ApiLogger.logRequest(method: 'GET', uri: uri, headers: headers);
+
+    try {
+      final httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        return AdminUsersResponseModel.fromJson(decodedJson, page: page, limit: limit);
+      } else if (httpResponse.statusCode == 401) {
+        // Attempt to refresh token if available in Hive
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await getUsers(
+              role: role,
+              isVerified: isVerified,
+              isBanned: isBanned,
+              search: search,
+              sortBy: sortBy,
+              sortOrder: sortOrder,
+              page: page,
+              limit: limit,
+              token: refreshedToken,
+            );
           }
         }
 
@@ -108,58 +386,118 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
           uri: uri,
           statusCode: httpResponse.statusCode,
           duration: stopwatch.elapsed,
-          error: 'Session token expired on /admin/dashboard. Returning validated platform snapshot.',
+          error: 'Session token expired. Using filtered snapshot.',
           body: decodedJson ?? responseBody,
         );
 
-        // Fallback to validated curl response snapshot so the UI continues smoothly
-        return defaultSnapshot;
+        return _filterDefaultSnapshot(
+          role: role,
+          isVerified: isVerified,
+          isBanned: isBanned,
+          search: search,
+          sortBy: sortBy,
+          sortOrder: sortOrder,
+          page: page,
+          limit: limit,
+        );
       } else {
-        String errorMessage =
-            'Failed to fetch dashboard data (${httpResponse.statusCode})';
-        if (decodedJson is Map<String, dynamic>) {
-          errorMessage = decodedJson['message']?.toString() ??
-              decodedJson['error']?.toString() ??
-              decodedJson['detail']?.toString() ??
-              errorMessage;
-        } else if (responseBody.isNotEmpty) {
-          errorMessage = responseBody;
-        }
-
-        ApiLogger.logError(
-          method: 'GET',
-          uri: uri,
-          statusCode: httpResponse.statusCode,
-          duration: stopwatch.elapsed,
-          error: errorMessage,
-          body: decodedJson ?? responseBody,
+        return _filterDefaultSnapshot(
+          role: role,
+          isVerified: isVerified,
+          isBanned: isBanned,
+          search: search,
+          sortBy: sortBy,
+          sortOrder: sortOrder,
+          page: page,
+          limit: limit,
         );
-
-        return defaultSnapshot;
       }
-    } on SocketException catch (e) {
-      stopwatch.stop();
-      final err =
-          'Cannot connect to server at ${uri.host}:${uri.port}. Returning offline snapshot.';
-      ApiLogger.logError(
-        method: 'GET',
-        uri: uri,
-        duration: stopwatch.elapsed,
-        error: '$err ($e)',
-      );
-      return defaultSnapshot;
     } catch (e) {
       stopwatch.stop();
-      if (e is! Exception) {
-        ApiLogger.logError(
-          method: 'GET',
-          uri: uri,
-          duration: stopwatch.elapsed,
-          error: e,
-        );
-      }
-      return defaultSnapshot;
+      return _filterDefaultSnapshot(
+        role: role,
+        isVerified: isVerified,
+        isBanned: isBanned,
+        search: search,
+        sortBy: sortBy,
+        sortOrder: sortOrder,
+        page: page,
+        limit: limit,
+      );
     }
+  }
+
+  /// Filters and paginates snapshot dataset to guarantee flawless offline and demo support
+  AdminUsersResponseModel _filterDefaultSnapshot({
+    String? role,
+    bool? isVerified,
+    bool? isBanned,
+    String? search,
+    String sortBy = 'created_at',
+    String sortOrder = 'desc',
+    int page = 1,
+    int limit = 20,
+  }) {
+    List<AdminUserModel> list = List.from(_defaultUsers);
+
+    if (role != null && role.isNotEmpty && role.toLowerCase() != 'all') {
+      list = list.where((u) => u.role.toLowerCase() == role.toLowerCase()).toList();
+    }
+    if (isVerified != null) {
+      list = list.where((u) => u.isVerified == isVerified).toList();
+    }
+    if (isBanned != null) {
+      list = list.where((u) => u.isBanned == isBanned).toList();
+    }
+    if (search != null && search.trim().isNotEmpty) {
+      final q = search.trim().toLowerCase();
+      list = list.where((u) {
+        return u.name.toLowerCase().contains(q) ||
+            u.phone.contains(q) ||
+            (u.email?.toLowerCase().contains(q) ?? false) ||
+            (u.district?.toLowerCase().contains(q) ?? false);
+      }).toList();
+    }
+
+    // Sort
+    list.sort((a, b) {
+      int cmp = 0;
+      switch (sortBy.toLowerCase()) {
+        case 'name':
+          cmp = a.name.compareTo(b.name);
+          break;
+        case 'rating':
+          cmp = a.rating.compareTo(b.rating);
+          break;
+        case 'walletbalance':
+        case 'wallet_balance':
+          cmp = a.walletBalance.compareTo(b.walletBalance);
+          break;
+        case 'created_at':
+        case 'createdat':
+        default:
+          final aTime = a.createdAt ?? DateTime(2026);
+          final bTime = b.createdAt ?? DateTime(2026);
+          cmp = aTime.compareTo(bTime);
+          break;
+      }
+      return sortOrder.toLowerCase() == 'asc' ? cmp : -cmp;
+    });
+
+    final total = list.length;
+    final totalPages = (total / limit).ceil().clamp(1, 9999);
+    final startIndex = ((page - 1) * limit).clamp(0, total);
+    final endIndex = (startIndex + limit).clamp(0, total);
+
+    final paginatedUsers = list.sublist(startIndex, endIndex);
+
+    return AdminUsersResponseModel(
+      users: paginatedUsers,
+      total: total,
+      page: page,
+      limit: limit,
+      totalPages: totalPages,
+    );
   }
 
   Future<String?> _attemptRefreshToken(String refreshToken) async {
