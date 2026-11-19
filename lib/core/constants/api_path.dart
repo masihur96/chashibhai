@@ -64,4 +64,7 @@ class ApiPath {
   // Wallet
   static String get wallet => '$baseUrl/wallet';
   static String get transactions => '$baseUrl/wallet/transactions';
+
+  // Admin
+  static String get adminDashboard => '$baseUrl/admin/dashboard';
 }
