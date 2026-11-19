@@ -4,6 +4,7 @@ import 'package:chashibhai/features/farmer/domain/repositories/farmer_repository
 import 'package:chashibhai/features/farmer/domain/usecases/get_my_products_usecase.dart';
 import 'package:chashibhai/features/buyer/presentation/state/product_provider.dart';
 import 'package:chashibhai/features/farmer/data/models/create_product_request_model.dart';
+import 'package:chashibhai/features/farmer/data/models/update_product_request_model.dart';
 import 'package:chashibhai/core/services/upload_service.dart';
 
 class MockFarmerRepository implements FarmerRepository {
@@ -66,6 +67,26 @@ class MockFarmerRepository implements FarmerRepository {
       'token': token,
     };
     return mockProducts;
+  }
+
+  @override
+  Future<Product> getProductById({required String id, String? token}) async {
+    return mockProducts.firstWhere((p) => p.id == id, orElse: () => mockProducts.first);
+  }
+
+  @override
+  Future<Product> updateProduct({
+    required String id,
+    required UpdateProductRequestModel request,
+    String? token,
+  }) async {
+    return mockProducts.first;
+  }
+
+  @override
+  Future<bool> deleteProduct({required String id, String? token}) async {
+    mockProducts.removeWhere((p) => p.id == id);
+    return true;
   }
 }
 

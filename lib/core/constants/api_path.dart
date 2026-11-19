@@ -41,8 +41,9 @@ class ApiPath {
   static String get verifyOtp => '$baseUrl/auth/verify-otp';
 
   // User & Profile
-  static String get userProfile => '$baseUrl/user/profile';
-  static String get updateProfile => '$baseUrl/user/update';
+  static String get userProfile => '$baseUrl/users/profile';
+  static String get updateProfile => '$baseUrl/users/profile';
+  static String get usersProfile => '$baseUrl/users/profile';
 
   // Products
   static String get products => '$baseUrl/products';

@@ -39,7 +39,14 @@ class _FarmerDashboardState extends State<FarmerDashboard>
   late AnimationController _fadeCtrl;
   late Animation<double> _fadeAnim;
 
-  static const _filters = ['All', 'Rice', 'Vegetables', 'Fruits', 'Grains'];
+  static const _filters = [
+    'All',
+    'Rice (Curl Filter)',
+    'Rice',
+    'Vegetables',
+    'Fruits',
+    'Grains'
+  ];
 
   @override
   void initState() {
@@ -63,14 +70,35 @@ class _FarmerDashboardState extends State<FarmerDashboard>
   Future<void> _fetchListings({String? filter}) async {
     final f = filter ?? _selectedFilter;
     final token = context.read<AuthProvider>().token;
+    String? category;
+    String? tradeType;
+    double? minPrice;
+    double? maxPrice;
+    String? search;
+
+    if (f == 'Rice (Curl Filter)') {
+      category = 'rice';
+      tradeType = 'both';
+      minPrice = 30.0;
+      maxPrice = 100.0;
+      search = 'Rice';
+    } else if (f != 'All') {
+      category = f.toLowerCase();
+    }
+
+    if (_searchController.text.trim().isNotEmpty) {
+      search = _searchController.text.trim();
+    }
+
     await context.read<ProductProvider>().fetchMyProducts(
           page: 1,
           limit: 20,
           status: 'active',
-          category: f == 'All' ? null : f.toLowerCase(),
-          search: _searchController.text.trim().isEmpty
-              ? null
-              : _searchController.text.trim(),
+          category: category,
+          tradeType: tradeType,
+          minPrice: minPrice,
+          maxPrice: maxPrice,
+          search: search,
           token: token,
         );
   }
@@ -465,7 +493,7 @@ class _FarmerDashboardState extends State<FarmerDashboard>
       children: [
         // Header
         _SectionHeader(
-          title: 'Active Listings',
+          title: 'Your Active Listings',
           count: loading ? null : products.length,
           trailing: Row(mainAxisSize: MainAxisSize.min, children: [
             _IconBtn(
@@ -849,7 +877,7 @@ class _FarmerDashboardState extends State<FarmerDashboard>
                             Icon(Icons.scale_outlined,
                                 size: 11, color: Colors.grey[500]),
                             const SizedBox(width: 3),
-                            Text('${p.quantity} ${p.unit}',
+                            Text('${p.quantity} ${p.unit} listed',
                                 style: GoogleFonts.outfit(
                                     fontSize: 11,
                                     color: AppColors.textSecondary)),

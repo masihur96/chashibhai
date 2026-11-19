@@ -10,6 +10,7 @@ import 'package:chashibhai/features/farmer/domain/repositories/farmer_repository
 import 'package:chashibhai/features/farmer/domain/usecases/get_my_products_usecase.dart';
 import 'package:chashibhai/features/farmer/presentation/views/farmer_dashboard.dart';
 import 'package:chashibhai/features/farmer/data/models/create_product_request_model.dart';
+import 'package:chashibhai/features/farmer/data/models/update_product_request_model.dart';
 import 'package:chashibhai/core/services/upload_service.dart';
 
 class FakeFarmerRepository implements FarmerRepository {
@@ -57,6 +58,25 @@ class FakeFarmerRepository implements FarmerRepository {
         status: 'active',
       ),
     ];
+  }
+
+  @override
+  Future<Product> getProductById({required String id, String? token}) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<Product> updateProduct({
+    required String id,
+    required UpdateProductRequestModel request,
+    String? token,
+  }) async {
+    throw UnimplementedError();
+  }
+
+  @override
+  Future<bool> deleteProduct({required String id, String? token}) async {
+    return true;
   }
 }
 

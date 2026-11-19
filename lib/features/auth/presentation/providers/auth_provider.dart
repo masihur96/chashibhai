@@ -370,8 +370,11 @@ class AuthProvider extends ChangeNotifier {
 
     final payload = <String, dynamic>{
       'name': name.trim(),
-      if (avatarUrl != null && avatarUrl.trim().isNotEmpty)
+      if (avatarUrl != null && avatarUrl.trim().isNotEmpty) ...{
         'avatarUrl': avatarUrl.trim(),
+        'avatar_url': avatarUrl.trim(),
+        'avatar': avatarUrl.trim(),
+      },
       if (district != null && district.trim().isNotEmpty)
         'district': district.trim(),
       if (file != null && file.trim().isNotEmpty)
@@ -382,6 +385,15 @@ class AuthProvider extends ChangeNotifier {
       final updatedUserEntity =
           await _updateProfileUseCase(token: token, data: payload);
       _currentUser = _mapUserEntityToAppUser(updatedUserEntity);
+      _currentUser = _currentUser?.copyWith(
+        name: name.trim(),
+        avatarUrl: (avatarUrl != null && avatarUrl.trim().isNotEmpty)
+            ? avatarUrl.trim()
+            : _currentUser?.avatarUrl,
+        district: (district != null && district.trim().isNotEmpty)
+            ? district.trim()
+            : _currentUser?.district,
+      );
       debugPrint(
         '✅ [AUTH] Profile updated on server: ${_currentUser?.name} | Avatar: ${_currentUser?.avatarUrl} | District: ${_currentUser?.district}',
       );

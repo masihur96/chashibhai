@@ -86,7 +86,7 @@ class UserModel extends UserEntity {
       email: userMap['email']?.toString(),
       token: token,
       refreshToken: refreshToken,
-      avatarUrl: (userMap['avatarUrl'] ?? userMap['avatar'])?.toString(),
+      avatarUrl: (userMap['avatarUrl'] ?? userMap['avatar_url'] ?? userMap['avatar'])?.toString(),
       district: district,
       isVerified: userMap['isVerified'] == true,
     );

@@ -469,12 +469,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
     required String token,
     required Map<String, dynamic> data,
   }) async {
-    final endpoint = ApiPath.usersMe;
+    final endpoint = ApiPath.usersProfile;
     final uri = Uri.parse(endpoint);
     final stopwatch = Stopwatch()..start();
 
     final headers = {
-      'accept': 'application/json',
+      'accept': '*/*',
       'Authorization': 'Bearer $token',
       'Content-Type': 'application/json; charset=utf-8',
     };
