@@ -1,6 +1,7 @@
 import '../../../../core/models/models.dart';
 import '../../../../core/services/upload_service.dart';
 import '../../data/models/create_product_request_model.dart';
+import '../../data/models/update_product_request_model.dart';
 
 abstract class FarmerRepository {
   Future<Product> addProduct({
@@ -26,6 +27,17 @@ abstract class FarmerRepository {
   });
 
   Future<Product> getProductById({
+    required String id,
+    String? token,
+  });
+
+  Future<Product> updateProduct({
+    required String id,
+    required UpdateProductRequestModel request,
+    String? token,
+  });
+
+  Future<bool> deleteProduct({
     required String id,
     String? token,
   });

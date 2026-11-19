@@ -3,6 +3,7 @@ import '../../../../core/services/upload_service.dart';
 import '../../domain/repositories/farmer_repository.dart';
 import '../datasources/farmer_remote_data_source.dart';
 import '../models/create_product_request_model.dart';
+import '../models/update_product_request_model.dart';
 
 class FarmerRepositoryImpl implements FarmerRepository {
   final FarmerRemoteDataSource remoteDataSource;
@@ -63,6 +64,30 @@ class FarmerRepositoryImpl implements FarmerRepository {
     String? token,
   }) async {
     return await remoteDataSource.getProductById(
+      id: id,
+      token: token,
+    );
+  }
+
+  @override
+  Future<Product> updateProduct({
+    required String id,
+    required UpdateProductRequestModel request,
+    String? token,
+  }) async {
+    return await remoteDataSource.updateProduct(
+      id: id,
+      request: request,
+      token: token,
+    );
+  }
+
+  @override
+  Future<bool> deleteProduct({
+    required String id,
+    String? token,
+  }) async {
+    return await remoteDataSource.deleteProduct(
       id: id,
       token: token,
     );

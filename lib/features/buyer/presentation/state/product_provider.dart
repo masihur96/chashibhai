@@ -3,6 +3,7 @@ import '../../../../core/models/mock_data.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/services/upload_service.dart';
 import '../../../farmer/data/models/create_product_request_model.dart';
+import '../../../farmer/data/models/update_product_request_model.dart';
 import '../../../farmer/data/repositories/farmer_repository_impl.dart';
 import '../../../farmer/domain/repositories/farmer_repository.dart';
 import '../../../farmer/domain/usecases/add_product_usecase.dart';
@@ -192,6 +193,85 @@ class ProductProvider extends ChangeNotifier {
       _isLoading = false;
       notifyListeners();
       return createdProduct;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Updates an existing product on the backend via PATCH /api/v1/products/{id}
+  Future<Product> updateProduct({
+    required String id,
+    required UpdateProductRequestModel request,
+    String? token,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final updatedProduct = await _farmerRepository.updateProduct(
+        id: id,
+        request: request,
+        token: token,
+      );
+
+      // Update in _myProducts
+      final myIdx = _myProducts.indexWhere((p) => p.id == id);
+      if (myIdx != -1) {
+        _myProducts[myIdx] = updatedProduct;
+      }
+
+      // Update in _products
+      final prodIdx = _products.indexWhere((p) => p.id == id);
+      if (prodIdx != -1) {
+        _products[prodIdx] = updatedProduct;
+      }
+
+      // Update selected product if viewing it
+      if (_selectedProduct?.id == id) {
+        _selectedProduct = updatedProduct;
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return updatedProduct;
+    } catch (e) {
+      _isLoading = false;
+      _errorMessage = e.toString();
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Deletes a product from the backend via DELETE /api/v1/products/{id}
+  Future<bool> deleteProduct({
+    required String id,
+    String? token,
+  }) async {
+    _isLoading = true;
+    _errorMessage = null;
+    notifyListeners();
+
+    try {
+      final success = await _farmerRepository.deleteProduct(
+        id: id,
+        token: token,
+      );
+
+      if (success) {
+        _myProducts.removeWhere((p) => p.id == id);
+        _products.removeWhere((p) => p.id == id);
+        if (_selectedProduct?.id == id) {
+          _selectedProduct = null;
+        }
+      }
+
+      _isLoading = false;
+      notifyListeners();
+      return success;
     } catch (e) {
       _isLoading = false;
       _errorMessage = e.toString();

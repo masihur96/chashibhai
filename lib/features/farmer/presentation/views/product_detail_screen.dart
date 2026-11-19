@@ -940,8 +940,12 @@ class _ProductDetailScreenState extends State<ProductDetailScreen> {
       MaterialPageRoute(
         builder: (_) => EditProductScreen(product: product),
       ),
-    ).then((_) {
-      _loadProductDetails();
+    ).then((result) {
+      if (result == 'deleted' && mounted) {
+        Navigator.of(context).pop();
+      } else {
+        _loadProductDetails();
+      }
     });
   }
 
