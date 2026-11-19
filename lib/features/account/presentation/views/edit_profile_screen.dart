@@ -36,6 +36,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   bool _isUploadingAvatar = false;
   bool _isSaving = false;
 
+  static const List<String> _commonDistricts = [
+    'Bogura',
+    'Dinajpur',
+    'Rajshahi',
+    'Rangpur',
+    'Jashore',
+    'Mymensingh',
+    'Cumilla',
+    'Sylhet',
+    'Dhaka',
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -151,82 +163,117 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
   void _showImageSourceSelector() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (ctx) {
         return SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+            padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 20),
             child: Column(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Center(
                   child: Container(
-                    width: 40,
-                    height: 4,
+                    width: 44,
+                    height: 5,
                     decoration: BoxDecoration(
                       color: Colors.grey.shade300,
-                      borderRadius: BorderRadius.circular(2),
+                      borderRadius: BorderRadius.circular(3),
                     ),
                   ),
                 ),
-                const SizedBox(height: 16),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Text(
-                    'Profile Photo',
-                    style: GoogleFonts.outfit(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                const SizedBox(height: 18),
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: const Icon(Icons.add_a_photo_rounded, color: AppColors.primary, size: 20),
                     ),
-                  ),
+                    const SizedBox(width: 12),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Update Profile Photo',
+                          style: GoogleFonts.outfit(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
+                          ),
+                        ),
+                        Text(
+                          'Select an option to update your photo',
+                          style: GoogleFonts.outfit(fontSize: 12, color: AppColors.textSecondary),
+                        ),
+                      ],
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 20),
                 ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  tileColor: const Color(0xFFF9FAFB),
                   leading: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.green.shade50,
+                      color: const Color(0xFFE8F5E9),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.camera_alt_outlined, color: AppColors.primary),
+                    child: const Icon(Icons.camera_alt_rounded, color: AppColors.primary, size: 22),
                   ),
-                  title: const Text('Take Photo', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Capture with camera & upload'),
+                  title: Text('Take Photo', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 15)),
+                  subtitle: Text('Capture with camera & upload directly', style: GoogleFonts.outfit(fontSize: 12)),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickAndUploadImage(ImageSource.camera);
                   },
                 ),
+                const SizedBox(height: 10),
                 ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  tileColor: const Color(0xFFF9FAFB),
                   leading: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.blue.shade50,
+                      color: const Color(0xFFE0F2FE),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.photo_library_outlined, color: Colors.blue),
+                    child: const Icon(Icons.photo_library_rounded, color: Color(0xFF0284C7), size: 22),
                   ),
-                  title: const Text('Choose from Gallery', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Select from device photos & upload'),
+                  title: Text('Choose from Gallery', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 15)),
+                  subtitle: Text('Select an image from device gallery', style: GoogleFonts.outfit(fontSize: 12)),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
                   onTap: () {
                     Navigator.pop(ctx);
                     _pickAndUploadImage(ImageSource.gallery);
                   },
                 ),
+                const SizedBox(height: 10),
                 ListTile(
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                  tileColor: const Color(0xFFF9FAFB),
                   leading: Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
-                      color: Colors.orange.shade50,
+                      color: const Color(0xFFFEF3C7),
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Icon(Icons.link_rounded, color: Colors.orange),
+                    child: const Icon(Icons.link_rounded, color: Color(0xFFD97706), size: 22),
                   ),
-                  title: const Text('Enter Image URL', style: TextStyle(fontWeight: FontWeight.w600)),
-                  subtitle: const Text('Paste a web URL or select sample'),
+                  title: Text('Enter Image URL', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, fontSize: 15)),
+                  subtitle: Text('Paste a web image URL or preset', style: GoogleFonts.outfit(fontSize: 12)),
+                  trailing: const Icon(Icons.chevron_right_rounded, color: Colors.grey),
                   onTap: () {
                     Navigator.pop(ctx);
                     _showUrlInputDialog();
@@ -245,39 +292,50 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
     showDialog(
       context: context,
       builder: (ctx) => AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-        title: Text('Avatar URL', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            const Icon(Icons.link_rounded, color: AppColors.primary),
+            const SizedBox(width: 8),
+            Text('Avatar URL', style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18)),
+          ],
+        ),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             TextField(
               controller: tempController,
-              decoration: const InputDecoration(
-                labelText: 'Image URL',
-                hintText: 'https://...',
-                prefixIcon: Icon(Icons.link),
-                border: OutlineInputBorder(),
+              decoration: InputDecoration(
+                labelText: 'Image Web URL',
+                hintText: 'https://cdn.example.com/avatar.jpg',
+                prefixIcon: const Icon(Icons.link_rounded, color: AppColors.primary),
+                filled: true,
+                fillColor: const Color(0xFFF9FAFB),
+                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
               ),
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: 16),
             Text(
               'Sample Presets:',
-              style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold),
+              style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.textSecondary),
             ),
-            const SizedBox(height: 6),
+            const SizedBox(height: 8),
             Wrap(
               spacing: 8,
+              runSpacing: 8,
               children: [
                 ActionChip(
-                  label: const Text('Sample Avatar 1'),
+                  backgroundColor: const Color(0xFFF4F6F9),
+                  label: Text('Preset 1 (Farmer)', style: GoogleFonts.outfit(fontSize: 12)),
                   onPressed: () {
                     tempController.text =
                         'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?w=400';
                   },
                 ),
                 ActionChip(
-                  label: const Text('Sample Avatar 2'),
+                  backgroundColor: const Color(0xFFF4F6F9),
+                  label: Text('Preset 2 (Professional)', style: GoogleFonts.outfit(fontSize: 12)),
                   onPressed: () {
                     tempController.text =
                         'https://images.unsplash.com/photo-1570295999919-56ceb5ecca61?w=400';
@@ -287,15 +345,18 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             ),
           ],
         ),
+        actionsPadding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(ctx),
-            child: const Text('Cancel'),
+            child: Text('Cancel', style: GoogleFonts.outfit(fontWeight: FontWeight.w600, color: AppColors.textSecondary)),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 10),
             ),
             onPressed: () {
               final newUrl = tempController.text.trim();
@@ -308,7 +369,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               }
               Navigator.pop(ctx);
             },
-            child: const Text('Apply'),
+            child: Text('Apply', style: GoogleFonts.outfit(fontWeight: FontWeight.bold)),
           ),
         ],
       ),
@@ -381,7 +442,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             Expanded(
               child: Text(
                 message,
-                style: const TextStyle(fontWeight: FontWeight.w600),
+                style: GoogleFonts.outfit(fontWeight: FontWeight.w600),
               ),
             ),
           ],
@@ -408,15 +469,40 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           'edit_profile'.tr(languageCode),
           style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
         ),
-        backgroundColor: Colors.white,
+        backgroundColor: const Color(0xFF1B5E20),
+        foregroundColor: Colors.white,
         elevation: 0,
-        surfaceTintColor: Colors.transparent,
-        leading: const BackButton(color: Colors.black87),
+        leading: const BackButton(color: Colors.white),
+        actions: [
+          // Quick save button in AppBar
+          TextButton.icon(
+            onPressed: (_isSaving || _isUploadingAvatar) ? null : _saveProfile,
+            icon: _isSaving
+                ? const SizedBox(
+                    width: 16,
+                    height: 16,
+                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                  )
+                : const Icon(Icons.check_rounded, color: Colors.white, size: 20),
+            label: Text(
+              'Save',
+              style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontWeight: FontWeight.bold,
+                fontSize: 15,
+              ),
+            ),
+          ),
+          const SizedBox(width: 8),
+        ],
       ),
       body: SingleChildScrollView(
         child: Column(
           children: [
+            // ─── Header Photo Card ───────────────────────────────────────
             _buildProfileHeader(user),
+
+            // ─── Form Container ──────────────────────────────────────────
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 20, 16, 40),
               child: Form(
@@ -425,7 +511,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _buildFormCard(user),
-                    const SizedBox(height: 28),
+                    const SizedBox(height: 24),
                     _buildSaveButton(),
                   ],
                 ),
@@ -454,7 +540,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
 
     return Container(
       width: double.infinity,
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 28),
+      padding: const EdgeInsets.fromLTRB(20, 12, 20, 28),
       decoration: const BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topLeft,
@@ -466,8 +552,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ],
         ),
         borderRadius: BorderRadius.only(
-          bottomLeft: Radius.circular(28),
-          bottomRight: Radius.circular(28),
+          bottomLeft: Radius.circular(32),
+          bottomRight: Radius.circular(32),
         ),
       ),
       child: Column(
@@ -476,16 +562,16 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             alignment: Alignment.center,
             children: [
               Container(
-                width: 116,
-                height: 116,
+                width: 110,
+                height: 110,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  border: Border.all(color: Colors.white, width: 3),
+                  border: Border.all(color: Colors.white, width: 3.5),
                   color: Colors.white.withValues(alpha: 0.2),
                   boxShadow: [
                     BoxShadow(
-                      color: Colors.black.withValues(alpha: 0.15),
-                      blurRadius: 10,
+                      color: Colors.black.withValues(alpha: 0.18),
+                      blurRadius: 12,
                       offset: const Offset(0, 4),
                     ),
                   ],
@@ -495,8 +581,8 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       ? Image(
                           image: imageProvider,
                           fit: BoxFit.cover,
-                          width: 116,
-                          height: 116,
+                          width: 110,
+                          height: 110,
                           errorBuilder: (_, __, ___) => _buildFallbackInitial(displayName, user),
                         )
                       : _buildFallbackInitial(displayName, user),
@@ -506,11 +592,11 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               // Uploading overlay spinner
               if (_isUploadingAvatar)
                 Container(
-                  width: 116,
-                  height: 116,
+                  width: 110,
+                  height: 110,
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
-                    color: Colors.black.withValues(alpha: 0.55),
+                    color: Colors.black.withValues(alpha: 0.6),
                   ),
                   child: const Center(
                     child: CircularProgressIndicator(
@@ -520,7 +606,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                 ),
 
-              // Camera Edit Button
+              // Camera Edit Badge Button
               Positioned(
                 bottom: 0,
                 right: 0,
@@ -533,7 +619,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                       shape: BoxShape.circle,
                       border: Border.all(color: Colors.white, width: 2.5),
                       boxShadow: const [
-                        BoxShadow(color: Colors.black26, blurRadius: 4, offset: Offset(0, 2)),
+                        BoxShadow(color: Colors.black26, blurRadius: 6, offset: Offset(0, 2)),
                       ],
                     ),
                     child: const Icon(
@@ -548,7 +634,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           const SizedBox(height: 12),
           Text(
-            displayName.isNotEmpty ? displayName : 'Farmer User',
+            displayName.isNotEmpty ? displayName : (user?.name ?? 'User Profile'),
             style: GoogleFonts.outfit(
               fontSize: 20,
               fontWeight: FontWeight.bold,
@@ -557,25 +643,95 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
           ),
           const SizedBox(height: 2),
           Text(
-            _phoneController.text.isNotEmpty ? _phoneController.text : 'Account Profile',
+            _phoneController.text.isNotEmpty ? _phoneController.text : 'Account Details',
             style: GoogleFonts.outfit(
               fontSize: 13,
-              color: Colors.white.withValues(alpha: 0.8),
+              color: Colors.white.withValues(alpha: 0.85),
             ),
           ),
+          const SizedBox(height: 8),
+
+          // Quick Photo Actions Pill Row
+          Wrap(
+            spacing: 8,
+            alignment: WrapAlignment.center,
+            children: [
+              _buildHeaderActionChip(
+                icon: Icons.camera_alt_outlined,
+                label: 'Take Photo',
+                onTap: _isUploadingAvatar ? null : () => _pickAndUploadImage(ImageSource.camera),
+              ),
+              _buildHeaderActionChip(
+                icon: Icons.photo_library_outlined,
+                label: 'Gallery',
+                onTap: _isUploadingAvatar ? null : () => _pickAndUploadImage(ImageSource.gallery),
+              ),
+              _buildHeaderActionChip(
+                icon: Icons.link_rounded,
+                label: 'URL',
+                onTap: _isUploadingAvatar ? null : _showUrlInputDialog,
+              ),
+            ],
+          ),
+
           if (_isUploadingAvatar)
             Padding(
-              padding: const EdgeInsets.only(top: 6),
-              child: Text(
-                'Uploading new photo...',
-                style: GoogleFonts.outfit(
-                  fontSize: 11,
-                  color: Colors.yellowAccent,
-                  fontWeight: FontWeight.bold,
-                ),
+              padding: const EdgeInsets.only(top: 8),
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const SizedBox(
+                    width: 12,
+                    height: 12,
+                    child: CircularProgressIndicator(color: Colors.yellowAccent, strokeWidth: 2),
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Uploading new photo...',
+                    style: GoogleFonts.outfit(
+                      fontSize: 12,
+                      color: Colors.yellowAccent,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ],
               ),
             ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildHeaderActionChip({
+    required IconData icon,
+    required String label,
+    VoidCallback? onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(16),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.2),
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.white30),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: Colors.white, size: 13),
+            const SizedBox(width: 4),
+            Text(
+              label,
+              style: GoogleFonts.outfit(
+                color: Colors.white,
+                fontSize: 11.5,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -608,9 +764,10 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: Colors.grey.shade200),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.05),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 14,
             offset: const Offset(0, 3),
           ),
@@ -621,21 +778,37 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         children: [
           Row(
             children: [
-              Icon(Icons.person_outline_rounded, color: AppColors.primary, size: 20),
-              const SizedBox(width: 8),
-              Text(
-                'Personal Information',
-                style: GoogleFonts.outfit(
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(8),
                 ),
+                child: const Icon(Icons.person_pin_rounded, color: AppColors.primary, size: 18),
+              ),
+              const SizedBox(width: 10),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Personal Information',
+                    style: GoogleFonts.outfit(
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  Text(
+                    'Update your public profile details',
+                    style: GoogleFonts.outfit(fontSize: 11.5, color: AppColors.textSecondary),
+                  ),
+                ],
               ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 20),
 
-          // Name
+          // 1. Full Name
           _buildTextField(
             controller: _nameController,
             label: 'Full Name',
@@ -643,9 +816,9 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             icon: Icons.badge_outlined,
             validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter your name' : null,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // District
+          // 2. District
           _buildTextField(
             controller: _districtController,
             label: 'District',
@@ -653,9 +826,49 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
             icon: Icons.location_on_outlined,
             validator: (v) => (v == null || v.trim().isEmpty) ? 'Please enter your district' : null,
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 8),
 
-          // Avatar URL
+          // District Quick Chips
+          Padding(
+            padding: const EdgeInsets.only(left: 4),
+            child: Wrap(
+              spacing: 6,
+              runSpacing: 6,
+              children: _commonDistricts.map((district) {
+                final isSelected = _districtController.text.trim().toLowerCase() == district.toLowerCase();
+                return InkWell(
+                  onTap: () {
+                    setState(() {
+                      _districtController.text = district;
+                    });
+                  },
+                  borderRadius: BorderRadius.circular(12),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: isSelected ? AppColors.primary.withValues(alpha: 0.12) : const Color(0xFFF3F4F6),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: isSelected ? AppColors.primary : Colors.transparent,
+                        width: 1,
+                      ),
+                    ),
+                    child: Text(
+                      district,
+                      style: GoogleFonts.outfit(
+                        fontSize: 11.5,
+                        fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                        color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                      ),
+                    ),
+                  ),
+                );
+              }).toList(),
+            ),
+          ),
+          const SizedBox(height: 18),
+
+          // 3. Avatar URL
           _buildTextField(
             controller: _avatarUrlController,
             label: 'Avatar URL',
@@ -667,15 +880,15 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
               onPressed: _showImageSourceSelector,
             ),
           ),
-          const SizedBox(height: 16),
+          const SizedBox(height: 18),
 
-          // Phone Number (Read-only)
+          // 4. Phone Number (Read-only Login ID)
           _buildTextField(
             controller: _phoneController,
             label: 'Phone Number (Account ID)',
-            icon: Icons.phone_outlined,
+            icon: Icons.lock_outline_rounded,
             readOnly: true,
-            helperText: 'Phone number cannot be changed as it is your login ID.',
+            helperText: 'Your phone number is your verified login credential and cannot be changed.',
           ),
         ],
       ),
@@ -707,7 +920,7 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
         helperText: helperText,
         helperMaxLines: 2,
         helperStyle: GoogleFonts.outfit(fontSize: 11, color: Colors.grey.shade600),
-        prefixIcon: Icon(icon, color: AppColors.primary, size: 20),
+        prefixIcon: Icon(icon, color: readOnly ? Colors.grey.shade500 : AppColors.primary, size: 20),
         suffixIcon: suffixIcon,
         filled: true,
         fillColor: readOnly ? const Color(0xFFF7F8FA) : const Color(0xFFFAFBFD),
@@ -754,14 +967,21 @@ class _EditProfileScreenState extends State<EditProfileScreen> {
                   ),
                   const SizedBox(width: 12),
                   Text(
-                    'Saving Profile...',
+                    'Saving Profile Changes...',
                     style: GoogleFonts.outfit(fontSize: 15, fontWeight: FontWeight.bold),
                   ),
                 ],
               )
-            : Text(
-                'Save Changes',
-                style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold),
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.check_circle_outline_rounded, size: 20),
+                  const SizedBox(width: 8),
+                  Text(
+                    'Save Changes',
+                    style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold),
+                  ),
+                ],
               ),
       ),
     );
