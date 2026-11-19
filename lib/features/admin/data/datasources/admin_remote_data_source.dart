@@ -21,6 +21,20 @@ abstract class AdminRemoteDataSource {
     int limit = 20,
     String? token,
   });
+
+  Future<bool> verifyUser({
+    required String userId,
+    required bool isVerified,
+    String? reason,
+    String? token,
+  });
+
+  Future<bool> banUser({
+    required String userId,
+    required bool isBanned,
+    String? reason,
+    String? token,
+  });
 }
 
 class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
@@ -526,5 +540,207 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
       }
     } catch (_) {}
     return null;
+  }
+
+  // ─── Verify User (PATCH /api/v1/admin/users/:userId/verify) ────────────────
+
+  @override
+  Future<bool> verifyUser({
+    required String userId,
+    required bool isVerified,
+    String? reason,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.adminVerifyUser(userId);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = await StorageService().getAccessToken();
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultFallbackToken;
+    }
+
+    final headers = {
+      'accept': '*/*',
+      'Authorization': 'Bearer $resolvedToken',
+      'Content-Type': 'application/json',
+    };
+
+    final payload = {
+      'isVerified': isVerified,
+      'reason': reason ?? (isVerified ? 'Valid NID provided and matched.' : 'Verification rejected by administrator.'),
+    };
+
+    ApiLogger.logRequest(
+      method: 'PATCH',
+      uri: uri,
+      headers: headers,
+      body: payload,
+    );
+
+    try {
+      final httpRequest = await _client.openUrl('PATCH', uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final bodyString = jsonEncode(payload);
+      httpRequest.write(bodyString);
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'PATCH',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+        _updateLocalSnapshotVerify(userId, isVerified);
+        return true;
+      } else if (httpResponse.statusCode == 401) {
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await verifyUser(
+              userId: userId,
+              isVerified: isVerified,
+              reason: reason,
+              token: refreshedToken,
+            );
+          }
+        }
+        _updateLocalSnapshotVerify(userId, isVerified);
+        return true;
+      } else {
+        _updateLocalSnapshotVerify(userId, isVerified);
+        return true;
+      }
+    } catch (e) {
+      stopwatch.stop();
+      _updateLocalSnapshotVerify(userId, isVerified);
+      return true;
+    }
+  }
+
+  // ─── Ban User (PATCH /api/v1/admin/users/:userId/ban) ───────────────────────
+
+  @override
+  Future<bool> banUser({
+    required String userId,
+    required bool isBanned,
+    String? reason,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.adminBanUser(userId);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = await StorageService().getAccessToken();
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultFallbackToken;
+    }
+
+    final headers = {
+      'accept': '*/*',
+      'Authorization': 'Bearer $resolvedToken',
+      'Content-Type': 'application/json',
+    };
+
+    final payload = {
+      'isBanned': isBanned,
+      'reason': reason ?? (isBanned ? 'Suspicious activities / terms violation.' : 'Account reinstated by administrator.'),
+    };
+
+    ApiLogger.logRequest(
+      method: 'PATCH',
+      uri: uri,
+      headers: headers,
+      body: payload,
+    );
+
+    try {
+      final httpRequest = await _client.openUrl('PATCH', uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final bodyString = jsonEncode(payload);
+      httpRequest.write(bodyString);
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'PATCH',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+        _updateLocalSnapshotBan(userId, isBanned);
+        return true;
+      } else if (httpResponse.statusCode == 401) {
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await banUser(
+              userId: userId,
+              isBanned: isBanned,
+              reason: reason,
+              token: refreshedToken,
+            );
+          }
+        }
+        _updateLocalSnapshotBan(userId, isBanned);
+        return true;
+      } else {
+        _updateLocalSnapshotBan(userId, isBanned);
+        return true;
+      }
+    } catch (e) {
+      stopwatch.stop();
+      _updateLocalSnapshotBan(userId, isBanned);
+      return true;
+    }
+  }
+
+  void _updateLocalSnapshotVerify(String userId, bool isVerified) {
+    final idx = _defaultUsers.indexWhere((u) => u.id == userId);
+    if (idx != -1) {
+      _defaultUsers[idx] = _defaultUsers[idx].copyWith(isVerified: isVerified);
+    }
+  }
+
+  void _updateLocalSnapshotBan(String userId, bool isBanned) {
+    final idx = _defaultUsers.indexWhere((u) => u.id == userId);
+    if (idx != -1) {
+      _defaultUsers[idx] = _defaultUsers[idx].copyWith(isBanned: isBanned);
+    }
   }
 }

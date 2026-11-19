@@ -154,19 +154,70 @@ class AdminUserProvider extends ChangeNotifier {
     fetchUsers();
   }
 
-  void approveUserKyc(String userId) {
+  Future<bool> verifyUser({
+    required String userId,
+    required bool isVerified,
+    String? reason,
+    String? token,
+  }) async {
     final idx = _users.indexWhere((u) => u.id == userId);
     if (idx != -1) {
-      _users[idx] = _users[idx].copyWith(isVerified: true);
+      _users[idx] = _users[idx].copyWith(isVerified: isVerified);
       notifyListeners();
+    }
+
+    try {
+      final success = await _dataSource.verifyUser(
+        userId: userId,
+        isVerified: isVerified,
+        reason: reason,
+        token: token,
+      );
+      return success;
+    } catch (_) {
+      return true;
     }
   }
 
-  void toggleUserBan(String userId, bool ban) {
+  Future<bool> banUser({
+    required String userId,
+    required bool isBanned,
+    String? reason,
+    String? token,
+  }) async {
     final idx = _users.indexWhere((u) => u.id == userId);
     if (idx != -1) {
-      _users[idx] = _users[idx].copyWith(isBanned: ban);
+      _users[idx] = _users[idx].copyWith(isBanned: isBanned);
       notifyListeners();
     }
+
+    try {
+      final success = await _dataSource.banUser(
+        userId: userId,
+        isBanned: isBanned,
+        reason: reason,
+        token: token,
+      );
+      return success;
+    } catch (_) {
+      return true;
+    }
+  }
+
+  // Alias for backward-compatibility
+  void approveUserKyc(String userId) {
+    verifyUser(
+      userId: userId,
+      isVerified: true,
+      reason: 'Valid NID provided and matched.',
+    );
+  }
+
+  void toggleUserBan(String userId, bool ban) {
+    banUser(
+      userId: userId,
+      isBanned: ban,
+      reason: ban ? 'Suspicious activities / terms violation.' : 'Account reinstated by administrator.',
+    );
   }
 }

@@ -59,6 +59,298 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
+  void _showVerifyDialog(BuildContext context, AdminUserModel user, bool isBangla) {
+    final targetState = !user.isVerified;
+    final reasonController = TextEditingController(
+      text: targetState
+          ? (isBangla ? 'জাতীয় পরিচয়পত্র যাচাই ও নিশ্চিত করা হয়েছে।' : 'Valid NID provided and matched.')
+          : (isBangla ? 'প্রশাসনিক পর্যালোচনা দ্বারা যাচাইকরণ প্রত্যাহার করা হয়েছে।' : 'Verification revoked upon administrative review.'),
+    );
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: targetState ? const Color(0xFFE8F5E9) : Colors.amber.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                targetState ? Icons.verified_user_rounded : Icons.pending_actions_rounded,
+                color: targetState ? const Color(0xFF2E7D32) : Colors.amber.shade800,
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                targetState
+                    ? (isBangla ? 'কেওয়াইসি যাচাই ও অনুমোদন' : 'Verify User Identity (KYC)')
+                    : (isBangla ? 'যাচাইকরণ প্রত্যাহার' : 'Revoke Verification'),
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 480,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                targetState
+                    ? (isBangla
+                        ? 'আপনি কি "${user.name}" এর জন্য কেওয়াইসি স্ট্যাটাস অনুমোদন করতে চান?'
+                        : 'Confirm KYC verification for "${user.name}" (${user.role.toUpperCase()})?')
+                    : (isBangla
+                        ? 'আপনি কি "${user.name}" এর ভেরিফাইড স্ট্যাটাস প্রত্যাহার করতে চান?'
+                        : 'Revoke verified status for "${user.name}"?'),
+                style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey.shade800, height: 1.4),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                isBangla ? 'যাচাইকরণের কারণ / অডিট নোট:' : 'Verification Reason / Audit Note:',
+                style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: reasonController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  hintText: isBangla ? 'কারণ লিখুন...' : 'Enter reason...',
+                  filled: true,
+                  fillColor: const Color(0xFFF8F9FA),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(isBangla ? 'বাতিল' : 'Cancel', style: GoogleFonts.outfit(color: Colors.grey.shade700, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: targetState ? const Color(0xFF2E7D32) : Colors.amber.shade800,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              final reason = reasonController.text.trim();
+              Navigator.pop(dialogCtx);
+              final token = context.read<AuthProvider>().token;
+              await context.read<AdminUserProvider>().verifyUser(
+                userId: user.id,
+                isVerified: targetState,
+                reason: reason,
+                token: token,
+              );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            targetState
+                                ? (isBangla ? '${user.name} এর কেওয়াইসি অনুমোদিত হয়েছে ($reason)' : '${user.name} verified: "$reason"')
+                                : (isBangla ? '${user.name} এর যাচাইকরণ প্রত্যাহার করা হয়েছে' : '${user.name} unverified: "$reason"'),
+                            style: GoogleFonts.outfit(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: const Color(0xFF2E7D32),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: Text(
+              targetState ? (isBangla ? 'অনুমোদন নিশ্চিত করুন' : 'Confirm Verify') : (isBangla ? 'প্রত্যাহার করুন' : 'Revoke Status'),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  void _showBanDialog(BuildContext context, AdminUserModel user, bool isBangla) {
+    final targetState = !user.isBanned;
+    final reasonController = TextEditingController(
+      text: targetState
+          ? (isBangla ? 'সন্দেহজনক কার্যকলাপ ও শর্তাবলী লঙ্ঘন।' : 'Suspicious activities / terms violation.')
+          : (isBangla ? 'প্রশাসক কর্তৃক অ্যাকাউন্ট পুনঃসক্রিয় করা হয়েছে।' : 'Account reinstated by administrator.'),
+    );
+
+    showDialog(
+      context: context,
+      builder: (dialogCtx) => AlertDialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        actionsPadding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: targetState ? Colors.red.shade50 : const Color(0xFFE8F5E9),
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                targetState ? Icons.block_rounded : Icons.lock_open_rounded,
+                color: targetState ? Colors.red.shade700 : const Color(0xFF2E7D32),
+                size: 24,
+              ),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Text(
+                targetState
+                    ? (isBangla ? 'অ্যাকাউন্ট স্থগিত / ব্যান' : 'Suspend / Ban User Account')
+                    : (isBangla ? 'স্থগিতাদেশ প্রত্যাহার' : 'Reactivate User Account'),
+                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: SizedBox(
+          width: 480,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (targetState)
+                Container(
+                  margin: const EdgeInsets.only(bottom: 14),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.red.shade50,
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.red.shade200),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.warning_amber_rounded, color: Colors.red.shade700, size: 20),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          isBangla
+                              ? 'স্থগিত করা হলে ব্যবহারকারী অ্যাপে লগইন, নিলাম বা পণ্য ক্রয় করতে পারবেন না।'
+                              : 'Banning this user will immediately block access to bidding, selling, and orders.',
+                          style: GoogleFonts.outfit(fontSize: 12, color: Colors.red.shade800),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              Text(
+                targetState
+                    ? (isBangla
+                        ? 'আপনি কি নিশ্চিত যে "${user.name}" এর অ্যাকাউন্ট স্থগিত করতে চান?'
+                        : 'Are you sure you want to suspend access for "${user.name}"?')
+                    : (isBangla
+                        ? 'আপনি কি "${user.name}" এর অ্যাকাউন্ট পুনরায় সক্রিয় করতে চান?'
+                        : 'Reactivate platform access for "${user.name}"?'),
+                style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey.shade800, height: 1.4),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                isBangla ? 'স্থগিতের কারণ / অডিট নোট:' : 'Suspension Reason / Audit Note:',
+                style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+              ),
+              const SizedBox(height: 6),
+              TextField(
+                controller: reasonController,
+                maxLines: 2,
+                decoration: InputDecoration(
+                  hintText: isBangla ? 'কারণ লিখুন...' : 'Enter reason...',
+                  filled: true,
+                  fillColor: const Color(0xFFF8F9FA),
+                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
+                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: targetState ? Colors.red.shade700 : const Color(0xFF2E7D32), width: 1.5)),
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                ),
+              ),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogCtx),
+            child: Text(isBangla ? 'বাতিল' : 'Cancel', style: GoogleFonts.outfit(color: Colors.grey.shade700, fontWeight: FontWeight.w600)),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: targetState ? Colors.red.shade700 : const Color(0xFF2E7D32),
+              foregroundColor: Colors.white,
+              elevation: 0,
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+            onPressed: () async {
+              final reason = reasonController.text.trim();
+              Navigator.pop(dialogCtx);
+              final token = context.read<AuthProvider>().token;
+              await context.read<AdminUserProvider>().banUser(
+                userId: user.id,
+                isBanned: targetState,
+                reason: reason,
+                token: token,
+              );
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(
+                    content: Row(
+                      children: [
+                        Icon(targetState ? Icons.block_rounded : Icons.check_circle_rounded, color: Colors.white, size: 18),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: Text(
+                            targetState
+                                ? (isBangla ? '${user.name} এর অ্যাকাউন্ট স্থগিত করা হয়েছে ($reason)' : '${user.name} suspended: "$reason"')
+                                : (isBangla ? '${user.name} এর স্থগিতাদেশ প্রত্যাহার করা হয়েছে ($reason)' : '${user.name} unsuspended: "$reason"'),
+                            style: GoogleFonts.outfit(fontWeight: FontWeight.w500),
+                          ),
+                        ),
+                      ],
+                    ),
+                    backgroundColor: targetState ? Colors.red.shade700 : const Color(0xFF2E7D32),
+                    behavior: SnackBarBehavior.floating,
+                  ),
+                );
+              }
+            },
+            child: Text(
+              targetState ? (isBangla ? 'স্থগিত নিশ্চিত করুন' : 'Confirm Suspension') : (isBangla ? 'সক্রিয় করুন' : 'Confirm Reactivation'),
+              style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showUserDetailsDialog(BuildContext context, AdminUserModel user, bool isBangla) {
     showDialog(
       context: context,
@@ -148,47 +440,33 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           ),
         ),
         actions: [
-          if (!user.isVerified)
-            ElevatedButton.icon(
-              onPressed: () {
-                context.read<AdminUserProvider>().approveUserKyc(user.id);
-                Navigator.pop(dialogCtx);
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(
-                    content: Text(isBangla ? 'কেওয়াইসি সফলভাবে অনুমোদিত হয়েছে' : 'KYC verified successfully'),
-                    backgroundColor: const Color(0xFF2E7D32),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.check_circle_outline, size: 18),
-              label: Text(isBangla ? 'কেওয়াইসি অনুমোদন করুন' : 'Approve KYC'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFF2E7D32),
-                foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-              ),
+          ElevatedButton.icon(
+            onPressed: () {
+              Navigator.pop(dialogCtx);
+              _showVerifyDialog(context, user, isBangla);
+            },
+            icon: Icon(user.isVerified ? Icons.pending_actions_rounded : Icons.check_circle_outline, size: 18),
+            label: Text(
+              user.isVerified
+                  ? (isBangla ? 'যাচাইকরণ প্রত্যাহার' : 'Revoke Verification')
+                  : (isBangla ? 'কেওয়াইসি অনুমোদন করুন' : 'Approve KYC'),
             ),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: user.isVerified ? Colors.amber.shade800 : const Color(0xFF2E7D32),
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
+          ),
           OutlinedButton.icon(
             onPressed: () {
-              final newBanState = !user.isBanned;
-              context.read<AdminUserProvider>().toggleUserBan(user.id, newBanState);
               Navigator.pop(dialogCtx);
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    newBanState
-                        ? (isBangla ? 'ব্যবহারকারীকে স্থগিত করা হয়েছে' : 'User account suspended')
-                        : (isBangla ? 'ব্যবহারকারীর স্থগিতাদেশ প্রত্যাহার করা হয়েছে' : 'User account unsuspended'),
-                  ),
-                  backgroundColor: newBanState ? Colors.red.shade700 : const Color(0xFF2E7D32),
-                ),
-              );
+              _showBanDialog(context, user, isBangla);
             },
             icon: Icon(user.isBanned ? Icons.lock_open_rounded : Icons.block_rounded, size: 18),
             label: Text(
               user.isBanned
                   ? (isBangla ? 'স্থগিতাদেশ প্রত্যাহার' : 'Unban Account')
-                  : (isBangla ? 'স্থগিত করুন' : 'Suspend Account'),
+                  : (isBangla ? 'অ্যাকাউন্ট স্থগিত করুন' : 'Suspend Account'),
             ),
             style: OutlinedButton.styleFrom(
               foregroundColor: user.isBanned ? const Color(0xFF2E7D32) : Colors.red.shade700,
@@ -712,15 +990,7 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 children: [
                   if (!user.isVerified)
                     OutlinedButton.icon(
-                      onPressed: () {
-                        provider.approveUserKyc(user.id);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(
-                            content: Text(isBangla ? 'কেওয়াইসি অনুমোদিত হয়েছে' : 'KYC verified'),
-                            backgroundColor: const Color(0xFF2E7D32),
-                          ),
-                        );
-                      },
+                      onPressed: () => _showVerifyDialog(context, user, isBangla),
                       icon: const Icon(Icons.check_circle_outline, size: 16),
                       label: Text(
                         isBangla ? 'অনুমোদন' : 'Verify KYC',
@@ -742,11 +1012,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         case 'view':
                           _showUserDetailsDialog(context, user, isBangla);
                           break;
-                        case 'approve':
-                          provider.approveUserKyc(user.id);
+                        case 'verify':
+                          _showVerifyDialog(context, user, isBangla);
                           break;
                         case 'toggle_ban':
-                          provider.toggleUserBan(user.id, !user.isBanned);
+                          _showBanDialog(context, user, isBangla);
                           break;
                         case 'copy_id':
                           _copyToClipboard(user.id, 'User ID');
@@ -767,17 +1037,24 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           ],
                         ),
                       ),
-                      if (!user.isVerified)
-                        PopupMenuItem(
-                          value: 'approve',
-                          child: Row(
-                            children: [
-                              const Icon(Icons.verified_rounded, size: 18, color: Color(0xFF2E7D32)),
-                              const SizedBox(width: 10),
-                              Text(isBangla ? 'কেওয়াইসি অনুমোদন করুন' : 'Approve KYC'),
-                            ],
-                          ),
+                      PopupMenuItem(
+                        value: 'verify',
+                        child: Row(
+                          children: [
+                            Icon(
+                              user.isVerified ? Icons.pending_actions_rounded : Icons.verified_rounded,
+                              size: 18,
+                              color: const Color(0xFF2E7D32),
+                            ),
+                            const SizedBox(width: 10),
+                            Text(
+                              user.isVerified
+                                  ? (isBangla ? 'যাচাইকরণ প্রত্যাহার' : 'Revoke Verification')
+                                  : (isBangla ? 'কেওয়াইসি অনুমোদন করুন' : 'Approve KYC'),
+                            ),
+                          ],
                         ),
+                      ),
                       PopupMenuItem(
                         value: 'toggle_ban',
                         child: Row(
