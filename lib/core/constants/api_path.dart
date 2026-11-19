@@ -47,6 +47,7 @@ class ApiPath {
   // Products
   static String get products => '$baseUrl/products';
   static String get myProducts => '$baseUrl/products/my';
+  static String productById(String id) => '$baseUrl/products/$id';
   static String get productCategories => '$baseUrl/products/categories';
 
   // Demands

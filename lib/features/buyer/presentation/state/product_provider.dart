@@ -14,6 +14,10 @@ class ProductProvider extends ChangeNotifier {
   bool _isMyProductsLoading = false;
   String? _myProductsError;
 
+  Product? _selectedProduct;
+  bool _isProductDetailLoading = false;
+  String? _productDetailError;
+
   String _searchQuery = '';
   String _selectedCategory = 'All';
   bool _isLoading = false;
@@ -35,6 +39,10 @@ class ProductProvider extends ChangeNotifier {
   List<Product> get myProducts => _myProducts;
   bool get isMyProductsLoading => _isMyProductsLoading;
   String? get myProductsError => _myProductsError;
+
+  Product? get selectedProduct => _selectedProduct;
+  bool get isProductDetailLoading => _isProductDetailLoading;
+  String? get productDetailError => _productDetailError;
 
   String get searchQuery => _searchQuery;
   String get selectedCategory => _selectedCategory;
@@ -132,6 +140,37 @@ class ProductProvider extends ChangeNotifier {
       notifyListeners();
       return [];
     }
+  }
+
+  /// Fetches a single product by ID via GET /api/v1/products/{id}
+  Future<Product?> fetchProductById({
+    required String id,
+    String? token,
+  }) async {
+    _isProductDetailLoading = true;
+    _productDetailError = null;
+    notifyListeners();
+
+    try {
+      final product = await _farmerRepository.getProductById(
+        id: id,
+        token: token,
+      );
+      _selectedProduct = product;
+      _isProductDetailLoading = false;
+      notifyListeners();
+      return product;
+    } catch (e) {
+      _isProductDetailLoading = false;
+      _productDetailError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      return null;
+    }
+  }
+
+  void setSelectedProduct(Product? product) {
+    _selectedProduct = product;
+    notifyListeners();
   }
 
   /// Creates a new product on the backend using the POST /api/v1/products API

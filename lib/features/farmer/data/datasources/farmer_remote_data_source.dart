@@ -30,6 +30,11 @@ abstract class FarmerRemoteDataSource {
     String? search,
     String? token,
   });
+
+  Future<Product> getProductById({
+    required String id,
+    String? token,
+  });
 }
 
 class FarmerRemoteDataSourceImpl implements FarmerRemoteDataSource {
@@ -344,6 +349,116 @@ class FarmerRemoteDataSourceImpl implements FarmerRemoteDataSource {
       } else {
         String errorMessage =
             'Failed to fetch products (Status code ${httpResponse.statusCode})';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['message']?.toString() ??
+              decodedJson['error']?.toString() ??
+              decodedJson['detail']?.toString() ??
+              errorMessage;
+        } else if (responseBody.isNotEmpty) {
+          errorMessage = responseBody;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      }
+    } on SocketException catch (e) {
+      stopwatch.stop();
+      final err =
+          'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running.';
+      ApiLogger.logError(
+        method: 'GET',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: err,
+      );
+      throw Exception(err);
+    } catch (e) {
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          duration: stopwatch.elapsed,
+          error: e,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Product> getProductById({
+    required String id,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.productById(id);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = await StorageService().getAccessToken();
+    }
+
+    final headers = <String, String>{
+      'accept': '*/*',
+    };
+    if (resolvedToken != null && resolvedToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $resolvedToken';
+    }
+
+    ApiLogger.logRequest(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+    );
+
+    try {
+      final httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        if (decodedJson is Map<String, dynamic>) {
+          final productMap = decodedJson['data'] is Map<String, dynamic>
+              ? decodedJson['data'] as Map<String, dynamic>
+              : (decodedJson['product'] is Map<String, dynamic>
+                  ? decodedJson['product'] as Map<String, dynamic>
+                  : decodedJson);
+          return Product.fromJson(productMap);
+        } else {
+          throw Exception('Invalid product data response');
+        }
+      } else {
+        String errorMessage =
+            'Failed to fetch product (Status code ${httpResponse.statusCode})';
         if (decodedJson is Map<String, dynamic>) {
           errorMessage = decodedJson['message']?.toString() ??
               decodedJson['error']?.toString() ??

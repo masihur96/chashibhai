@@ -56,4 +56,15 @@ class FarmerRepositoryImpl implements FarmerRepository {
       token: token,
     );
   }
+
+  @override
+  Future<Product> getProductById({
+    required String id,
+    String? token,
+  }) async {
+    return await remoteDataSource.getProductById(
+      id: id,
+      token: token,
+    );
+  }
 }

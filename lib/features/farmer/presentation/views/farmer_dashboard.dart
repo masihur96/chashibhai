@@ -7,7 +7,7 @@ import '../../../buyer/presentation/state/demand_provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import './add_product_screen.dart';
-import './edit_product_screen.dart';
+import './product_detail_screen.dart';
 import '../../../admin/presentation/views/analytics_screen.dart';
 import '../../../account/presentation/views/profile_screen.dart';
 import './demand_details_screen.dart';
@@ -716,7 +716,12 @@ class _FarmerDashboardState extends State<FarmerDashboard>
       child: GestureDetector(
         onTap: () => Navigator.push(
           context,
-          MaterialPageRoute(builder: (_) => EditProductScreen(product: p)),
+          MaterialPageRoute(
+            builder: (_) => ProductDetailScreen(
+              productId: p.id,
+              initialProduct: p,
+            ),
+          ),
         ).then((_) => _fetchListings()),
         child: Container(
           decoration: BoxDecoration(

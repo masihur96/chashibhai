@@ -24,4 +24,9 @@ abstract class FarmerRepository {
     String? search,
     String? token,
   });
+
+  Future<Product> getProductById({
+    required String id,
+    String? token,
+  });
 }
