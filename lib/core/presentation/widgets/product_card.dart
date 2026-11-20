@@ -9,12 +9,14 @@ class ProductCard extends StatelessWidget {
   final Product product;
   final NumberFormat currencyFormat;
   final VoidCallback onTap;
+  final VoidCallback? onBidTap;
 
   const ProductCard({
     super.key,
     required this.product,
     required this.currencyFormat,
     required this.onTap,
+    this.onBidTap,
   });
 
   @override
@@ -105,6 +107,25 @@ class ProductCard extends StatelessWidget {
                       ),
                     ],
                   ),
+                  if (onBidTap != null && product.tradeType != TradeType.negotiation) ...[
+                    const SizedBox(height: 8),
+                    SizedBox(
+                      width: double.infinity,
+                      height: 28,
+                      child: ElevatedButton.icon(
+                        onPressed: onBidTap,
+                        icon: const Icon(Icons.gavel_rounded, size: 12),
+                        label: const Text('Bid', style: TextStyle(fontSize: 11, fontWeight: FontWeight.bold)),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Theme.of(context).colorScheme.primary,
+                          foregroundColor: Colors.white,
+                          padding: EdgeInsets.zero,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(6)),
+                        ),
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

@@ -7,6 +7,7 @@ import 'package:chashibhai/core/services/upload_service.dart';
 import 'package:chashibhai/features/auth/presentation/state/auth_provider.dart';
 import 'package:chashibhai/features/group/presentation/state/group_provider.dart';
 import 'package:chashibhai/features/buyer/data/models/create_demand_request_model.dart';
+import 'package:chashibhai/features/buyer/data/models/create_bid_request_model.dart';
 import 'package:chashibhai/features/buyer/domain/repositories/buyer_repository.dart';
 import 'package:chashibhai/features/buyer/domain/usecases/create_demand_usecase.dart';
 import 'package:chashibhai/features/buyer/presentation/state/demand_provider.dart';
@@ -77,6 +78,39 @@ class MockBuyerRepository implements BuyerRepository {
               : TradeType.negotiation),
       imageUrl: request.imageUrl,
     );
+  }
+
+  @override
+  Future<Bid> createBid({
+    required CreateBidRequestModel request,
+    String? token,
+  }) async {
+    return Bid(
+      id: 'b_mock_create',
+      productId: request.productId,
+      buyerId: 'buyer_test',
+      amount: request.amount,
+      createdAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<List<Product>> getAvailableProducts({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? search,
+    String? token,
+  }) async {
+    return [];
+  }
+
+  @override
+  Future<Product?> getProductById({
+    required String id,
+    String? token,
+  }) async {
+    return null;
   }
 }
 

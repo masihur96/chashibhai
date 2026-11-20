@@ -6,6 +6,7 @@ import 'package:chashibhai/core/services/upload_service.dart';
 import 'package:chashibhai/features/account/presentation/state/app_state_provider.dart';
 import 'package:chashibhai/features/auth/presentation/state/auth_provider.dart';
 import 'package:chashibhai/features/buyer/data/models/create_demand_request_model.dart';
+import 'package:chashibhai/features/buyer/data/models/create_bid_request_model.dart';
 import 'package:chashibhai/features/buyer/domain/repositories/buyer_repository.dart';
 import 'package:chashibhai/features/buyer/domain/usecases/get_my_demands_usecase.dart';
 import 'package:chashibhai/features/buyer/presentation/state/demand_provider.dart';
@@ -72,6 +73,65 @@ class MockBuyerRepository implements BuyerRepository {
     String? token,
   }) async {
     return [];
+  }
+
+  @override
+  Future<Bid> createBid({
+    required CreateBidRequestModel request,
+    String? token,
+  }) async {
+    return Bid(
+      id: 'b_mock_1',
+      productId: request.productId,
+      buyerId: 'buyer_test',
+      amount: request.amount,
+      createdAt: DateTime.now(),
+    );
+  }
+
+  @override
+  Future<List<Product>> getAvailableProducts({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? search,
+    String? token,
+  }) async {
+    return [
+      Product(
+        id: 'ee9ac1a6-bb66-45d0-a6de-8e390702be0e',
+        farmerId: 'f1',
+        productName: 'Fresh Diamond Potatoes',
+        imageUrl: 'assets/images/potato.png',
+        quantity: 500,
+        unit: 'KG',
+        minimumPrice: 55.0,
+        tradeType: TradeType.auction,
+        startTime: DateTime.now().subtract(const Duration(hours: 4)),
+        endTime: DateTime.now().add(const Duration(days: 2)),
+        category: 'Vegetables',
+      ),
+    ];
+  }
+
+  @override
+  Future<Product?> getProductById({
+    required String id,
+    String? token,
+  }) async {
+    return Product(
+      id: id,
+      farmerId: 'f1',
+      productName: 'Fresh Diamond Potatoes',
+      imageUrl: 'assets/images/potato.png',
+      quantity: 500,
+      unit: 'KG',
+      minimumPrice: 55.0,
+      tradeType: TradeType.auction,
+      startTime: DateTime.now().subtract(const Duration(hours: 4)),
+      endTime: DateTime.now().add(const Duration(days: 2)),
+      category: 'Vegetables',
+    );
   }
 }
 

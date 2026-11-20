@@ -7,6 +7,7 @@ import '../../../../core/models/models.dart';
 import '../../../../core/services/upload_service.dart';
 import '../../../../core/utils/storage_service.dart';
 import '../models/create_demand_request_model.dart';
+import '../models/create_bid_request_model.dart';
 
 abstract class BuyerRemoteDataSource {
   Future<DemandPost> createDemand({
@@ -30,15 +31,33 @@ abstract class BuyerRemoteDataSource {
     String? status,
     String? token,
   });
+
+  Future<Bid> createBid({
+    required CreateBidRequestModel request,
+    String? token,
+  });
+
+  Future<List<Product>> getAvailableProducts({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? search,
+    String? token,
+  });
+
+  Future<Product?> getProductById({
+    required String id,
+    String? token,
+  });
 }
 
 class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
   final HttpClient _client;
   final UploadService _uploadService;
 
-  /// Default fallback token from curl specification
+  /// Default fallback token from user curl specification
   static const String defaultFallbackToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MmY2ODM5YS01ZDBjLTQwYTctYmQ5Mi1hNTA4MGNkOGIwNzAiLCJwaG9uZSI6Ijg4MDE3NDA3MTkyMDUiLCJlbWFpbCI6IiIsInJvbGUiOiJmYXJtZXIiLCJpYXQiOjE3OTUwMTgxNTMsImV4cCI6MTc5NTAxOTA1M30.RS_3yAvrKK79heeVSxEnF5qUprg0B1JVSudMO3zA5Yo';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTE1MDM5OCwiZXhwIjoxNzk1MTUxMjk4fQ.7JodOSM6L_8q748GQJ1MUVqtfSEl8_xeDSiJKjiHcFA';
 
   BuyerRemoteDataSourceImpl({HttpClient? client, UploadService? uploadService})
       : _client = client ?? HttpClient(),
@@ -444,6 +463,325 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
       }
     } catch (_) {}
     return null;
+  }
+
+  @override
+  Future<Bid> createBid({
+    required CreateBidRequestModel request,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.bids;
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    // Resolve bearer token: explicit param -> StorageService -> default fallback token
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = await StorageService().getAccessToken();
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultFallbackToken;
+    }
+
+    final headers = {
+      'accept': 'application/json',
+      'Authorization': 'Bearer $resolvedToken',
+      'Content-Type': 'application/json',
+    };
+
+    final requestPayload = request.toJson();
+
+    ApiLogger.logRequest(
+      method: 'POST',
+      uri: uri,
+      headers: headers,
+      body: requestPayload,
+    );
+
+    try {
+      final httpRequest = await _client.postUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final bodyString = jsonEncode(requestPayload);
+      httpRequest.write(bodyString);
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        if (decodedJson is Map<String, dynamic>) {
+          final bidMap = decodedJson['data'] is Map<String, dynamic>
+              ? decodedJson['data'] as Map<String, dynamic>
+              : (decodedJson['bid'] is Map<String, dynamic>
+                  ? decodedJson['bid'] as Map<String, dynamic>
+                  : decodedJson);
+          return Bid.fromJson(bidMap);
+        } else {
+          return Bid(
+            id: 'b_${DateTime.now().millisecondsSinceEpoch}',
+            productId: request.productId,
+            buyerId: '395e2439-099f-41da-a739-019f5a08e504',
+            amount: request.amount,
+            createdAt: DateTime.now(),
+          );
+        }
+      } else if (httpResponse.statusCode == 401) {
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await createBid(
+              request: request,
+              token: refreshedToken,
+            );
+          }
+        }
+
+        String errorMessage = 'Unauthorized or token expired';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      } else {
+        String errorMessage =
+            'Failed to place bid (Status code ${httpResponse.statusCode})';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['message']?.toString() ??
+              decodedJson['error']?.toString() ??
+              decodedJson['detail']?.toString() ??
+              errorMessage;
+        } else if (responseBody.isNotEmpty) {
+          errorMessage = responseBody;
+        }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      }
+    } on SocketException catch (e) {
+      stopwatch.stop();
+      final err =
+          'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running.';
+      ApiLogger.logError(
+        method: 'POST',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: err,
+      );
+      throw Exception(err);
+    } catch (e) {
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          duration: stopwatch.elapsed,
+          error: e,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<Product>> getAvailableProducts({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? search,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.products;
+    final baseUri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    final queryParameters = <String, String>{
+      'page': page.toString(),
+      'limit': limit.toString(),
+    };
+    if (category != null && category.isNotEmpty && category != 'All') {
+      queryParameters['category'] = category;
+    }
+    if (search != null && search.isNotEmpty) {
+      queryParameters['search'] = search;
+    }
+
+    final uri = baseUri.replace(queryParameters: queryParameters);
+
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = await StorageService().getAccessToken();
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultFallbackToken;
+    }
+
+    final headers = {
+      'accept': 'application/json',
+      'Authorization': 'Bearer $resolvedToken',
+    };
+
+    ApiLogger.logRequest(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+    );
+
+    try {
+      final httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        final List<Product> products = [];
+        if (decodedJson is Map<String, dynamic>) {
+          final data = decodedJson['data'] ?? decodedJson['products'];
+          if (data is List) {
+            for (final item in data) {
+              if (item is Map<String, dynamic>) {
+                products.add(Product.fromJson(item));
+              }
+            }
+          }
+        } else if (decodedJson is List) {
+          for (final item in decodedJson) {
+            if (item is Map<String, dynamic>) {
+              products.add(Product.fromJson(item));
+            }
+          }
+        }
+        return products;
+      } else {
+        throw Exception('Failed to fetch available products (${httpResponse.statusCode})');
+      }
+    } catch (e) {
+      stopwatch.stop();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Product?> getProductById({
+    required String id,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.productById(id);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = await StorageService().getAccessToken();
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultFallbackToken;
+    }
+
+    final headers = {
+      'accept': 'application/json',
+      'Authorization': 'Bearer $resolvedToken',
+    };
+
+    ApiLogger.logRequest(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+    );
+
+    try {
+      final httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        if (decodedJson is Map<String, dynamic>) {
+          final productMap = decodedJson['data'] is Map<String, dynamic>
+              ? decodedJson['data'] as Map<String, dynamic>
+              : (decodedJson['product'] is Map<String, dynamic>
+                  ? decodedJson['product'] as Map<String, dynamic>
+                  : decodedJson);
+          return Product.fromJson(productMap);
+        }
+        return null;
+      } else {
+        return null;
+      }
+    } catch (e) {
+      stopwatch.stop();
+      return null;
+    }
   }
 
   TradeType _parseTradeType(String type) {

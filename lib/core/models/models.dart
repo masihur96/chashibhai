@@ -228,6 +228,8 @@ class Bid {
   final String buyerId;
   final double amount;
   final DateTime createdAt;
+  final String? bidderName;
+  final String? status;
 
   Bid({
     required this.id,
@@ -235,7 +237,67 @@ class Bid {
     required this.buyerId,
     required this.amount,
     required this.createdAt,
+    this.bidderName,
+    this.status = 'active',
   });
+
+  Bid copyWith({
+    String? id,
+    String? productId,
+    String? buyerId,
+    double? amount,
+    DateTime? createdAt,
+    String? bidderName,
+    String? status,
+  }) {
+    return Bid(
+      id: id ?? this.id,
+      productId: productId ?? this.productId,
+      buyerId: buyerId ?? this.buyerId,
+      amount: amount ?? this.amount,
+      createdAt: createdAt ?? this.createdAt,
+      bidderName: bidderName ?? this.bidderName,
+      status: status ?? this.status,
+    );
+  }
+
+  factory Bid.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(dynamic val) {
+      if (val == null) return DateTime.now();
+      return DateTime.tryParse(val.toString()) ?? DateTime.now();
+    }
+
+    double parseDouble(dynamic val) {
+      if (val == null) return 0.0;
+      if (val is num) return val.toDouble();
+      return double.tryParse(val.toString()) ?? 0.0;
+    }
+
+    return Bid(
+      id: (json['id'] ?? json['_id'] ?? 'b_${DateTime.now().millisecondsSinceEpoch}').toString(),
+      productId: (json['productId'] ?? json['product_id'] ?? '').toString(),
+      buyerId: (json['buyerId'] ?? json['buyer_id'] ?? json['userId'] ?? json['user_id'] ?? '').toString(),
+      amount: parseDouble(json['amount'] ?? json['price'] ?? json['bidAmount'] ?? json['bid_amount']),
+      createdAt: parseDate(json['createdAt'] ?? json['created_at']),
+      bidderName: json['bidderName']?.toString() ?? json['bidder_name']?.toString() ?? json['userName']?.toString(),
+      status: (json['status'] ?? 'active').toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'productId': productId,
+      'product_id': productId,
+      'buyerId': buyerId,
+      'buyer_id': buyerId,
+      'amount': amount,
+      'createdAt': createdAt.toUtc().toIso8601String(),
+      'created_at': createdAt.toUtc().toIso8601String(),
+      if (bidderName != null) 'bidderName': bidderName,
+      if (status != null) 'status': status,
+    };
+  }
 }
 
 class Negotiation {

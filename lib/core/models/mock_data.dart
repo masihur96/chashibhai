@@ -93,6 +93,20 @@ class MockData {
 
   static final demoProducts = [
     Product(
+      id: 'ee9ac1a6-bb66-45d0-a6de-8e390702be0e',
+      farmerId: 'f1',
+      productName: 'Fresh Diamond Potatoes',
+      imageUrl: 'assets/images/potato.png',
+      imageUrls: const ['assets/images/potato.png'],
+      quantity: 500,
+      unit: 'KG',
+      minimumPrice: 55.0,
+      tradeType: TradeType.auction,
+      startTime: DateTime.now().subtract(const Duration(hours: 4)),
+      endTime: DateTime.now().add(const Duration(days: 2, hours: 6)),
+      category: 'Vegetables',
+    ),
+    Product(
       id: 'p1',
       farmerId: 'f1',
       productName: 'Organic Potatoes',
@@ -147,6 +161,14 @@ class MockData {
   ];
 
   static final demoBids = [
+    Bid(
+      id: 'b_ee9_1',
+      productId: 'ee9ac1a6-bb66-45d0-a6de-8e390702be0e',
+      buyerId: '395e2439-099f-41da-a739-019f5a08e504',
+      amount: 55.0,
+      createdAt: DateTime.now().subtract(const Duration(minutes: 15)),
+      bidderName: 'Masihur Rahman',
+    ),
     Bid(
       id: 'b1',
       productId: 'p2',

@@ -1,6 +1,7 @@
 import '../../../../core/models/models.dart';
 import '../../../../core/services/upload_service.dart';
 import '../../data/models/create_demand_request_model.dart';
+import '../../data/models/create_bid_request_model.dart';
 
 abstract class BuyerRepository {
   Future<DemandPost> createDemand({
@@ -22,6 +23,24 @@ abstract class BuyerRepository {
     double? maxPrice,
     String? tradeType,
     String? status,
+    String? token,
+  });
+
+  Future<Bid> createBid({
+    required CreateBidRequestModel request,
+    String? token,
+  });
+
+  Future<List<Product>> getAvailableProducts({
+    int page = 1,
+    int limit = 20,
+    String? category,
+    String? search,
+    String? token,
+  });
+
+  Future<Product?> getProductById({
+    required String id,
     String? token,
   });
 }
