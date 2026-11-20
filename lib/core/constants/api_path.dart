@@ -68,6 +68,11 @@ class ApiPath {
   // Groups
   static String get groups => '$baseUrl/groups';
 
+  // Reviews
+  static String get reviews => '$baseUrl/reviews';
+  static String get myReviews => '$baseUrl/reviews/my';
+  static String reviewsByUser(String userId) => '$baseUrl/reviews/user/$userId';
+
   // Orders
   static String get orders => '$baseUrl/orders';
 

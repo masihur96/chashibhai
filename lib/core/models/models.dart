@@ -875,4 +875,64 @@ class Review {
     this.comment,
     required this.createdAt,
   });
+
+  factory Review.fromJson(Map<String, dynamic> json) {
+    return Review(
+      id: json['id']?.toString() ??
+          json['_id']?.toString() ??
+          json['reviewId']?.toString() ??
+          'rev_${DateTime.now().millisecondsSinceEpoch}',
+      reviewerId: json['reviewerId']?.toString() ??
+          json['reviewer_id']?.toString() ??
+          json['userId']?.toString() ??
+          '',
+      revieweeId: json['revieweeId']?.toString() ??
+          json['reviewee_id']?.toString() ??
+          json['targetUserId']?.toString() ??
+          '',
+      orderId: json['orderId']?.toString() ?? json['order_id']?.toString(),
+      rating: (json['rating'] is num)
+          ? (json['rating'] as num).toDouble()
+          : (double.tryParse(json['rating']?.toString() ?? '0') ?? 0.0),
+      comment: json['comment']?.toString() ?? json['review']?.toString(),
+      createdAt: DateTime.tryParse(
+            json['createdAt']?.toString() ??
+                json['created_at']?.toString() ??
+                '',
+          ) ??
+          DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'reviewerId': reviewerId,
+      'revieweeId': revieweeId,
+      if (orderId != null) 'orderId': orderId,
+      'rating': rating,
+      if (comment != null) 'comment': comment,
+      'createdAt': createdAt.toIso8601String(),
+    };
+  }
+
+  Review copyWith({
+    String? id,
+    String? reviewerId,
+    String? revieweeId,
+    String? orderId,
+    double? rating,
+    String? comment,
+    DateTime? createdAt,
+  }) {
+    return Review(
+      id: id ?? this.id,
+      reviewerId: reviewerId ?? this.reviewerId,
+      revieweeId: revieweeId ?? this.revieweeId,
+      orderId: orderId ?? this.orderId,
+      rating: rating ?? this.rating,
+      comment: comment ?? this.comment,
+      createdAt: createdAt ?? this.createdAt,
+    );
+  }
 }

@@ -246,8 +246,9 @@ void main() {
       expect(mockRepository.lastBidRequest?.amount, 55);
       expect(mockRepository.lastBidToken, curlToken);
 
-      expect(demandProvider.bids.first.id, newBid.id);
-      expect(demandProvider.bids.first.amount, 55);
+      expect(demandProvider.bids.any((b) => b.id == newBid.id), isTrue);
+      expect(demandProvider.myBids.first.id, newBid.id);
+      expect(demandProvider.myBids.first.amount, 55);
     });
 
     test('ProductProvider fetchAvailableProducts populates products with target product', () async {
