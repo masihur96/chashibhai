@@ -11,10 +11,12 @@ import 'package:chashibhai/features/buyer/domain/repositories/buyer_repository.d
 import 'package:chashibhai/features/account/presentation/state/review_provider.dart';
 import 'package:chashibhai/features/buyer/domain/usecases/create_bid_usecase.dart';
 import 'package:chashibhai/features/buyer/domain/usecases/get_product_bids_usecase.dart';
+import 'package:chashibhai/features/buyer/domain/usecases/get_my_bids_usecase.dart';
 import 'package:chashibhai/features/buyer/presentation/state/demand_provider.dart';
 import 'package:chashibhai/features/buyer/presentation/state/product_provider.dart';
 import 'package:chashibhai/features/buyer/presentation/views/buyer_home.dart';
 import 'package:chashibhai/features/buyer/presentation/views/product_details.dart';
+import 'package:chashibhai/features/buyer/presentation/views/my_bids_screen.dart';
 import 'package:chashibhai/features/group/presentation/state/group_provider.dart';
 import 'package:chashibhai/features/wallet/presentation/state/order_provider.dart';
 
@@ -134,6 +136,43 @@ class TestMockBuyerRepository implements BuyerRepository {
     ];
   }
 
+  String? lastGetMyBidsToken;
+
+  @override
+  Future<List<Bid>> getMyBids({
+    String? token,
+  }) async {
+    lastGetMyBidsToken = token;
+    return [
+      Bid(
+        id: 'b_my_1',
+        productId: 'ea374c5d-7edf-49b4-af27-a8ebce966ed3',
+        buyerId: '395e2439-099f-41da-a739-019f5a08e504',
+        amount: 65.0,
+        createdAt: DateTime.now().subtract(const Duration(minutes: 8)),
+        bidderName: 'Masihur Rahman',
+        status: 'winning',
+        productName: 'Premium Fresh Potatoes',
+        productImageUrl: 'assets/images/potato.png',
+        currentHighestBid: 65.0,
+        isWinning: true,
+      ),
+      Bid(
+        id: 'b_my_2',
+        productId: 'p2',
+        buyerId: '395e2439-099f-41da-a739-019f5a08e504',
+        amount: 68.0,
+        createdAt: DateTime.now().subtract(const Duration(hours: 2)),
+        bidderName: 'Masihur Rahman',
+        status: 'outbid',
+        productName: 'Red Onions',
+        productImageUrl: 'assets/images/onion.png',
+        currentHighestBid: 72.0,
+        isWinning: false,
+      ),
+    ];
+  }
+
   @override
   Future<List<Negotiation>> getMyNegotiations({
     String? token,
@@ -169,10 +208,12 @@ void main() {
       mockRepository = TestMockBuyerRepository();
       createBidUseCase = CreateBidUseCase(mockRepository);
       final getProductBidsUseCase = GetProductBidsUseCase(mockRepository);
+      final getMyBidsUseCase = GetMyBidsUseCase(mockRepository);
       demandProvider = DemandProvider(
         buyerRepository: mockRepository,
         createBidUseCase: createBidUseCase,
         getProductBidsUseCase: getProductBidsUseCase,
+        getMyBidsUseCase: getMyBidsUseCase,
       );
       productProvider = ProductProvider(
         buyerRepository: mockRepository,
@@ -364,6 +405,75 @@ void main() {
 
       // Verify bottom action button
       expect(find.text('Place Bid'), findsOneWidget);
+    });
+
+    test('GetMyBidsUseCase calls repository with curl bearer token', () async {
+      final getMyBidsUseCase = GetMyBidsUseCase(mockRepository);
+      const testToken =
+          'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTE2NDIxMiwiZXhwIjoxNzk1MTY1MTEyfQ.YQmIE4_tvYuZdMQonDMTJWXI6baALYW-Ee5kD5Fbl0E';
+
+      final bids = await getMyBidsUseCase(token: testToken);
+
+      expect(mockRepository.lastGetMyBidsToken, testToken);
+      expect(bids.length, 2);
+      expect(bids.first.amount, 65.0);
+      expect(bids.first.status, 'winning');
+      expect(bids[1].status, 'outbid');
+    });
+
+    test('DemandProvider fetchMyBids loads bids and sorts by createdAt', () async {
+      expect(demandProvider.isMyBidsLoading, isFalse);
+
+      final fetched = await demandProvider.fetchMyBids();
+
+      expect(demandProvider.isMyBidsLoading, isFalse);
+      expect(demandProvider.myBidsError, isNull);
+      expect(fetched.length, 2);
+      expect(demandProvider.myBids.length, 2);
+      expect(demandProvider.myBids.first.id, 'b_my_1');
+      expect(demandProvider.myBids.first.amount, 65.0);
+    });
+
+    testWidgets('MyBidsScreen displays curl endpoint pill, summary metrics, and bids list', (WidgetTester tester) async {
+      tester.view.physicalSize = const Size(1200, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final authProvider = AuthProvider();
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<DemandProvider>.value(value: demandProvider),
+            ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+            ChangeNotifierProvider<ProductProvider>.value(value: productProvider),
+          ],
+          child: const MaterialApp(
+            home: MyBidsScreen(),
+          ),
+        ),
+      );
+
+      // Settle frame for initial myBids fetch
+      await tester.pumpAndSettle();
+
+      // Verify header and cURL endpoint pill
+      expect(find.text('My Bids'), findsWidgets);
+      expect(find.text('/api/v1/bids/my'), findsOneWidget);
+
+      // Verify summary metrics
+      expect(find.text('Total Bids'), findsOneWidget);
+      expect(find.text('Leading'), findsWidgets);
+      expect(find.text('Outbid'), findsWidgets);
+
+      // Verify bids list items from mock repository
+      expect(find.text('Premium Fresh Potatoes'), findsOneWidget);
+      expect(find.text('Red Onions'), findsOneWidget);
+      expect(find.text('👑 HIGHEST BID'), findsOneWidget);
+      expect(find.text('⚠️ OUTBID'), findsOneWidget);
+      expect(find.text('View Auction'), findsWidgets);
+      expect(find.text('Increase Bid'), findsOneWidget);
     });
   });
 }

@@ -57,6 +57,9 @@ class TestNegotiationsMockRepository implements BuyerRepository {
   Future<List<Bid>> getBidsByProductId({required String productId, String? token}) async => [];
 
   @override
+  Future<List<Bid>> getMyBids({String? token}) async => [];
+
+  @override
   Future<Bid> createBid({required CreateBidRequestModel request, String? token}) async {
     throw UnimplementedError();
   }

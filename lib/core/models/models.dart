@@ -230,6 +230,13 @@ class Bid {
   final DateTime createdAt;
   final String? bidderName;
   final String? status;
+  final String? productName;
+  final String? productImageUrl;
+  final String? productUnit;
+  final double? productMinimumPrice;
+  final DateTime? productEndTime;
+  final double? currentHighestBid;
+  final bool? isWinning;
 
   Bid({
     required this.id,
@@ -239,6 +246,13 @@ class Bid {
     required this.createdAt,
     this.bidderName,
     this.status = 'active',
+    this.productName,
+    this.productImageUrl,
+    this.productUnit,
+    this.productMinimumPrice,
+    this.productEndTime,
+    this.currentHighestBid,
+    this.isWinning,
   });
 
   Bid copyWith({
@@ -249,6 +263,13 @@ class Bid {
     DateTime? createdAt,
     String? bidderName,
     String? status,
+    String? productName,
+    String? productImageUrl,
+    String? productUnit,
+    double? productMinimumPrice,
+    DateTime? productEndTime,
+    double? currentHighestBid,
+    bool? isWinning,
   }) {
     return Bid(
       id: id ?? this.id,
@@ -258,6 +279,13 @@ class Bid {
       createdAt: createdAt ?? this.createdAt,
       bidderName: bidderName ?? this.bidderName,
       status: status ?? this.status,
+      productName: productName ?? this.productName,
+      productImageUrl: productImageUrl ?? this.productImageUrl,
+      productUnit: productUnit ?? this.productUnit,
+      productMinimumPrice: productMinimumPrice ?? this.productMinimumPrice,
+      productEndTime: productEndTime ?? this.productEndTime,
+      currentHighestBid: currentHighestBid ?? this.currentHighestBid,
+      isWinning: isWinning ?? this.isWinning,
     );
   }
 
@@ -286,14 +314,64 @@ class Bid {
       }
     }
 
+    // Extract nested product details if present
+    String? productName;
+    String? productImageUrl;
+    String? productUnit;
+    double? productMinimumPrice;
+    DateTime? productEndTime;
+
+    final productMap = json['product'];
+    if (productMap is Map<String, dynamic>) {
+      productName = productMap['productName']?.toString() ??
+          productMap['product_name']?.toString() ??
+          productMap['name']?.toString();
+      productImageUrl = productMap['imageUrl']?.toString() ??
+          productMap['image_url']?.toString() ??
+          productMap['image']?.toString();
+      productUnit = productMap['unit']?.toString();
+      if (productMap['minimumPrice'] != null || productMap['minimum_price'] != null) {
+        productMinimumPrice = parseDouble(productMap['minimumPrice'] ?? productMap['minimum_price']);
+      }
+      if (productMap['endTime'] != null || productMap['end_time'] != null) {
+        productEndTime = DateTime.tryParse((productMap['endTime'] ?? productMap['end_time']).toString());
+      }
+    }
+    productName ??= json['productName']?.toString() ?? json['product_name']?.toString();
+    productImageUrl ??= json['productImageUrl']?.toString() ?? json['product_image_url']?.toString();
+    productUnit ??= json['unit']?.toString();
+    if (productMinimumPrice == null && (json['minimumPrice'] != null || json['minimum_price'] != null)) {
+      productMinimumPrice = parseDouble(json['minimumPrice'] ?? json['minimum_price']);
+    }
+    if (productEndTime == null && (json['endTime'] != null || json['end_time'] != null)) {
+      productEndTime = DateTime.tryParse((json['endTime'] ?? json['end_time']).toString());
+    }
+
+    double? currentHighestBid;
+    if (json['currentHighestBid'] != null || json['highestBid'] != null || json['current_highest_bid'] != null) {
+      currentHighestBid = parseDouble(json['currentHighestBid'] ?? json['highestBid'] ?? json['current_highest_bid']);
+    }
+
+    bool? isWinning;
+    if (json['isWinning'] != null || json['is_winning'] != null) {
+      isWinning = json['isWinning'] == true || json['is_winning'] == true;
+    }
+
     return Bid(
       id: (json['id'] ?? json['_id'] ?? 'b_${DateTime.now().millisecondsSinceEpoch}').toString(),
-      productId: (json['productId'] ?? json['product_id'] ?? '').toString(),
+      productId: (json['productId'] ?? json['product_id'] ?? (productMap is Map ? productMap['id'] : '') ?? '').toString(),
       buyerId: (json['buyerId'] ?? json['buyer_id'] ?? json['userId'] ?? json['user_id'] ?? '').toString(),
       amount: parseDouble(json['amount'] ?? json['price'] ?? json['bidAmount'] ?? json['bid_amount']),
       createdAt: parseDate(json['createdAt'] ?? json['created_at']),
       bidderName: bidderName,
       status: (json['status'] ?? 'active').toString(),
+      productName: productName,
+      productImageUrl: productImageUrl,
+      productUnit: productUnit,
+      productMinimumPrice: productMinimumPrice,
+      productEndTime: productEndTime,
+      currentHighestBid: currentHighestBid,
+      isWinning: isWinning,
     );
   }
 
@@ -309,6 +387,13 @@ class Bid {
       'created_at': createdAt.toUtc().toIso8601String(),
       if (bidderName != null) 'bidderName': bidderName,
       if (status != null) 'status': status,
+      if (productName != null) 'productName': productName,
+      if (productImageUrl != null) 'productImageUrl': productImageUrl,
+      if (productUnit != null) 'productUnit': productUnit,
+      if (productMinimumPrice != null) 'productMinimumPrice': productMinimumPrice,
+      if (productEndTime != null) 'productEndTime': productEndTime!.toUtc().toIso8601String(),
+      if (currentHighestBid != null) 'currentHighestBid': currentHighestBid,
+      if (isWinning != null) 'isWinning': isWinning,
     };
   }
 }

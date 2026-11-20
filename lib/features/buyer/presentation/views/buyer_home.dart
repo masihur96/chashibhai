@@ -19,6 +19,7 @@ import './my_demands_screen.dart';
 import './category_products_screen.dart';
 import './notification_screen.dart';
 import './negotiations_list_screen.dart';
+import './my_bids_screen.dart';
 import '../../../group/presentation/views/groups_list_screen.dart';
 import '../../../group/presentation/views/group_detail_screen.dart';
 import '../../../../core/utils/localization.dart';
@@ -526,16 +527,35 @@ class _HomeTabState extends State<_HomeTab> {
                   ),
               ],
             ),
-            TextButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => CategoryProductsScreen(category: selectedCategory),
+            Row(
+              children: [
+                TextButton.icon(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MyBidsScreen(),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.gavel_outlined, size: 15),
+                  label: const Text('My Bids', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  style: TextButton.styleFrom(
+                    foregroundColor: const Color(0xFF2E7D32),
                   ),
-                );
-              },
-              child: Text('view_all'.tr(languageCode)),
+                ),
+                TextButton(
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => CategoryProductsScreen(category: selectedCategory),
+                      ),
+                    );
+                  },
+                  child: Text('view_all'.tr(languageCode)),
+                ),
+              ],
             ),
           ],
         ),
@@ -1487,6 +1507,13 @@ class _HomeTabState extends State<_HomeTab> {
                   tooltip: 'My Negotiations',
                   onPressed: () {
                     Navigator.push(context, MaterialPageRoute(builder: (context) => const NegotiationsListScreen()));
+                  },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.gavel_outlined, color: Colors.white),
+                  tooltip: 'My Bids',
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const MyBidsScreen()));
                   },
                 ),
                 const SizedBox(width: 4),

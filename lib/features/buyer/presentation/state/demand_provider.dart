@@ -10,25 +10,30 @@ import '../../domain/usecases/create_demand_usecase.dart';
 import '../../domain/usecases/get_my_demands_usecase.dart';
 import '../../domain/usecases/create_bid_usecase.dart';
 import '../../domain/usecases/get_product_bids_usecase.dart';
+import '../../domain/usecases/get_my_bids_usecase.dart';
 
 class DemandProvider extends ChangeNotifier {
   List<DemandPost> _demands = List<DemandPost>.from(MockData.demoDemands);
   List<DemandPost> _myDemands = [];
   List<Bid> _bids = List<Bid>.from(MockData.demoBids);
+  List<Bid> _myBids = [];
   bool _isLoading = false;
   bool _isMyDemandsLoading = false;
   bool _isPlacingBid = false;
   bool _isProductBidsLoading = false;
+  bool _isMyBidsLoading = false;
   String? _errorMessage;
   String? _myDemandsError;
   String? _bidError;
   String? _productBidsError;
+  String? _myBidsError;
   String? _lastLoadedProductId;
 
   final CreateDemandUseCase _createDemandUseCase;
   final GetMyDemandsUseCase _getMyDemandsUseCase;
   final CreateBidUseCase _createBidUseCase;
   final GetProductBidsUseCase _getProductBidsUseCase;
+  final GetMyBidsUseCase _getMyBidsUseCase;
   final BuyerRepository _buyerRepository;
 
   DemandProvider({
@@ -36,6 +41,7 @@ class DemandProvider extends ChangeNotifier {
     GetMyDemandsUseCase? getMyDemandsUseCase,
     CreateBidUseCase? createBidUseCase,
     GetProductBidsUseCase? getProductBidsUseCase,
+    GetMyBidsUseCase? getMyBidsUseCase,
     BuyerRepository? buyerRepository,
   })  : _buyerRepository = buyerRepository ?? BuyerRepositoryImpl(),
         _createDemandUseCase = createDemandUseCase ??
@@ -45,19 +51,31 @@ class DemandProvider extends ChangeNotifier {
         _createBidUseCase = createBidUseCase ??
             CreateBidUseCase(buyerRepository ?? BuyerRepositoryImpl()),
         _getProductBidsUseCase = getProductBidsUseCase ??
-            GetProductBidsUseCase(buyerRepository ?? BuyerRepositoryImpl());
+            GetProductBidsUseCase(buyerRepository ?? BuyerRepositoryImpl()),
+        _getMyBidsUseCase = getMyBidsUseCase ??
+            GetMyBidsUseCase(buyerRepository ?? BuyerRepositoryImpl());
 
   List<DemandPost> get demands => _demands;
   List<DemandPost> get myDemands => _myDemands;
   List<Bid> get bids => _bids;
+  List<Bid> get myBids {
+    if (_myBids.isNotEmpty) return _myBids;
+    final fallback = _bids.where((b) =>
+        b.buyerId == '395e2439-099f-41da-a739-019f5a08e504' ||
+        b.buyerId == 'u1').toList();
+    fallback.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+    return fallback;
+  }
   bool get isLoading => _isLoading;
   bool get isMyDemandsLoading => _isMyDemandsLoading;
   bool get isPlacingBid => _isPlacingBid;
   bool get isProductBidsLoading => _isProductBidsLoading;
+  bool get isMyBidsLoading => _isMyBidsLoading;
   String? get errorMessage => _errorMessage;
   String? get myDemandsError => _myDemandsError;
   String? get bidError => _bidError;
   String? get productBidsError => _productBidsError;
+  String? get myBidsError => _myBidsError;
   String? get lastLoadedProductId => _lastLoadedProductId;
   BuyerRepository get buyerRepository => _buyerRepository;
 
@@ -138,6 +156,33 @@ class DemandProvider extends ChangeNotifier {
     }
   }
 
+  /// Fetches the buyer's bids using GET /api/v1/bids/my
+  Future<List<Bid>> fetchMyBids({String? token}) async {
+    _isMyBidsLoading = true;
+    _myBidsError = null;
+    notifyListeners();
+
+    try {
+      final fetched = await _getMyBidsUseCase(token: token);
+      fetched.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      _myBids = fetched;
+      _isMyBidsLoading = false;
+      notifyListeners();
+      return _myBids;
+    } catch (e) {
+      _isMyBidsLoading = false;
+      _myBidsError = e.toString().replaceFirst('Exception: ', '');
+      if (_myBids.isEmpty) {
+        _myBids = _bids.where((b) =>
+            b.buyerId == '395e2439-099f-41da-a739-019f5a08e504' ||
+            b.buyerId == 'u1').toList();
+        _myBids.sort((a, b) => b.createdAt.compareTo(a.createdAt));
+      }
+      notifyListeners();
+      return _myBids;
+    }
+  }
+
   /// Places a bid using POST /api/v1/bids
   Future<Bid> placeBid({
     required String productId,
@@ -157,6 +202,8 @@ class DemandProvider extends ChangeNotifier {
         token: token,
       );
       addBid(newBid);
+      _myBids.removeWhere((b) => b.id == newBid.id);
+      _myBids.insert(0, newBid);
       _isPlacingBid = false;
       notifyListeners();
       return newBid;

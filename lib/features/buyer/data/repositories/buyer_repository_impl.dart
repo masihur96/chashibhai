@@ -109,6 +109,15 @@ class BuyerRepositoryImpl implements BuyerRepository {
   }
 
   @override
+  Future<List<Bid>> getMyBids({
+    String? token,
+  }) async {
+    return await remoteDataSource.getMyBids(
+      token: token,
+    );
+  }
+
+  @override
   Future<List<Negotiation>> getMyNegotiations({
     String? token,
   }) async {

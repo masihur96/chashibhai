@@ -5,6 +5,7 @@ import '../../features/account/presentation/state/app_state_provider.dart';
 import '../../features/account/presentation/views/profile_screen.dart';
 import '../../features/account/presentation/views/settings_screen.dart';
 import '../../features/buyer/presentation/views/negotiations_list_screen.dart';
+import '../../features/buyer/presentation/views/my_bids_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/views/login_screen.dart';
 import '../models/models.dart';
@@ -117,6 +118,14 @@ class AppDrawer extends StatelessWidget {
             onTap: () {
               Navigator.pop(context);
               Navigator.push(context, MaterialPageRoute(builder: (_) => const NegotiationsListScreen()));
+            },
+          ),
+          ListTile(
+            leading: const Icon(Icons.gavel_outlined),
+            title: const Text('My Bids'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const MyBidsScreen()));
             },
           ),
           ListTile(
