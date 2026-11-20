@@ -703,6 +703,7 @@ class DemandOffer {
   final String demandId;
   final String farmerId;
   final double offerPrice;
+  final String? note;
   final DateTime createdAt;
 
   DemandOffer({
@@ -710,8 +711,45 @@ class DemandOffer {
     required this.demandId,
     required this.farmerId,
     required this.offerPrice,
+    this.note,
     required this.createdAt,
   });
+
+  factory DemandOffer.fromJson(Map<String, dynamic> json) {
+    double parseDouble(dynamic val) {
+      if (val == null) return 0.0;
+      if (val is num) return val.toDouble();
+      return double.tryParse(val.toString()) ?? 0.0;
+    }
+
+    return DemandOffer(
+      id: (json['id'] ?? json['_id'] ?? '').toString(),
+      demandId: (json['demandId'] ?? json['demand_id'] ?? '').toString(),
+      farmerId: (json['farmerId'] ?? json['farmer_id'] ?? '').toString(),
+      offerPrice: parseDouble(json['offerPrice'] ?? json['offer_price']),
+      note: json['note']?.toString(),
+      createdAt: DateTime.tryParse(
+            json['createdAt']?.toString() ??
+                json['created_at']?.toString() ??
+                '',
+          ) ??
+          DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'demandId': demandId,
+      'demand_id': demandId,
+      'farmerId': farmerId,
+      'farmer_id': farmerId,
+      'offerPrice': offerPrice,
+      'offer_price': offerPrice,
+      if (note != null) 'note': note,
+      'createdAt': createdAt.toUtc().toIso8601String(),
+    };
+  }
 }
 
 class Order {

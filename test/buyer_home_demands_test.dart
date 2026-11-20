@@ -7,6 +7,7 @@ import 'package:chashibhai/features/account/presentation/state/app_state_provide
 import 'package:chashibhai/features/auth/presentation/state/auth_provider.dart';
 import 'package:chashibhai/features/buyer/data/models/create_demand_request_model.dart';
 import 'package:chashibhai/features/buyer/data/models/create_bid_request_model.dart';
+import 'package:chashibhai/features/buyer/data/models/create_demand_offer_request_model.dart';
 import 'package:chashibhai/features/buyer/domain/repositories/buyer_repository.dart';
 import 'package:chashibhai/features/buyer/domain/usecases/get_my_demands_usecase.dart';
 import 'package:chashibhai/features/buyer/presentation/state/demand_provider.dart';
@@ -69,6 +70,22 @@ class MockBuyerRepository implements BuyerRepository {
     String? token,
   }) async {
     return mockDemands;
+  }
+
+  @override
+  Future<DemandOffer> submitDemandOffer({
+    required String demandId,
+    required CreateDemandOfferRequestModel request,
+    String? token,
+  }) async {
+    return DemandOffer(
+      id: 'mock_offer_home',
+      demandId: demandId,
+      farmerId: 'farmer_1',
+      offerPrice: request.offerPrice,
+      note: request.note,
+      createdAt: DateTime.now(),
+    );
   }
 
   @override

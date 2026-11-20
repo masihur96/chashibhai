@@ -6,6 +6,7 @@ import 'package:chashibhai/core/services/upload_service.dart';
 import 'package:chashibhai/features/auth/presentation/state/auth_provider.dart';
 import 'package:chashibhai/features/buyer/data/models/create_demand_request_model.dart';
 import 'package:chashibhai/features/buyer/data/models/create_bid_request_model.dart';
+import 'package:chashibhai/features/buyer/data/models/create_demand_offer_request_model.dart';
 import 'package:chashibhai/features/buyer/domain/repositories/buyer_repository.dart';
 import 'package:chashibhai/features/buyer/domain/usecases/get_my_negotiations_usecase.dart';
 import 'package:chashibhai/features/buyer/presentation/state/negotiation_provider.dart';
@@ -77,6 +78,22 @@ class TestNegotiationsMockRepository implements BuyerRepository {
 
   @override
   Future<List<DemandPost>> getDemands({int page = 1, int limit = 10, String? tradeType = 'both', String? status = 'active', String? search, String? token}) async => [];
+
+  @override
+  Future<DemandOffer> submitDemandOffer({
+    required String demandId,
+    required CreateDemandOfferRequestModel request,
+    String? token,
+  }) async {
+    return DemandOffer(
+      id: 'mock_neg_offer',
+      demandId: demandId,
+      farmerId: 'farmer_1',
+      offerPrice: request.offerPrice,
+      note: request.note,
+      createdAt: DateTime.now(),
+    );
+  }
 
   @override
   Future<Product?> getProductById({required String id, String? token}) async => null;

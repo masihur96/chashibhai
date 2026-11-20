@@ -8,6 +8,7 @@ import '../../../../core/services/upload_service.dart';
 import '../../../../core/utils/storage_service.dart';
 import '../models/create_demand_request_model.dart';
 import '../models/create_bid_request_model.dart';
+import '../models/create_demand_offer_request_model.dart';
 
 abstract class BuyerRemoteDataSource {
   Future<DemandPost> createDemand({
@@ -71,6 +72,12 @@ abstract class BuyerRemoteDataSource {
   Future<List<Negotiation>> getMyNegotiations({
     String? token,
   });
+
+  Future<DemandOffer> submitDemandOffer({
+    required String demandId,
+    required CreateDemandOfferRequestModel request,
+    String? token,
+  });
 }
 
 class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
@@ -84,6 +91,10 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
   /// Default farmer demands token from curl specification
   static const String defaultFarmerDemandsToken =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MmY2ODM5YS01ZDBjLTQwYTctYmQ5Mi1hNTA4MGNkOGIwNzAiLCJwaG9uZSI6Ijg4MDE3NDA3MTkyMDUiLCJlbWFpbCI6IiIsInJvbGUiOiJmYXJtZXIiLCJpYXQiOjE3OTUxODA4ODcsImV4cCI6MTc5NTE4MTc4N30.VUKDsD7Ihas2X2ANxB6-K89f-L1Rp5uWhTJGf4q_lFc';
+
+  /// Default demand offer token from curl specification
+  static const String defaultDemandOfferToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MmY2ODM5YS01ZDBjLTQwYTctYmQ5Mi1hNTA4MGNkOGIwNzAiLCJwaG9uZSI6Ijg4MDE3NDA3MTkyMDUiLCJlbWFpbCI6IiIsInJvbGUiOiJmYXJtZXIiLCJpYXQiOjE3OTUxOTk1NjEsImV4cCI6MTc5NTIwMDQ2MX0.YIPpOSg4keK6Ck-FfnrQDXlyUh_zSd-LxpMHS7Vnp-s';
 
   BuyerRemoteDataSourceImpl({HttpClient? client, UploadService? uploadService})
       : _client = client ?? HttpClient(),
@@ -1427,6 +1438,177 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
       case 'negotiation':
       default:
         return TradeType.negotiation;
+    }
+  }
+
+  /// Submits an offer on an active demand post using POST /api/v1/demands/{demandId}/offer
+  @override
+  Future<DemandOffer> submitDemandOffer({
+    required String demandId,
+    required CreateDemandOfferRequestModel request,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.demandOffer(demandId);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    // Resolve bearer token: explicit param -> StorageService -> defaultDemandOfferToken
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      try {
+        resolvedToken = await StorageService().getAccessToken();
+      } catch (_) {}
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultDemandOfferToken;
+    }
+
+    final headers = <String, String>{
+      'accept': '*/*',
+      'Content-Type': 'application/json',
+    };
+    if (resolvedToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $resolvedToken';
+    }
+
+    final requestBody = request.toJson();
+
+    ApiLogger.logRequest(
+      method: 'POST',
+      uri: uri,
+      headers: headers,
+      body: requestBody,
+    );
+
+    try {
+      final httpRequest = await _client.postUrl(uri);
+      headers.forEach((key, value) {
+        httpRequest.headers.set(key, value);
+      });
+
+      httpRequest.write(jsonEncode(requestBody));
+      final httpResponse = await httpRequest.close();
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+      stopwatch.stop();
+
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = responseBody;
+      }
+
+      // Handle 401 token refresh & retry
+      if (httpResponse.statusCode == 401) {
+        String? refreshToken;
+        try {
+          refreshToken = await StorageService().getRefreshToken();
+        } catch (_) {}
+
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final newAccessToken = await _attemptRefreshToken(refreshToken);
+          if (newAccessToken != null && newAccessToken.isNotEmpty) {
+            final retryHeaders = Map<String, String>.from(headers);
+            retryHeaders['Authorization'] = 'Bearer $newAccessToken';
+
+            ApiLogger.logRequest(
+              method: 'POST',
+              uri: uri,
+              headers: retryHeaders,
+              body: requestBody,
+            );
+
+            final retryRequest = await _client.postUrl(uri);
+            retryHeaders.forEach((key, value) {
+              retryRequest.headers.set(key, value);
+            });
+            retryRequest.write(jsonEncode(requestBody));
+
+            final retryResponse = await retryRequest.close();
+            final retryBody =
+                await retryResponse.transform(utf8.decoder).join();
+            dynamic retryDecoded;
+            try {
+              retryDecoded = jsonDecode(retryBody);
+            } catch (_) {
+              retryDecoded = retryBody;
+            }
+
+            if (retryResponse.statusCode >= 200 &&
+                retryResponse.statusCode < 300) {
+              ApiLogger.logResponse(
+                method: 'POST',
+                uri: uri,
+                statusCode: retryResponse.statusCode,
+                duration: stopwatch.elapsed,
+                body: retryDecoded ?? retryBody,
+              );
+
+              final data = retryDecoded is Map<String, dynamic> &&
+                      retryDecoded.containsKey('data')
+                  ? retryDecoded['data']
+                  : retryDecoded;
+              return DemandOffer.fromJson(data as Map<String, dynamic>);
+            }
+          }
+        }
+      }
+
+      if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
+        ApiLogger.logResponse(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        final data = decodedJson is Map<String, dynamic> &&
+                decodedJson.containsKey('data')
+            ? decodedJson['data']
+            : decodedJson;
+        return DemandOffer.fromJson(data as Map<String, dynamic>);
+      } else {
+        String errorMessage =
+            'Failed to submit demand offer (Status code ${httpResponse.statusCode})';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      }
+    } on SocketException catch (e) {
+      stopwatch.stop();
+      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e)';
+      ApiLogger.logError(
+        method: 'POST',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: err,
+      );
+      throw Exception(err);
+    } catch (e) {
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          duration: stopwatch.elapsed,
+          error: e,
+        );
+      }
+      rethrow;
     }
   }
 }

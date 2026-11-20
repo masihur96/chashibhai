@@ -6,9 +6,12 @@ import 'package:provider/provider.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/presentation/widgets/reviews_list_sheet.dart';
 import '../../../../core/presentation/widgets/product_image_view.dart';
+import '../../../../core/theme/app_colors.dart';
 import '../../../account/presentation/state/review_provider.dart';
 import '../../../auth/presentation/state/auth_provider.dart';
+import '../../../buyer/presentation/state/demand_provider.dart';
 import '../../../order/presentation/views/rating_dialog.dart';
+import './widgets/submit_demand_offer_sheet.dart';
 
 class DemandDetailsScreen extends StatelessWidget {
   final DemandPost demand;
@@ -20,6 +23,14 @@ class DemandDetailsScreen extends StatelessWidget {
     final currencyFormat = NumberFormat.currency(symbol: '৳', decimalDigits: 0);
     final currentUser = context.watch<AuthProvider>().currentUser;
     final reviewProvider = context.watch<ReviewProvider>();
+    final demandProv = context.watch<DemandProvider>();
+
+    final myOffer = demandProv.myOffers
+            .where((o) => o.demandId == demand.id)
+            .firstOrNull ??
+        (demandProv.lastSubmittedOffer?.demandId == demand.id
+            ? demandProv.lastSubmittedOffer
+            : null);
 
     final buyerId = demand.buyerId;
     final averageRating = reviewProvider.getAverageRating(buyerId);
@@ -47,18 +58,99 @@ class DemandDetailsScreen extends StatelessWidget {
                   _buildDemandDetails(context),
                   const SizedBox(height: 40),
                   if (currentUser?.role == UserRole.farmer) ...[
+                    if (myOffer != null) ...[
+                      Container(
+                        padding: const EdgeInsets.all(16),
+                        margin: const EdgeInsets.only(bottom: 16),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8F5E9),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: const Color(0xFFA5D6A7)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_rounded,
+                                        color: AppColors.primary, size: 20),
+                                    const SizedBox(width: 8),
+                                    Text(
+                                      'Your Offer is Active',
+                                      style: GoogleFonts.outfit(
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 15,
+                                        color: AppColors.primary,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 8, vertical: 3),
+                                  decoration: BoxDecoration(
+                                    color: AppColors.primary,
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                  child: Text(
+                                    '৳${myOffer.offerPrice.toStringAsFixed(1)} / KG',
+                                    style: GoogleFonts.outfit(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            if (myOffer.note != null &&
+                                myOffer.note!.isNotEmpty) ...[
+                              const SizedBox(height: 8),
+                              Text(
+                                myOffer.note!,
+                                style: GoogleFonts.outfit(
+                                  fontSize: 13,
+                                  color: Colors.grey.shade800,
+                                ),
+                              ),
+                            ],
+                          ],
+                        ),
+                      ),
+                    ],
                     SizedBox(
                       width: double.infinity,
                       height: 50,
-                      child: ElevatedButton(
+                      child: ElevatedButton.icon(
                         onPressed: () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Offer submitted successfully!'),
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(24),
+                              ),
                             ),
+                            builder: (context) =>
+                                SubmitDemandOfferSheet(demand: demand),
                           );
                         },
-                        child: const Text('Offer to Supply'),
+                        icon: Icon(myOffer != null
+                            ? Icons.edit_note_rounded
+                            : Icons.local_shipping_outlined),
+                        label: Text(myOffer != null
+                            ? 'Update Offer to Supply'
+                            : 'Offer to Supply'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
                       ),
                     ),
                     const SizedBox(height: 16),

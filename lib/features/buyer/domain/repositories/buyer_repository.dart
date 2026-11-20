@@ -2,6 +2,7 @@ import '../../../../core/models/models.dart';
 import '../../../../core/services/upload_service.dart';
 import '../../data/models/create_demand_request_model.dart';
 import '../../data/models/create_bid_request_model.dart';
+import '../../data/models/create_demand_offer_request_model.dart';
 
 abstract class BuyerRepository {
   Future<DemandPost> createDemand({
@@ -63,6 +64,12 @@ abstract class BuyerRepository {
   });
 
   Future<List<Negotiation>> getMyNegotiations({
+    String? token,
+  });
+
+  Future<DemandOffer> submitDemandOffer({
+    required String demandId,
+    required CreateDemandOfferRequestModel request,
     String? token,
   });
 }

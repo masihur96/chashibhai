@@ -12,6 +12,8 @@ import '../../domain/usecases/get_demands_usecase.dart';
 import '../../domain/usecases/create_bid_usecase.dart';
 import '../../domain/usecases/get_product_bids_usecase.dart';
 import '../../domain/usecases/get_my_bids_usecase.dart';
+import '../../domain/usecases/submit_demand_offer_usecase.dart';
+import '../../data/models/create_demand_offer_request_model.dart';
 
 class DemandProvider extends ChangeNotifier {
   List<DemandPost> _demands = List<DemandPost>.from(MockData.demoDemands);
@@ -24,13 +26,17 @@ class DemandProvider extends ChangeNotifier {
   bool _isPlacingBid = false;
   bool _isProductBidsLoading = false;
   bool _isMyBidsLoading = false;
+  bool _isSubmittingOffer = false;
   String? _errorMessage;
   String? _demandsError;
   String? _myDemandsError;
   String? _bidError;
   String? _productBidsError;
   String? _myBidsError;
+  String? _submitOfferError;
   String? _lastLoadedProductId;
+  DemandOffer? _lastSubmittedOffer;
+  final List<DemandOffer> _myOffers = [];
 
   final CreateDemandUseCase _createDemandUseCase;
   final GetMyDemandsUseCase _getMyDemandsUseCase;
@@ -38,6 +44,7 @@ class DemandProvider extends ChangeNotifier {
   final CreateBidUseCase _createBidUseCase;
   final GetProductBidsUseCase _getProductBidsUseCase;
   final GetMyBidsUseCase _getMyBidsUseCase;
+  final SubmitDemandOfferUseCase _submitDemandOfferUseCase;
   final BuyerRepository _buyerRepository;
 
   DemandProvider({
@@ -47,6 +54,7 @@ class DemandProvider extends ChangeNotifier {
     CreateBidUseCase? createBidUseCase,
     GetProductBidsUseCase? getProductBidsUseCase,
     GetMyBidsUseCase? getMyBidsUseCase,
+    SubmitDemandOfferUseCase? submitDemandOfferUseCase,
     BuyerRepository? buyerRepository,
   })  : _buyerRepository = buyerRepository ?? BuyerRepositoryImpl(),
         _createDemandUseCase = createDemandUseCase ??
@@ -60,7 +68,9 @@ class DemandProvider extends ChangeNotifier {
         _getProductBidsUseCase = getProductBidsUseCase ??
             GetProductBidsUseCase(buyerRepository ?? BuyerRepositoryImpl()),
         _getMyBidsUseCase = getMyBidsUseCase ??
-            GetMyBidsUseCase(buyerRepository ?? BuyerRepositoryImpl());
+            GetMyBidsUseCase(buyerRepository ?? BuyerRepositoryImpl()),
+        _submitDemandOfferUseCase = submitDemandOfferUseCase ??
+            SubmitDemandOfferUseCase(buyerRepository ?? BuyerRepositoryImpl());
 
   List<DemandPost> get demands => _demands;
   List<DemandPost> get myDemands => _myDemands;
@@ -85,6 +95,10 @@ class DemandProvider extends ChangeNotifier {
   String? get bidError => _bidError;
   String? get productBidsError => _productBidsError;
   String? get myBidsError => _myBidsError;
+  bool get isSubmittingOffer => _isSubmittingOffer;
+  String? get submitOfferError => _submitOfferError;
+  DemandOffer? get lastSubmittedOffer => _lastSubmittedOffer;
+  List<DemandOffer> get myOffers => List.unmodifiable(_myOffers);
   String? get lastLoadedProductId => _lastLoadedProductId;
   BuyerRepository get buyerRepository => _buyerRepository;
 
@@ -331,6 +345,40 @@ class DemandProvider extends ChangeNotifier {
     } catch (e) {
       _isLoading = false;
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Submits an offer on an active demand post using POST /api/v1/demands/{demandId}/offer
+  Future<DemandOffer> submitDemandOffer({
+    required String demandId,
+    required double offerPrice,
+    String? note,
+    String? token,
+  }) async {
+    _isSubmittingOffer = true;
+    _submitOfferError = null;
+    notifyListeners();
+
+    try {
+      final newOffer = await _submitDemandOfferUseCase(
+        demandId: demandId,
+        request: CreateDemandOfferRequestModel(
+          offerPrice: offerPrice,
+          note: note,
+        ),
+        token: token,
+      );
+      _lastSubmittedOffer = newOffer;
+      _myOffers.removeWhere((o) => o.id == newOffer.id);
+      _myOffers.insert(0, newOffer);
+      _isSubmittingOffer = false;
+      notifyListeners();
+      return newOffer;
+    } catch (e) {
+      _isSubmittingOffer = false;
+      _submitOfferError = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
       rethrow;
     }

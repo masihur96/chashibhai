@@ -4,6 +4,7 @@ import '../../domain/repositories/buyer_repository.dart';
 import '../datasources/buyer_remote_data_source.dart';
 import '../models/create_demand_request_model.dart';
 import '../models/create_bid_request_model.dart';
+import '../models/create_demand_offer_request_model.dart';
 
 class BuyerRepositoryImpl implements BuyerRepository {
   final BuyerRemoteDataSource remoteDataSource;
@@ -141,6 +142,19 @@ class BuyerRepositoryImpl implements BuyerRepository {
     String? token,
   }) async {
     return await remoteDataSource.getMyNegotiations(
+      token: token,
+    );
+  }
+
+  @override
+  Future<DemandOffer> submitDemandOffer({
+    required String demandId,
+    required CreateDemandOfferRequestModel request,
+    String? token,
+  }) async {
+    return await remoteDataSource.submitDemandOffer(
+      demandId: demandId,
+      request: request,
       token: token,
     );
   }
