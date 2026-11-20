@@ -8,6 +8,7 @@ import '../../data/repositories/buyer_repository_impl.dart';
 import '../../domain/repositories/buyer_repository.dart';
 import '../../domain/usecases/create_demand_usecase.dart';
 import '../../domain/usecases/get_my_demands_usecase.dart';
+import '../../domain/usecases/get_demands_usecase.dart';
 import '../../domain/usecases/create_bid_usecase.dart';
 import '../../domain/usecases/get_product_bids_usecase.dart';
 import '../../domain/usecases/get_my_bids_usecase.dart';
@@ -18,11 +19,13 @@ class DemandProvider extends ChangeNotifier {
   List<Bid> _bids = List<Bid>.from(MockData.demoBids);
   List<Bid> _myBids = [];
   bool _isLoading = false;
+  bool _isDemandsLoading = false;
   bool _isMyDemandsLoading = false;
   bool _isPlacingBid = false;
   bool _isProductBidsLoading = false;
   bool _isMyBidsLoading = false;
   String? _errorMessage;
+  String? _demandsError;
   String? _myDemandsError;
   String? _bidError;
   String? _productBidsError;
@@ -31,6 +34,7 @@ class DemandProvider extends ChangeNotifier {
 
   final CreateDemandUseCase _createDemandUseCase;
   final GetMyDemandsUseCase _getMyDemandsUseCase;
+  final GetDemandsUseCase _getDemandsUseCase;
   final CreateBidUseCase _createBidUseCase;
   final GetProductBidsUseCase _getProductBidsUseCase;
   final GetMyBidsUseCase _getMyBidsUseCase;
@@ -39,6 +43,7 @@ class DemandProvider extends ChangeNotifier {
   DemandProvider({
     CreateDemandUseCase? createDemandUseCase,
     GetMyDemandsUseCase? getMyDemandsUseCase,
+    GetDemandsUseCase? getDemandsUseCase,
     CreateBidUseCase? createBidUseCase,
     GetProductBidsUseCase? getProductBidsUseCase,
     GetMyBidsUseCase? getMyBidsUseCase,
@@ -48,6 +53,8 @@ class DemandProvider extends ChangeNotifier {
             CreateDemandUseCase(buyerRepository ?? BuyerRepositoryImpl()),
         _getMyDemandsUseCase = getMyDemandsUseCase ??
             GetMyDemandsUseCase(buyerRepository ?? BuyerRepositoryImpl()),
+        _getDemandsUseCase = getDemandsUseCase ??
+            GetDemandsUseCase(buyerRepository ?? BuyerRepositoryImpl()),
         _createBidUseCase = createBidUseCase ??
             CreateBidUseCase(buyerRepository ?? BuyerRepositoryImpl()),
         _getProductBidsUseCase = getProductBidsUseCase ??
@@ -67,11 +74,13 @@ class DemandProvider extends ChangeNotifier {
     return fallback;
   }
   bool get isLoading => _isLoading;
+  bool get isDemandsLoading => _isDemandsLoading;
   bool get isMyDemandsLoading => _isMyDemandsLoading;
   bool get isPlacingBid => _isPlacingBid;
   bool get isProductBidsLoading => _isProductBidsLoading;
   bool get isMyBidsLoading => _isMyBidsLoading;
   String? get errorMessage => _errorMessage;
+  String? get demandsError => _demandsError;
   String? get myDemandsError => _myDemandsError;
   String? get bidError => _bidError;
   String? get productBidsError => _productBidsError;
@@ -261,6 +270,42 @@ class DemandProvider extends ChangeNotifier {
       rethrow;
     } finally {
       _isMyDemandsLoading = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches public buyer demands using GET /api/v1/demands?page=1&limit=10&tradeType=both&trade_type=both&status=active
+  Future<List<DemandPost>> fetchDemands({
+    int page = 1,
+    int limit = 10,
+    String? tradeType = 'both',
+    String? status = 'active',
+    String? search,
+    String? token,
+  }) async {
+    _isDemandsLoading = true;
+    _demandsError = null;
+    notifyListeners();
+
+    try {
+      final fetched = await _getDemandsUseCase(
+        page: page,
+        limit: limit,
+        tradeType: tradeType,
+        status: status,
+        search: search,
+        token: token,
+      );
+      _demands = fetched;
+      return fetched;
+    } catch (e) {
+      _demandsError = e.toString().replaceFirst('Exception: ', '');
+      if (_demands.isEmpty) {
+        _demands = List<DemandPost>.from(MockData.demoDemands);
+      }
+      return _demands;
+    } finally {
+      _isDemandsLoading = false;
       notifyListeners();
     }
   }

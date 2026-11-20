@@ -76,6 +76,9 @@ class TestNegotiationsMockRepository implements BuyerRepository {
   Future<List<DemandPost>> getMyDemands({int page = 1, int limit = 10, String? search, String? productName, double? minPrice, double? maxPrice, String? tradeType, String? status, String? token}) async => [];
 
   @override
+  Future<List<DemandPost>> getDemands({int page = 1, int limit = 10, String? tradeType = 'both', String? status = 'active', String? search, String? token}) async => [];
+
+  @override
   Future<Product?> getProductById({required String id, String? token}) async => null;
 
   @override

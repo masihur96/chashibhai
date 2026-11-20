@@ -55,7 +55,10 @@ class _FarmerDashboardState extends State<FarmerDashboard>
         vsync: this, duration: const Duration(milliseconds: 500));
     _fadeAnim = CurvedAnimation(parent: _fadeCtrl, curve: Curves.easeOut);
     _fadeCtrl.forward();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _fetchListings());
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _fetchListings();
+      _fetchBuyerDemands();
+    });
   }
 
   @override
@@ -99,6 +102,17 @@ class _FarmerDashboardState extends State<FarmerDashboard>
           minPrice: minPrice,
           maxPrice: maxPrice,
           search: search,
+          token: token,
+        );
+  }
+
+  Future<void> _fetchBuyerDemands() async {
+    final token = context.read<AuthProvider>().token;
+    await context.read<DemandProvider>().fetchDemands(
+          page: 1,
+          limit: 10,
+          tradeType: 'both',
+          status: 'active',
           token: token,
         );
   }
@@ -192,7 +206,12 @@ class _FarmerDashboardState extends State<FarmerDashboard>
     return RefreshIndicator(
       color: AppColors.primary,
       displacement: 60,
-      onRefresh: _fetchListings,
+      onRefresh: () async {
+        await Future.wait([
+          _fetchListings(),
+          _fetchBuyerDemands(),
+        ]);
+      },
       child: CustomScrollView(
         physics: const AlwaysScrollableScrollPhysics(),
         slivers: [
@@ -936,27 +955,191 @@ class _FarmerDashboardState extends State<FarmerDashboard>
   // ─── Demands Section ──────────────────────────────────────────────────────────
 
   Widget _demandsSection(BuildContext context, NumberFormat fmt) {
-    final demands = context.watch<DemandProvider>().demands;
+    final demandProv = context.watch<DemandProvider>();
+    final demands = demandProv.demands;
+    final isLoading = demandProv.isDemandsLoading;
+    final error = demandProv.demandsError;
     final shown = demands.take(6).toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _SectionHeader(
-          title: 'Buyer Demands',
-          count: demands.isNotEmpty ? demands.length : null,
-          trailing: TextButton(
-            onPressed: () {},
-            style: TextButton.styleFrom(
-                foregroundColor: AppColors.primary,
-                padding: EdgeInsets.zero),
-            child: Text('View All',
-                style: GoogleFonts.outfit(
-                    fontWeight: FontWeight.w600, fontSize: 13)),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Expanded(
+              child: Row(
+                children: [
+                  Text(
+                    'Buyer Demands',
+                    style: GoogleFonts.outfit(
+                      fontSize: 17,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                  if (demands.isNotEmpty) ...[
+                    const SizedBox(width: 8),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 9, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        '${demands.length}',
+                        style: GoogleFonts.outfit(
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                          color: AppColors.primary,
+                        ),
+                      ),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+            IconButton(
+              tooltip: 'Refresh Demands',
+              icon: isLoading
+                  ? const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: AppColors.primary,
+                      ),
+                    )
+                  : const Icon(Icons.refresh_rounded,
+                      size: 20, color: AppColors.primary),
+              onPressed: isLoading ? null : _fetchBuyerDemands,
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        // Active cURL query badge
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.grey.shade200),
+          ),
+          child: Row(
+            children: [
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'GET',
+                  style: GoogleFonts.firaCode(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.primary,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  '/api/v1/demands?tradeType=both&status=active',
+                  style: GoogleFonts.firaCode(
+                    fontSize: 10,
+                    color: AppColors.textSecondary,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              const SizedBox(width: 4),
+              Container(
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFE8F5E9),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Text(
+                  'Active',
+                  style: GoogleFonts.outfit(
+                    fontSize: 10,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.success,
+                  ),
+                ),
+              ),
+            ],
           ),
         ),
         const SizedBox(height: 14),
-        if (demands.isEmpty)
+        if (isLoading && demands.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(32),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: const Center(
+              child: Column(
+                children: [
+                  CircularProgressIndicator(color: AppColors.primary),
+                  SizedBox(height: 12),
+                  Text('Fetching buyer demands...'),
+                ],
+              ),
+            ),
+          )
+        else if (error != null && demands.isEmpty)
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(
+                  color: AppColors.error.withValues(alpha: 0.3)),
+            ),
+            child: Column(
+              children: [
+                const Icon(Icons.error_outline_rounded,
+                    color: AppColors.error, size: 36),
+                const SizedBox(height: 8),
+                Text(
+                  'Failed to load demands',
+                  style: GoogleFonts.outfit(
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  error,
+                  textAlign: TextAlign.center,
+                  style: GoogleFonts.outfit(
+                    fontSize: 12,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                ElevatedButton.icon(
+                  onPressed: _fetchBuyerDemands,
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('Try Again'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          )
+        else if (demands.isEmpty)
           _noDemandsCard()
         else
           GridView.builder(
@@ -967,7 +1150,7 @@ class _FarmerDashboardState extends State<FarmerDashboard>
               crossAxisCount: 2,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
-              childAspectRatio: 0.84,
+              childAspectRatio: 0.70,
             ),
             itemCount: shown.length,
             itemBuilder: (_, i) => _demandCard(context, shown[i], fmt),
@@ -979,11 +1162,17 @@ class _FarmerDashboardState extends State<FarmerDashboard>
   Widget _demandCard(
       BuildContext context, DemandPost d, NumberFormat fmt) {
     final isAuction = d.tradeType == TradeType.auction;
-    final tradeColor =
-        isAuction ? const Color(0xFFF57C00) : const Color(0xFF1565C0);
+    final isBoth = d.tradeType == TradeType.both;
+    final tradeColor = isAuction
+        ? const Color(0xFFF57C00)
+        : isBoth
+            ? const Color(0xFF00796B)
+            : const Color(0xFF1565C0);
     final tradeBg = isAuction
         ? const Color(0xFFFFF3E0)
-        : const Color(0xFFE3F2FD);
+        : isBoth
+            ? const Color(0xFFE0F2F1)
+            : const Color(0xFFE3F2FD);
     final tradeFg = tradeColor;
 
     final daysLeft = d.expiryTime.difference(DateTime.now()).inDays;
@@ -1083,35 +1272,73 @@ class _FarmerDashboardState extends State<FarmerDashboard>
               // ── Info ───────────────────────────────────────────────────────
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 10),
+                  padding: const EdgeInsets.fromLTRB(10, 8, 10, 8),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
-                      Text(d.productName,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.outfit(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              color: AppColors.textPrimary,
-                              height: 1.3)),
-
-                      // Quantity
-                      Row(children: [
-                        Icon(Icons.shopping_basket_outlined,
-                            size: 11, color: Colors.grey[500]),
-                        const SizedBox(width: 3),
-                        Text('${d.quantity.toStringAsFixed(0)} KG',
-                            style: GoogleFonts.outfit(
-                                fontSize: 11,
-                                color: AppColors.textSecondary)),
-                      ]),
-
-                      // Price row + expiry
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
+                          Text(d.productName,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.outfit(
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 13,
+                                  color: AppColors.textPrimary,
+                                  height: 1.2)),
+                          if (d.buyerName != null && d.buyerName!.isNotEmpty) ...[
+                            const SizedBox(height: 3),
+                            Row(children: [
+                              const Icon(Icons.person_outline_rounded,
+                                  size: 11, color: AppColors.primary),
+                              const SizedBox(width: 3),
+                              Expanded(
+                                child: Text(d.buyerName!,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.w600,
+                                        color: AppColors.textSecondary)),
+                              ),
+                            ]),
+                          ],
+                          if (d.deliveryLocation.isNotEmpty) ...[
+                            const SizedBox(height: 2),
+                            Row(children: [
+                              Icon(Icons.location_on_outlined,
+                                  size: 11, color: Colors.grey[500]),
+                              const SizedBox(width: 3),
+                              Expanded(
+                                child: Text(d.deliveryLocation,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: GoogleFonts.outfit(
+                                        fontSize: 10,
+                                        color: Colors.grey[600])),
+                              ),
+                            ]),
+                          ],
+                        ],
+                      ),
+
+                      // Quantity and Price
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(children: [
+                            Icon(Icons.shopping_basket_outlined,
+                                size: 11, color: Colors.grey[500]),
+                            const SizedBox(width: 3),
+                            Text('${d.quantity.toStringAsFixed(0)} KG',
+                                style: GoogleFonts.outfit(
+                                    fontSize: 11,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textSecondary)),
+                          ]),
+                          const SizedBox(height: 3),
                           Row(
                             mainAxisAlignment:
                                 MainAxisAlignment.spaceBetween,

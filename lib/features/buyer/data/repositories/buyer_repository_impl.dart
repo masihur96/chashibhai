@@ -59,6 +59,25 @@ class BuyerRepositoryImpl implements BuyerRepository {
   }
 
   @override
+  Future<List<DemandPost>> getDemands({
+    int page = 1,
+    int limit = 10,
+    String? tradeType = 'both',
+    String? status = 'active',
+    String? search,
+    String? token,
+  }) async {
+    return await remoteDataSource.getDemands(
+      page: page,
+      limit: limit,
+      tradeType: tradeType,
+      status: status,
+      search: search,
+      token: token,
+    );
+  }
+
+  @override
   Future<Bid> createBid({
     required CreateBidRequestModel request,
     String? token,

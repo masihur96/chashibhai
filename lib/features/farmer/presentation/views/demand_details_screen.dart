@@ -5,6 +5,7 @@ import 'package:provider/provider.dart';
 
 import '../../../../core/models/models.dart';
 import '../../../../core/presentation/widgets/reviews_list_sheet.dart';
+import '../../../../core/presentation/widgets/product_image_view.dart';
 import '../../../account/presentation/state/review_provider.dart';
 import '../../../auth/presentation/state/auth_provider.dart';
 import '../../../order/presentation/views/rating_dialog.dart';
@@ -110,7 +111,11 @@ class DemandDetailsScreen extends StatelessWidget {
       flexibleSpace: FlexibleSpaceBar(
         background: Hero(
           tag: demand.id,
-          child: Image.asset(demand.imageUrl, fit: BoxFit.cover),
+          child: ProductImageView(
+            imageUrl: demand.imageUrl,
+            width: double.infinity,
+            fit: BoxFit.cover,
+          ),
         ),
       ),
     );
@@ -166,8 +171,8 @@ class DemandDetailsScreen extends StatelessWidget {
                   ),
                   decoration: BoxDecoration(
                     color: demand.tradeType == TradeType.auction
-                        ? Colors.orange.withOpacity(0.1)
-                        : Colors.blue.withOpacity(0.1),
+                        ? Colors.orange.withValues(alpha: 0.1)
+                        : Colors.blue.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
@@ -236,7 +241,7 @@ class DemandDetailsScreen extends StatelessWidget {
                     radius: 25,
                     backgroundColor: Theme.of(
                       context,
-                    ).colorScheme.primary.withOpacity(0.1),
+                    ).colorScheme.primary.withValues(alpha: 0.1),
                     child: Icon(
                       Icons.person,
                       color: Theme.of(context).colorScheme.primary,
@@ -248,7 +253,11 @@ class DemandDetailsScreen extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'Buyer ${buyerId.substring(0, 2).toUpperCase()}',
+                          demand.buyerName?.isNotEmpty == true
+                              ? demand.buyerName!
+                              : (buyerId.length >= 2
+                                  ? 'Buyer ${buyerId.substring(0, 2).toUpperCase()}'
+                                  : 'Buyer $buyerId'),
                           style: const TextStyle(
                             fontWeight: FontWeight.bold,
                             fontSize: 16,

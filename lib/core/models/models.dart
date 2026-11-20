@@ -583,6 +583,8 @@ class DemandPost {
   final DemandStatus status;
   final TradeType tradeType;
   final String imageUrl;
+  final String? buyerName;
+  final String? buyerPhone;
 
   DemandPost({
     required this.id,
@@ -595,6 +597,8 @@ class DemandPost {
     required this.status,
     required this.tradeType,
     required this.imageUrl,
+    this.buyerName,
+    this.buyerPhone,
   });
 
   DemandPost copyWith({
@@ -608,6 +612,8 @@ class DemandPost {
     DemandStatus? status,
     TradeType? tradeType,
     String? imageUrl,
+    String? buyerName,
+    String? buyerPhone,
   }) {
     return DemandPost(
       id: id ?? this.id,
@@ -620,6 +626,8 @@ class DemandPost {
       status: status ?? this.status,
       tradeType: tradeType ?? this.tradeType,
       imageUrl: imageUrl ?? this.imageUrl,
+      buyerName: buyerName ?? this.buyerName,
+      buyerPhone: buyerPhone ?? this.buyerPhone,
     );
   }
 
@@ -649,6 +657,8 @@ class DemandPost {
       return double.tryParse(val.toString()) ?? 0.0;
     }
 
+    final buyerObj = json['buyer'] is Map<String, dynamic> ? json['buyer'] as Map<String, dynamic> : null;
+
     return DemandPost(
       id: (json['id'] ?? json['_id'] ?? 'd_${DateTime.now().millisecondsSinceEpoch}').toString(),
       buyerId: (json['buyerId'] ?? json['buyer_id'] ?? json['userId'] ?? json['user_id'] ?? '').toString(),
@@ -660,6 +670,8 @@ class DemandPost {
       status: parseDemandStatus(json['status']),
       tradeType: parseTradeType(json['tradeType'] ?? json['trade_type']),
       imageUrl: (json['imageUrl'] ?? json['image_url'] ?? '').toString(),
+      buyerName: buyerObj?['name']?.toString() ?? json['buyerName']?.toString() ?? json['buyer_name']?.toString(),
+      buyerPhone: buyerObj?['phone']?.toString() ?? json['buyerPhone']?.toString() ?? json['buyer_phone']?.toString(),
     );
   }
 

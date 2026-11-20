@@ -99,6 +99,18 @@ class TestMockBuyerRepository implements BuyerRepository {
   }
 
   @override
+  Future<List<DemandPost>> getDemands({
+    int page = 1,
+    int limit = 10,
+    String? tradeType = 'both',
+    String? status = 'active',
+    String? search,
+    String? token,
+  }) async {
+    return [];
+  }
+
+  @override
   Future<List<String>> uploadImages({
     required List<UploadFileItem> files,
     String? token,

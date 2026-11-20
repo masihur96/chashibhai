@@ -32,6 +32,15 @@ abstract class BuyerRemoteDataSource {
     String? token,
   });
 
+  Future<List<DemandPost>> getDemands({
+    int page = 1,
+    int limit = 10,
+    String? tradeType = 'both',
+    String? status = 'active',
+    String? search,
+    String? token,
+  });
+
   Future<Bid> createBid({
     required CreateBidRequestModel request,
     String? token,
@@ -71,6 +80,10 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
   /// Default fallback token from user curl specification
   static const String defaultFallbackToken =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTE2NDIxMiwiZXhwIjoxNzk1MTY1MTEyfQ.YQmIE4_tvYuZdMQonDMTJWXI6baALYW-Ee5kD5Fbl0E';
+
+  /// Default farmer demands token from curl specification
+  static const String defaultFarmerDemandsToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MmY2ODM5YS01ZDBjLTQwYTctYmQ5Mi1hNTA4MGNkOGIwNzAiLCJwaG9uZSI6Ijg4MDE3NDA3MTkyMDUiLCJlbWFpbCI6IiIsInJvbGUiOiJmYXJtZXIiLCJpYXQiOjE3OTUxODA4ODcsImV4cCI6MTc5NTE4MTc4N30.VUKDsD7Ihas2X2ANxB6-K89f-L1Rp5uWhTJGf4q_lFc';
 
   BuyerRemoteDataSourceImpl({HttpClient? client, UploadService? uploadService})
       : _client = client ?? HttpClient(),
@@ -380,6 +393,183 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
               maxPrice: maxPrice,
               tradeType: tradeType,
               status: status,
+              token: refreshedToken,
+            );
+          }
+        }
+
+        String errorMessage = 'Unauthorized or token expired';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      } else {
+        String errorMessage =
+            'Failed to fetch demands (Status code ${httpResponse.statusCode})';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['message']?.toString() ??
+              decodedJson['error']?.toString() ??
+              decodedJson['detail']?.toString() ??
+              errorMessage;
+        } else if (responseBody.isNotEmpty) {
+          errorMessage = responseBody;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      }
+    } on SocketException catch (e) {
+      stopwatch.stop();
+      final err =
+          'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running.';
+      ApiLogger.logError(
+        method: 'GET',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: err,
+      );
+      throw Exception(err);
+    } catch (e) {
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          duration: stopwatch.elapsed,
+          error: e,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  @override
+  Future<List<DemandPost>> getDemands({
+    int page = 1,
+    int limit = 10,
+    String? tradeType = 'both',
+    String? status = 'active',
+    String? search,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.demands;
+    final baseUri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    final queryParameters = <String, String>{
+      'page': page.toString(),
+      'limit': limit.toString(),
+    };
+
+    if (tradeType != null && tradeType.isNotEmpty) {
+      queryParameters['tradeType'] = tradeType;
+      queryParameters['trade_type'] = tradeType;
+    }
+    if (status != null && status.isNotEmpty) {
+      queryParameters['status'] = status;
+    }
+    if (search != null && search.isNotEmpty) {
+      queryParameters['search'] = search;
+    }
+
+    final uri = baseUri.replace(queryParameters: queryParameters);
+
+    // Resolve bearer token: explicit parameter -> StorageService -> defaultFarmerDemandsToken
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      try {
+        resolvedToken = await StorageService().getAccessToken();
+      } catch (_) {}
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultFarmerDemandsToken;
+    }
+
+    final headers = {
+      'accept': '*/*',
+      'Authorization': 'Bearer $resolvedToken',
+    };
+
+    ApiLogger.logRequest(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+    );
+
+    try {
+      final httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        final List<dynamic> items;
+        if (decodedJson is Map<String, dynamic>) {
+          if (decodedJson['data'] is List) {
+            items = decodedJson['data'] as List<dynamic>;
+          } else if (decodedJson['demands'] is List) {
+            items = decodedJson['demands'] as List<dynamic>;
+          } else {
+            items = [];
+          }
+        } else if (decodedJson is List) {
+          items = decodedJson;
+        } else {
+          items = [];
+        }
+
+        return items
+            .map((item) => DemandPost.fromJson(item as Map<String, dynamic>))
+            .toList();
+      } else if (httpResponse.statusCode == 401) {
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await getDemands(
+              page: page,
+              limit: limit,
+              tradeType: tradeType,
+              status: status,
+              search: search,
               token: refreshedToken,
             );
           }

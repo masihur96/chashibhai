@@ -60,6 +60,18 @@ class MockBuyerRepository implements BuyerRepository {
   }
 
   @override
+  Future<List<DemandPost>> getDemands({
+    int page = 1,
+    int limit = 10,
+    String? tradeType = 'both',
+    String? status = 'active',
+    String? search,
+    String? token,
+  }) async {
+    return mockDemands;
+  }
+
+  @override
   Future<DemandPost> createDemand({
     required CreateDemandRequestModel request,
     String? token,

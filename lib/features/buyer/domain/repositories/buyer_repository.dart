@@ -26,6 +26,15 @@ abstract class BuyerRepository {
     String? token,
   });
 
+  Future<List<DemandPost>> getDemands({
+    int page = 1,
+    int limit = 10,
+    String? tradeType = 'both',
+    String? status = 'active',
+    String? search,
+    String? token,
+  });
+
   Future<Bid> createBid({
     required CreateBidRequestModel request,
     String? token,
