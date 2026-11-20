@@ -295,7 +295,10 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
             Row(
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
                     color: Theme.of(context).colorScheme.errorContainer,
                     borderRadius: BorderRadius.circular(10),
@@ -323,7 +326,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 IconButton(
                   icon: const Icon(Icons.refresh, size: 20),
                   tooltip: 'Refresh Auction Bids',
-                  onPressed: isAuctionLoading ? null : () => _fetchBids(force: true),
+                  onPressed: isAuctionLoading
+                      ? null
+                      : () => _fetchBids(force: true),
                 ),
               ],
             ),
@@ -346,7 +351,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 width: 8,
                 height: 8,
                 decoration: BoxDecoration(
-                  color: isAuctionLoading ? Colors.amber : const Color(0xFF2E7D32),
+                  color: isAuctionLoading
+                      ? Colors.amber
+                      : const Color(0xFF2E7D32),
                   shape: BoxShape.circle,
                 ),
               ),
@@ -528,11 +535,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     ),
                   ],
                 ),
-                Container(
-                  height: 40,
-                  width: 1,
-                  color: Colors.green.shade200,
-                ),
+                Container(height: 40, width: 1, color: Colors.green.shade200),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -556,11 +559,7 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                     ),
                   ],
                 ),
-                Container(
-                  height: 40,
-                  width: 1,
-                  color: Colors.green.shade200,
-                ),
+                Container(height: 40, width: 1, color: Colors.green.shade200),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -623,30 +622,38 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
               final isSecond = index == 1;
               final isThird = index == 2;
 
-              final bidderTitle = bid.bidderName != null && bid.bidderName!.isNotEmpty
+              final bidderTitle =
+                  bid.bidderName != null && bid.bidderName!.isNotEmpty
                   ? bid.bidderName!
                   : _formatBuyerLabel(bid.buyerId);
 
               return Container(
                 decoration: BoxDecoration(
-                  color: isTopBid ? Colors.green.shade50.withValues(alpha: 0.5) : Colors.white,
+                  color: isTopBid
+                      ? Colors.green.shade50.withValues(alpha: 0.5)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(12),
                   border: Border.all(
-                    color: isTopBid ? Colors.green.shade300 : Colors.grey.shade200,
+                    color: isTopBid
+                        ? Colors.green.shade300
+                        : Colors.grey.shade200,
                     width: isTopBid ? 1.5 : 1.0,
                   ),
                 ),
                 child: ListTile(
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 4),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 4,
+                  ),
                   leading: CircleAvatar(
                     radius: 18,
                     backgroundColor: isTopBid
                         ? const Color(0xFFFFD700)
                         : (isSecond
-                            ? const Color(0xFFC0C0C0)
-                            : (isThird
-                                ? const Color(0xFFCD7F32)
-                                : Colors.grey.shade200)),
+                              ? const Color(0xFFC0C0C0)
+                              : (isThird
+                                    ? const Color(0xFFCD7F32)
+                                    : Colors.grey.shade200)),
                     child: Text(
                       isTopBid ? '👑' : '#${index + 1}',
                       style: TextStyle(
@@ -664,7 +671,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         child: Text(
                           bidderTitle,
                           style: TextStyle(
-                            fontWeight: isTopBid ? FontWeight.bold : FontWeight.w600,
+                            fontWeight: isTopBid
+                                ? FontWeight.bold
+                                : FontWeight.w600,
                             fontSize: 14,
                           ),
                           overflow: TextOverflow.ellipsis,
@@ -776,7 +785,8 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 child: const Text('Negotiate'),
               ),
             ),
-          if (widget.product.tradeType == TradeType.both) const SizedBox(width: 16),
+          if (widget.product.tradeType == TradeType.both)
+            const SizedBox(width: 16),
           if (widget.product.tradeType != TradeType.negotiation)
             Expanded(
               flex: 2,
@@ -807,12 +817,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
           .map((b) => b.amount)
           .reduce((a, b) => a > b ? a : b);
     }
-    final defaultAmount = widget.product.id == 'ee9ac1a6-bb66-45d0-a6de-8e390702be0e' ||
+    final defaultAmount =
+        widget.product.id == 'ee9ac1a6-bb66-45d0-a6de-8e390702be0e' ||
             widget.product.id == 'ea374c5d-7edf-49b4-af27-a8ebce966ed3'
         ? (currentHighest < 55.0 ? 55.0 : currentHighest + 5.0)
         : (currentHighest >= widget.product.minimumPrice
-            ? currentHighest + 2.0
-            : widget.product.minimumPrice);
+              ? currentHighest + 2.0
+              : widget.product.minimumPrice);
 
     final controller = TextEditingController(
       text: defaultAmount.toStringAsFixed(0),

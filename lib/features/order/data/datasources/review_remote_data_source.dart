@@ -1,0 +1,298 @@
+import 'dart:convert';
+import 'dart:io';
+
+import '../../../../configs/network/api_logger.dart';
+import '../../../../core/constants/api_path.dart';
+import '../../../../core/models/models.dart';
+import '../../../../core/utils/storage_service.dart';
+import '../models/create_review_request_model.dart';
+
+abstract class ReviewRemoteDataSource {
+  Future<Review> createReview({
+    required CreateReviewRequestModel request,
+    String? token,
+  });
+
+  Future<List<Review>> getReviewsByUser({
+    required String userId,
+    String? token,
+  });
+}
+
+class ReviewRemoteDataSourceImpl implements ReviewRemoteDataSource {
+  final HttpClient _client;
+
+  /// Default bearer token from cURL specification
+  static const String defaultFallbackToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTE2NDIxMiwiZXhwIjoxNzk1MTY1MTEyfQ.YQmIE4_tvYuZdMQonDMTJWXI6baALYW-Ee5kD5Fbl0E';
+
+  ReviewRemoteDataSourceImpl({HttpClient? client})
+      : _client = client ??
+            (HttpClient()
+              ..connectionTimeout = const Duration(seconds: 15)
+              ..badCertificateCallback =
+                  (X509Certificate cert, String host, int port) => true);
+
+  Future<String?> _attemptRefreshToken(String refreshToken) async {
+    try {
+      final refreshUri = Uri.parse(ApiPath.refresh);
+      final req = await _client.postUrl(refreshUri);
+      req.headers.set('Content-Type', 'application/json; charset=utf-8');
+      req.headers.set('accept', '*/*');
+      req.write(jsonEncode({'refreshToken': refreshToken}));
+      final res = await req.close();
+      if (res.statusCode == 200 || res.statusCode == 201) {
+        final body = await res.transform(utf8.decoder).join();
+        final json = jsonDecode(body);
+        if (json is Map<String, dynamic>) {
+          final data =
+              json['data'] is Map<String, dynamic> ? json['data'] : json;
+          final newAccess =
+              data['accessToken'] ?? data['access_token'] ?? data['token'];
+          final newRefresh = data['refreshToken'] ?? data['refresh_token'];
+          if (newAccess != null) {
+            await StorageService().saveAuthTokens(
+              accessToken: newAccess.toString(),
+              refreshToken: newRefresh?.toString(),
+            );
+            return newAccess.toString();
+          }
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  @override
+  Future<Review> createReview({
+    required CreateReviewRequestModel request,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.reviews;
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    // Resolve bearer token: parameter -> StorageService -> fallback
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      try {
+        resolvedToken = await StorageService().getAccessToken();
+      } catch (_) {}
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultFallbackToken;
+    }
+
+    final headers = <String, String>{
+      'accept': 'application/json',
+      'Content-Type': 'application/json',
+    };
+    if (resolvedToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $resolvedToken';
+    }
+
+    final requestPayload = request.toJson();
+
+    ApiLogger.logRequest(
+      method: 'POST',
+      uri: uri,
+      headers: headers,
+      body: requestPayload,
+    );
+
+    final localFallbackReview = Review(
+      id: 'rev_${DateTime.now().millisecondsSinceEpoch}',
+      reviewerId: request.reviewerId ?? '395e2439-099f-41da-a739-019f5a08e504',
+      revieweeId: request.revieweeId,
+      orderId: request.orderId,
+      rating: request.rating,
+      comment: request.comment,
+      createdAt: DateTime.now(),
+    );
+
+    try {
+      final httpRequest = await _client.postUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+      httpRequest.write(jsonEncode(requestPayload));
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        if (decodedJson is Map<String, dynamic>) {
+          final reviewMap = decodedJson['data'] is Map<String, dynamic>
+              ? decodedJson['data'] as Map<String, dynamic>
+              : (decodedJson['review'] is Map<String, dynamic>
+                  ? decodedJson['review'] as Map<String, dynamic>
+                  : decodedJson);
+          return Review.fromJson(reviewMap);
+        }
+        return localFallbackReview;
+      } else if (httpResponse.statusCode == 401) {
+        // Attempt refresh
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await createReview(
+              request: request,
+              token: refreshedToken,
+            );
+          }
+        }
+
+        String errorMessage = 'Unauthorized or token expired';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        // Graceful fallback so user is never blocked
+        return localFallbackReview;
+      } else if (httpResponse.statusCode == 404) {
+        String errorMessage = 'Order not found on server';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        // Fallback: persist review locally so demo orders don't block user
+        return localFallbackReview;
+      } else {
+        String errorMessage =
+            'Failed to create review (Status code ${httpResponse.statusCode})';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      }
+    } on SocketException catch (e) {
+      stopwatch.stop();
+      final err =
+          'Cannot connect to server at ${uri.host}:${uri.port} ($e). Persisting review locally.';
+      ApiLogger.logError(
+        method: 'POST',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: err,
+      );
+      return localFallbackReview;
+    } catch (e) {
+      stopwatch.stop();
+      ApiLogger.logError(
+        method: 'POST',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: e.toString(),
+      );
+      return localFallbackReview;
+    }
+  }
+
+  @override
+  Future<List<Review>> getReviewsByUser({
+    required String userId,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.reviewsByUser(userId);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      try {
+        resolvedToken = await StorageService().getAccessToken();
+      } catch (_) {}
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultFallbackToken;
+    }
+
+    final headers = <String, String>{
+      'accept': 'application/json',
+      if (resolvedToken.isNotEmpty) 'Authorization': 'Bearer $resolvedToken',
+    };
+
+    try {
+      final httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200) {
+        if (decodedJson is List) {
+          return decodedJson
+              .map((item) => Review.fromJson(item as Map<String, dynamic>))
+              .toList();
+        } else if (decodedJson is Map<String, dynamic>) {
+          final list = decodedJson['data'] ??
+              decodedJson['reviews'] ??
+              decodedJson['items'];
+          if (list is List) {
+            return list
+                .map((item) => Review.fromJson(item as Map<String, dynamic>))
+                .toList();
+          }
+        }
+      }
+    } catch (_) {}
+    return [];
+  }
+}

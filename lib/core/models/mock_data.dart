@@ -278,13 +278,13 @@ class MockData {
 
   static final demoOrders = [
     Order(
-      id: 'o1',
+      id: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
       supplyId: 'p1',
-      buyerId: 'u1',
-      farmerId: 'f1',
+      buyerId: '395e2439-099f-41da-a739-019f5a08e504',
+      farmerId: '92f6839a-5d0c-40a7-bd92-a5080cd8b070',
       finalPrice: 35.0,
       quantity: 100,
-      commission: 350.0,
+      commission: 70.0,
       status: OrderStatus.delivered,
     ),
   ];

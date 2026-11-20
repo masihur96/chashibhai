@@ -9,6 +9,9 @@ import 'package:chashibhai/core/constants/api_path.dart';
 import 'package:chashibhai/core/models/models.dart';
 import 'package:chashibhai/features/account/presentation/state/review_provider.dart';
 import 'package:chashibhai/features/auth/presentation/providers/auth_provider.dart';
+import 'package:chashibhai/features/order/data/datasources/review_remote_data_source.dart';
+import 'package:chashibhai/features/order/data/models/create_review_request_model.dart';
+import 'package:chashibhai/features/order/data/repositories/review_repository_impl.dart';
 import 'package:chashibhai/features/order/presentation/views/rating_dialog.dart';
 
 class MockReviewHttpClient implements HttpClient {
@@ -21,12 +24,13 @@ class MockReviewHttpClient implements HttpClient {
     'statusCode': 201,
     'message': 'Review submitted successfully',
     'data': {
-      'id': 'rev_test_123',
+      'id': 'rev_test_curl_123',
       'reviewerId': '395e2439-099f-41da-a739-019f5a08e504',
-      'revieweeId': 'f1_seller',
-      'orderId': 'order_abc',
-      'rating': 5.0,
-      'comment': 'Exceptional fresh produce!',
+      'revieweeId': 'd3b07384-d113-49fb-9400-ee481d6f5822',
+      'orderId': 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
+      'rating': 4.5,
+      'comment':
+          'Fresh produce, arrived promptly as described. Highly recommended!',
       'createdAt': '2026-11-20T16:00:00.000Z',
     }
   });
@@ -88,7 +92,8 @@ class _MockReviewHttpHeaders implements HttpHeaders {
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
 }
 
-class _MockReviewHttpClientResponse extends Stream<List<int>> implements HttpClientResponse {
+class _MockReviewHttpClientResponse extends Stream<List<int>>
+    implements HttpClientResponse {
   @override
   final int statusCode;
   final String responseBody;
@@ -115,33 +120,82 @@ class _MockReviewHttpClientResponse extends Stream<List<int>> implements HttpCli
 }
 
 void main() {
+  group('CreateReviewRequestModel Tests', () {
+    test('CreateReviewRequestModel serialization with cURL dual-cased keys', () {
+      final model = CreateReviewRequestModel(
+        revieweeId: 'd3b07384-d113-49fb-9400-ee481d6f5822',
+        orderId: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
+        rating: 4.5,
+        comment:
+            'Fresh produce, arrived promptly as described. Highly recommended!',
+      );
+
+      final map = model.toJson();
+      expect(map['revieweeId'], 'd3b07384-d113-49fb-9400-ee481d6f5822');
+      expect(map['reviewee_id'], 'd3b07384-d113-49fb-9400-ee481d6f5822');
+      expect(map['orderId'], 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d');
+      expect(map['order_id'], 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d');
+      expect(map['rating'], 4.5);
+      expect(map['comment'],
+          'Fresh produce, arrived promptly as described. Highly recommended!');
+    });
+  });
+
   group('Review Model & Provider Tests', () {
     test('Review fromJson and toJson serialization', () {
       final jsonMap = {
-        'id': 'r_test_1',
+        'id': 'r_test_curl',
         'reviewerId': '395e2439-099f-41da-a739-019f5a08e504',
-        'revieweeId': 'farmer_99',
-        'orderId': 'ord_88',
+        'revieweeId': 'd3b07384-d113-49fb-9400-ee481d6f5822',
+        'orderId': 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
         'rating': 4.5,
-        'comment': 'Good quality tomatoes',
+        'comment':
+            'Fresh produce, arrived promptly as described. Highly recommended!',
         'createdAt': '2026-11-20T12:00:00.000Z',
       };
 
       final review = Review.fromJson(jsonMap);
-      expect(review.id, 'r_test_1');
+      expect(review.id, 'r_test_curl');
       expect(review.reviewerId, '395e2439-099f-41da-a739-019f5a08e504');
-      expect(review.revieweeId, 'farmer_99');
-      expect(review.orderId, 'ord_88');
+      expect(review.revieweeId, 'd3b07384-d113-49fb-9400-ee481d6f5822');
+      expect(review.orderId, 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d');
       expect(review.rating, 4.5);
-      expect(review.comment, 'Good quality tomatoes');
+      expect(review.comment,
+          'Fresh produce, arrived promptly as described. Highly recommended!');
 
       final serialized = review.toJson();
-      expect(serialized['id'], 'r_test_1');
+      expect(serialized['id'], 'r_test_curl');
       expect(serialized['rating'], 4.5);
-      expect(serialized['orderId'], 'ord_88');
+      expect(serialized['orderId'], 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d');
     });
 
-    test('ReviewProvider submitReview sends POST request to ApiPath.reviews with Bearer auth', () async {
+    test('ReviewRemoteDataSource submits review matching exact user cURL',
+        () async {
+      final mockClient = MockReviewHttpClient();
+      final dataSource = ReviewRemoteDataSourceImpl(client: mockClient);
+      final repo = ReviewRepositoryImpl(remoteDataSource: dataSource);
+
+      final result = await repo.createReview(
+        request: const CreateReviewRequestModel(
+          revieweeId: 'd3b07384-d113-49fb-9400-ee481d6f5822',
+          orderId: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
+          rating: 4.5,
+          comment:
+              'Fresh produce, arrived promptly as described. Highly recommended!',
+        ),
+      );
+
+      expect(mockClient.lastMethod, 'POST');
+      expect(mockClient.lastUri.toString(), ApiPath.reviews);
+      expect(mockClient.lastHeaders['content-type'], 'application/json');
+      expect(mockClient.lastHeaders['accept'], 'application/json');
+      expect(result.id, 'rev_test_curl_123');
+      expect(result.rating, 4.5);
+      expect(result.revieweeId, 'd3b07384-d113-49fb-9400-ee481d6f5822');
+    });
+
+    test('ReviewProvider submitReview sends POST request to ApiPath.reviews',
+        () async {
       final mockClient = MockReviewHttpClient();
       final provider = ReviewProvider(client: mockClient);
 
@@ -150,41 +204,47 @@ void main() {
 
       final created = await provider.submitReview(
         reviewerId: '395e2439-099f-41da-a739-019f5a08e504',
-        revieweeId: 'f1_seller',
-        orderId: 'order_abc',
-        rating: 5.0,
-        comment: 'Exceptional fresh produce!',
+        revieweeId: 'd3b07384-d113-49fb-9400-ee481d6f5822',
+        orderId: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
+        rating: 4.5,
+        comment:
+            'Fresh produce, arrived promptly as described. Highly recommended!',
         token: testToken,
       );
 
       expect(mockClient.lastMethod, 'POST');
       expect(mockClient.lastUri.toString(), ApiPath.reviews);
       expect(mockClient.lastHeaders['authorization'], 'Bearer $testToken');
-      expect(created.id, 'rev_test_123');
-      expect(created.rating, 5.0);
-      expect(provider.reviews.first.id, 'rev_test_123');
-      expect(provider.hasReviewedOrder('order_abc', '395e2439-099f-41da-a739-019f5a08e504'), true);
+      expect(created.id, 'rev_test_curl_123');
+      expect(created.rating, 4.5);
+      expect(provider.reviews.first.id, 'rev_test_curl_123');
+      expect(
+          provider.hasReviewedOrder('a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
+              '395e2439-099f-41da-a739-019f5a08e504'),
+          true);
     });
 
-    test('ReviewProvider submitReview falls back gracefully on network error', () async {
-      final provider = ReviewProvider(); // Uses default client which will fail gracefully without real server
+    test('ReviewProvider submitReview falls back gracefully on network error',
+        () async {
+      final provider = ReviewProvider();
 
       final review = await provider.submitReview(
         reviewerId: 'u1',
-        revieweeId: 'f1',
+        revieweeId: 'd3b07384-d113-49fb-9400-ee481d6f5822',
         orderId: 'offline_order',
-        rating: 4.0,
+        rating: 4.5,
         comment: 'Locally persisted test review',
       );
 
-      expect(review.rating, 4.0);
+      expect(review.rating, 4.5);
       expect(review.orderId, 'offline_order');
       expect(provider.reviews.any((r) => r.orderId == 'offline_order'), true);
     });
   });
 
   group('RatingDialog Widget Tests', () {
-    testWidgets('Displays title, star buttons, endpoint pill and submits review',
+    testWidgets(
+        'Displays 4.5 default rating, cURL comment, endpoint pill and submits review',
         (tester) async {
       final mockClient = MockReviewHttpClient();
       final reviewProvider = ReviewProvider(client: mockClient);
@@ -199,9 +259,9 @@ void main() {
           child: const MaterialApp(
             home: Scaffold(
               body: RatingDialog(
-                orderId: 'order_widget_test',
+                orderId: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
                 reviewerId: '395e2439-099f-41da-a739-019f5a08e504',
-                revieweeId: 'farmer_01',
+                revieweeId: 'd3b07384-d113-49fb-9400-ee481d6f5822',
               ),
             ),
           ),
@@ -212,34 +272,25 @@ void main() {
 
       // Verify title & subtitle
       expect(find.text('Rate your Experience'), findsOneWidget);
-      expect(find.textContaining('Feedback for Order #order_wi'), findsOneWidget);
+      expect(find.textContaining('Feedback for Order #a1b2c3d4'),
+          findsOneWidget);
 
       // Verify endpoint pill
       expect(find.text('POST'), findsOneWidget);
       expect(find.text('Bearer Auth'), findsOneWidget);
 
-      // Verify 5 star icons are present
-      expect(find.byIcon(Icons.star_outline_rounded), findsNWidgets(5));
-      expect(find.text('Tap a star to rate'), findsOneWidget);
+      // Verify 4.5 rating badge & default cURL chip
+      expect(find.textContaining('4.5 ★'), findsWidgets);
+      expect(find.text('4.5 (cURL Default) ★'), findsOneWidget);
 
-      // Tap 5th star
-      await tester.tap(find.byIcon(Icons.star_outline_rounded).last);
-      await tester.pumpAndSettle();
+      // Verify default comment text in TextField
+      expect(
+          find.text(
+              'Fresh produce, arrived promptly as described. Highly recommended!'),
+          findsOneWidget);
 
-      // Verify mood tag changed to Excellent!
-      expect(find.text('Excellent! 🌟'), findsOneWidget);
-
-      // Verify quick tags are shown
-      expect(find.text('Fresh Quality 🥦'), findsOneWidget);
-
-      // Tap quick tag 'Fresh Quality 🥦'
-      await tester.tap(find.text('Fresh Quality 🥦'));
-      await tester.pumpAndSettle();
-
-      // Verify text field contains quick tag
-      expect(find.text('Fresh Quality 🥦'), findsWidgets);
-
-      // Tap Submit Review button
+      // Scroll to and tap Submit Review button
+      await tester.ensureVisible(find.text('Submit Review'));
       await tester.tap(find.text('Submit Review'));
       await tester.pump();
       await tester.pump(const Duration(milliseconds: 500));
@@ -247,6 +298,9 @@ void main() {
       // Verify HTTP request was sent
       expect(mockClient.lastMethod, 'POST');
       expect(mockClient.lastUri.toString(), ApiPath.reviews);
+      expect(mockClient.lastBody, contains('"rating":4.5'));
+      expect(mockClient.lastBody, contains('"revieweeId":"d3b07384-d113-49fb-9400-ee481d6f5822"'));
+      expect(mockClient.lastBody, contains('"orderId":"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"'));
     });
   });
 }
