@@ -96,4 +96,15 @@ class BuyerRepositoryImpl implements BuyerRepository {
       token: token,
     );
   }
+
+  @override
+  Future<List<Bid>> getBidsByProductId({
+    required String productId,
+    String? token,
+  }) async {
+    return await remoteDataSource.getBidsByProductId(
+      productId: productId,
+      token: token,
+    );
+  }
 }

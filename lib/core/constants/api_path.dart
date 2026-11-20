@@ -57,6 +57,7 @@ class ApiPath {
 
   // Bids
   static String get bids => '$baseUrl/bids';
+  static String bidsByProduct(String productId) => '$baseUrl/bids/product/$productId';
 
   // Groups
   static String get groups => '$baseUrl/groups';

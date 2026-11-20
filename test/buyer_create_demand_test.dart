@@ -112,6 +112,14 @@ class MockBuyerRepository implements BuyerRepository {
   }) async {
     return null;
   }
+
+  @override
+  Future<List<Bid>> getBidsByProductId({
+    required String productId,
+    String? token,
+  }) async {
+    return [];
+  }
 }
 
 void main() {

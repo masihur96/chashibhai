@@ -49,6 +49,11 @@ abstract class BuyerRemoteDataSource {
     required String id,
     String? token,
   });
+
+  Future<List<Bid>> getBidsByProductId({
+    required String productId,
+    String? token,
+  });
 }
 
 class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
@@ -57,7 +62,7 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
 
   /// Default fallback token from user curl specification
   static const String defaultFallbackToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTE1MDM5OCwiZXhwIjoxNzk1MTUxMjk4fQ.7JodOSM6L_8q748GQJ1MUVqtfSEl8_xeDSiJKjiHcFA';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTE1ODI5NSwiZXhwIjoxNzk1MTU5MTk1fQ.xJWsu_m_q470KTzWo_CajAUzig4lRpTw4sbhbF6gOMc';
 
   BuyerRemoteDataSourceImpl({HttpClient? client, UploadService? uploadService})
       : _client = client ?? HttpClient(),
@@ -781,6 +786,154 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
     } catch (e) {
       stopwatch.stop();
       return null;
+    }
+  }
+
+  @override
+  Future<List<Bid>> getBidsByProductId({
+    required String productId,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.bidsByProduct(productId);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    // Resolve bearer token: explicit param -> StorageService -> default fallback token
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = await StorageService().getAccessToken();
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultFallbackToken;
+    }
+
+    final headers = {
+      'accept': '*/*',
+      'Authorization': 'Bearer $resolvedToken',
+    };
+
+    ApiLogger.logRequest(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+    );
+
+    try {
+      final httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        final List<Bid> bids = [];
+        if (decodedJson is Map<String, dynamic>) {
+          final data = decodedJson['data'] ?? decodedJson['bids'] ?? decodedJson['result'];
+          if (data is List) {
+            for (final item in data) {
+              if (item is Map<String, dynamic>) {
+                bids.add(Bid.fromJson(item));
+              }
+            }
+          }
+        } else if (decodedJson is List) {
+          for (final item in decodedJson) {
+            if (item is Map<String, dynamic>) {
+              bids.add(Bid.fromJson(item));
+            }
+          }
+        }
+        return bids;
+      } else if (httpResponse.statusCode == 401) {
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await getBidsByProductId(
+              productId: productId,
+              token: refreshedToken,
+            );
+          }
+        }
+
+        String errorMessage = 'Unauthorized or token expired';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      } else {
+        String errorMessage =
+            'Failed to fetch product bids (Status code ${httpResponse.statusCode})';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['message']?.toString() ??
+              decodedJson['error']?.toString() ??
+              decodedJson['detail']?.toString() ??
+              errorMessage;
+        } else if (responseBody.isNotEmpty) {
+          errorMessage = responseBody;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      }
+    } on SocketException catch (e) {
+      stopwatch.stop();
+      final err =
+          'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running.';
+      ApiLogger.logError(
+        method: 'GET',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: err,
+      );
+      throw Exception(err);
+    } catch (e) {
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          duration: stopwatch.elapsed,
+          error: e,
+        );
+      }
+      rethrow;
     }
   }
 

@@ -133,6 +133,14 @@ class MockBuyerRepository implements BuyerRepository {
       category: 'Vegetables',
     );
   }
+
+  @override
+  Future<List<Bid>> getBidsByProductId({
+    required String productId,
+    String? token,
+  }) async {
+    return [];
+  }
 }
 
 void main() {

@@ -273,13 +273,26 @@ class Bid {
       return double.tryParse(val.toString()) ?? 0.0;
     }
 
+    String? bidderName = json['bidderName']?.toString() ??
+        json['bidder_name']?.toString() ??
+        json['userName']?.toString() ??
+        json['name']?.toString();
+    if (bidderName == null) {
+      final bidderMap = json['bidder'] ?? json['user'] ?? json['buyer'];
+      if (bidderMap is Map<String, dynamic>) {
+        bidderName = bidderMap['name']?.toString() ??
+            bidderMap['fullName']?.toString() ??
+            bidderMap['phone']?.toString();
+      }
+    }
+
     return Bid(
       id: (json['id'] ?? json['_id'] ?? 'b_${DateTime.now().millisecondsSinceEpoch}').toString(),
       productId: (json['productId'] ?? json['product_id'] ?? '').toString(),
       buyerId: (json['buyerId'] ?? json['buyer_id'] ?? json['userId'] ?? json['user_id'] ?? '').toString(),
       amount: parseDouble(json['amount'] ?? json['price'] ?? json['bidAmount'] ?? json['bid_amount']),
       createdAt: parseDate(json['createdAt'] ?? json['created_at']),
-      bidderName: json['bidderName']?.toString() ?? json['bidder_name']?.toString() ?? json['userName']?.toString(),
+      bidderName: bidderName,
       status: (json['status'] ?? 'active').toString(),
     );
   }

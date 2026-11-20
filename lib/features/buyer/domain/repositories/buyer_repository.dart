@@ -43,4 +43,9 @@ abstract class BuyerRepository {
     required String id,
     String? token,
   });
+
+  Future<List<Bid>> getBidsByProductId({
+    required String productId,
+    String? token,
+  });
 }
