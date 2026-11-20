@@ -72,6 +72,8 @@ class ApiPath {
   static String get reviews => '$baseUrl/reviews';
   static String get myReviews => '$baseUrl/reviews/my';
   static String reviewsByUser(String userId) => '$baseUrl/reviews/user/$userId';
+  static String reviewsByOrder(String orderId) =>
+      '$baseUrl/reviews/order/${Uri.encodeComponent(orderId)}';
 
   // Orders
   static String get orders => '$baseUrl/orders';

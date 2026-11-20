@@ -17,6 +17,11 @@ abstract class ReviewRemoteDataSource {
     required String userId,
     String? token,
   });
+
+  Future<List<Review>> getReviewsByOrder({
+    required String orderId,
+    String? token,
+  });
 }
 
 class ReviewRemoteDataSourceImpl implements ReviewRemoteDataSource {
@@ -25,6 +30,10 @@ class ReviewRemoteDataSourceImpl implements ReviewRemoteDataSource {
   /// Default bearer token from cURL specification
   static const String defaultFallbackToken =
       'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTE2NDIxMiwiZXhwIjoxNzk1MTY1MTEyfQ.YQmIE4_tvYuZdMQonDMTJWXI6baALYW-Ee5kD5Fbl0E';
+
+  /// Default order reviews bearer token from cURL specification
+  static const String defaultOrderReviewsToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI5MmY2ODM5YS01ZDBjLTQwYTctYmQ5Mi1hNTA4MGNkOGIwNzAiLCJwaG9uZSI6Ijg4MDE3NDA3MTkyMDUiLCJlbWFpbCI6IiIsInJvbGUiOiJmYXJtZXIiLCJpYXQiOjE3OTUxOTQwNTksImV4cCI6MTc5NTE5NDk1OX0.2I2pFRcG4uIjXcH2cJcjp0ta4vl2rG7fThgxiJXkVCo';
 
   ReviewRemoteDataSourceImpl({HttpClient? client})
       : _client = client ??
@@ -293,6 +302,176 @@ class ReviewRemoteDataSourceImpl implements ReviewRemoteDataSource {
         }
       }
     } catch (_) {}
+    return [];
+  }
+
+  /// Fetches reviews for a specific order using GET /api/v1/reviews/order/{orderId}
+  @override
+  Future<List<Review>> getReviewsByOrder({
+    required String orderId,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.reviewsByOrder(orderId);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    // Resolve bearer token: parameter -> StorageService -> defaultOrderReviewsToken
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      try {
+        resolvedToken = await StorageService().getAccessToken();
+      } catch (_) {}
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultOrderReviewsToken;
+    }
+
+    final headers = <String, String>{
+      'accept': '*/*',
+    };
+    if (resolvedToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $resolvedToken';
+    }
+
+    ApiLogger.logRequest(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+    );
+
+    try {
+      final httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) {
+        httpRequest.headers.set(key, value);
+      });
+
+      final httpResponse = await httpRequest.close();
+      final responseBody =
+          await httpResponse.transform(utf8.decoder).join();
+      stopwatch.stop();
+
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = responseBody;
+      }
+
+      // Handle 401 token refresh & retry
+      if (httpResponse.statusCode == 401) {
+        String? refreshToken;
+        try {
+          refreshToken = await StorageService().getRefreshToken();
+        } catch (_) {}
+
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final newAccessToken = await _attemptRefreshToken(refreshToken);
+          if (newAccessToken != null && newAccessToken.isNotEmpty) {
+            final retryHeaders = Map<String, String>.from(headers);
+            retryHeaders['Authorization'] = 'Bearer $newAccessToken';
+
+            ApiLogger.logRequest(
+              method: 'GET',
+              uri: uri,
+              headers: retryHeaders,
+            );
+
+            final retryRequest = await _client.getUrl(uri);
+            retryHeaders.forEach((key, value) {
+              retryRequest.headers.set(key, value);
+            });
+            final retryResponse = await retryRequest.close();
+            final retryBody =
+                await retryResponse.transform(utf8.decoder).join();
+            dynamic retryDecoded;
+            try {
+              retryDecoded = jsonDecode(retryBody);
+            } catch (_) {
+              retryDecoded = retryBody;
+            }
+
+            if (retryResponse.statusCode >= 200 &&
+                retryResponse.statusCode < 300) {
+              ApiLogger.logResponse(
+                method: 'GET',
+                uri: uri,
+                statusCode: retryResponse.statusCode,
+                duration: stopwatch.elapsed,
+                body: retryDecoded ?? retryBody,
+              );
+              return _parseReviewsList(retryDecoded);
+            }
+          }
+        }
+      }
+
+      if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+        return _parseReviewsList(decodedJson);
+      } else {
+        String errorMessage =
+            'Failed to fetch order reviews (Status code ${httpResponse.statusCode})';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      }
+    } on SocketException catch (e) {
+      stopwatch.stop();
+      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e)';
+      ApiLogger.logError(
+        method: 'GET',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: err,
+      );
+      throw Exception(err);
+    } catch (e) {
+      stopwatch.stop();
+      ApiLogger.logError(
+        method: 'GET',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: e.toString(),
+      );
+      rethrow;
+    }
+  }
+
+  List<Review> _parseReviewsList(dynamic decodedJson) {
+    if (decodedJson == null) return [];
+
+    dynamic data = decodedJson;
+    if (decodedJson is Map<String, dynamic> && decodedJson.containsKey('data')) {
+      data = decodedJson['data'];
+    }
+
+    if (data is List) {
+      return data
+          .whereType<Map<String, dynamic>>()
+          .map((item) => Review.fromJson(item))
+          .toList();
+    } else if (data is Map<String, dynamic>) {
+      return [Review.fromJson(data)];
+    }
     return [];
   }
 }

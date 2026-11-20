@@ -10,9 +10,11 @@ import '../../../order/data/datasources/review_remote_data_source.dart';
 import '../../../order/data/models/create_review_request_model.dart';
 import '../../../order/data/repositories/review_repository_impl.dart';
 import '../../../order/domain/repositories/review_repository.dart';
+import '../../../order/domain/usecases/get_order_reviews_usecase.dart';
 
 class ReviewProvider with ChangeNotifier {
   final ReviewRepository _reviewRepository;
+  final GetOrderReviewsUseCase _getOrderReviewsUseCase;
   final HttpClient _client;
   final List<Review> _reviews = List.from(MockData.demoReviews);
 
@@ -22,17 +24,38 @@ class ReviewProvider with ChangeNotifier {
   bool _isLoadingReviews = false;
   String? _reviewsError;
 
+  List<Review> _orderReviews = [];
+  bool _isLoadingOrderReviews = false;
+  String? _orderReviewsError;
+  String? _lastLoadedOrderId;
+
   /// Default fallback token provided from cURL specification
   static const String defaultFallbackToken =
       ReviewRemoteDataSourceImpl.defaultFallbackToken;
 
-  ReviewProvider({HttpClient? client, ReviewRepository? repository})
-      : _client = client ?? HttpClient(),
+  /// Default order reviews token provided from cURL specification
+  static const String defaultOrderReviewsToken =
+      ReviewRemoteDataSourceImpl.defaultOrderReviewsToken;
+
+  ReviewProvider({
+    HttpClient? client,
+    ReviewRepository? repository,
+    GetOrderReviewsUseCase? getOrderReviewsUseCase,
+  })  : _client = client ?? HttpClient(),
         _reviewRepository = repository ??
             ReviewRepositoryImpl(
               remoteDataSource: ReviewRemoteDataSourceImpl(
                 client: client,
               ),
+            ),
+        _getOrderReviewsUseCase = getOrderReviewsUseCase ??
+            GetOrderReviewsUseCase(
+              repository ??
+                  ReviewRepositoryImpl(
+                    remoteDataSource: ReviewRemoteDataSourceImpl(
+                      client: client,
+                    ),
+                  ),
             ) {
     _client.connectionTimeout = const Duration(seconds: 15);
   }
@@ -42,6 +65,10 @@ class ReviewProvider with ChangeNotifier {
   String? get submitError => _submitError;
   bool get isLoadingReviews => _isLoadingReviews;
   String? get reviewsError => _reviewsError;
+  List<Review> get orderReviews => List.unmodifiable(_orderReviews);
+  bool get isLoadingOrderReviews => _isLoadingOrderReviews;
+  String? get orderReviewsError => _orderReviewsError;
+  String? get lastLoadedOrderId => _lastLoadedOrderId;
   ReviewRepository get reviewRepository => _reviewRepository;
 
   List<Review> getReviewsForUser(String userId) {
@@ -179,5 +206,46 @@ class ReviewProvider with ChangeNotifier {
       notifyListeners();
       return getReviewsForUser(userId);
     }
+  }
+
+  /// Fetches reviews for a specific order using GET /api/v1/reviews/order/{orderId}
+  Future<List<Review>> fetchReviewsForOrder({
+    required String orderId,
+    String? token,
+  }) async {
+    _isLoadingOrderReviews = true;
+    _orderReviewsError = null;
+    _lastLoadedOrderId = orderId;
+    notifyListeners();
+
+    try {
+      final list = await _getOrderReviewsUseCase(
+        orderId: orderId,
+        token: token,
+      );
+      _orderReviews = list;
+      for (final r in list) {
+        _reviews.removeWhere((existing) => existing.id == r.id);
+        _reviews.insert(0, r);
+      }
+      _isLoadingOrderReviews = false;
+      notifyListeners();
+      return list;
+    } catch (e) {
+      _isLoadingOrderReviews = false;
+      _orderReviewsError = e.toString().replaceFirst('Exception: ', '');
+
+      // Fallback: check if local reviews have one matching this orderId
+      final localMatching =
+          _reviews.where((r) => r.orderId == orderId).toList();
+      _orderReviews = localMatching;
+
+      notifyListeners();
+      return _orderReviews;
+    }
+  }
+
+  List<Review> getReviewsForOrder(String orderId) {
+    return _reviews.where((r) => r.orderId == orderId).toList();
   }
 }

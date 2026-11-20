@@ -11,4 +11,9 @@ abstract class ReviewRepository {
     required String userId,
     String? token,
   });
+
+  Future<List<Review>> getReviewsByOrder({
+    required String orderId,
+    String? token,
+  });
 }

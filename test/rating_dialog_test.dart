@@ -10,8 +10,10 @@ import 'package:chashibhai/core/models/models.dart';
 import 'package:chashibhai/features/account/presentation/state/review_provider.dart';
 import 'package:chashibhai/features/auth/presentation/providers/auth_provider.dart';
 import 'package:chashibhai/features/order/data/datasources/review_remote_data_source.dart';
+import 'package:chashibhai/core/presentation/widgets/reviews_list_sheet.dart';
 import 'package:chashibhai/features/order/data/models/create_review_request_model.dart';
 import 'package:chashibhai/features/order/data/repositories/review_repository_impl.dart';
+import 'package:chashibhai/features/order/domain/usecases/get_order_reviews_usecase.dart';
 import 'package:chashibhai/features/order/presentation/views/rating_dialog.dart';
 
 class MockReviewHttpClient implements HttpClient {
@@ -42,6 +44,11 @@ class MockReviewHttpClient implements HttpClient {
   dynamic noSuchMethod(Invocation invocation) {
     if (invocation.memberName == #postUrl) {
       lastMethod = 'POST';
+      lastUri = invocation.positionalArguments.first as Uri;
+      return Future.value(_MockReviewHttpClientRequest(this));
+    }
+    if (invocation.memberName == #getUrl) {
+      lastMethod = 'GET';
       lastUri = invocation.positionalArguments.first as Uri;
       return Future.value(_MockReviewHttpClientRequest(this));
     }
@@ -301,6 +308,102 @@ void main() {
       expect(mockClient.lastBody, contains('"rating":4.5'));
       expect(mockClient.lastBody, contains('"revieweeId":"d3b07384-d113-49fb-9400-ee481d6f5822"'));
       expect(mockClient.lastBody, contains('"orderId":"a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d"'));
+    });
+
+    test('ReviewRemoteDataSourceImpl getReviewsByOrder sends GET to ApiPath.reviewsByOrder', () async {
+      final mockClient = MockReviewHttpClient();
+      mockClient.statusCodeToReturn = 200;
+      mockClient.responseBodyToReturn = jsonEncode({
+        'statusCode': 200,
+        'data': [
+          {
+            'id': 'rev_order_curl_1',
+            'reviewerId': 'u1',
+            'revieweeId': 'f1',
+            'orderId': ' rfs dfsd',
+            'rating': 4.5,
+            'comment': 'Fresh produce, arrived promptly as described. Highly recommended!',
+            'createdAt': '2026-11-20T17:00:00.000Z',
+          }
+        ]
+      });
+
+      final dataSource = ReviewRemoteDataSourceImpl(client: mockClient);
+      final reviews = await dataSource.getReviewsByOrder(
+        orderId: ' rfs dfsd',
+        token: ReviewRemoteDataSourceImpl.defaultOrderReviewsToken,
+      );
+
+      expect(mockClient.lastMethod, 'GET');
+      expect(
+        mockClient.lastUri.toString(),
+        ApiPath.reviewsByOrder(' rfs dfsd'),
+      );
+      expect(reviews.length, 1);
+      expect(reviews.first.id, 'rev_order_curl_1');
+      expect(reviews.first.orderId, ' rfs dfsd');
+      expect(reviews.first.rating, 4.5);
+      expect(reviews.first.comment, contains('Fresh produce, arrived promptly'));
+    });
+
+    testWidgets('ReviewsListSheet displays reviews fetched via cURL endpoint', (WidgetTester tester) async {
+      final mockClient = MockReviewHttpClient();
+      mockClient.statusCodeToReturn = 200;
+      mockClient.responseBodyToReturn = jsonEncode({
+        'statusCode': 200,
+        'data': [
+          {
+            'id': 'rev_order_curl_2',
+            'reviewerId': 'u1',
+            'revieweeId': 'f1',
+            'orderId': ' rfs dfsd',
+            'rating': 4.5,
+            'comment': 'Fresh produce, arrived promptly as described. Highly recommended!',
+            'createdAt': '2026-11-20T17:00:00.000Z',
+          }
+        ]
+      });
+
+      final dataSource = ReviewRemoteDataSourceImpl(client: mockClient);
+      final repo = ReviewRepositoryImpl(remoteDataSource: dataSource);
+      final useCase = GetOrderReviewsUseCase(repo);
+      final reviewProvider = ReviewProvider(
+        client: mockClient,
+        repository: repo,
+        getOrderReviewsUseCase: useCase,
+      );
+      final authProvider = AuthProvider();
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider<ReviewProvider>.value(value: reviewProvider),
+            ChangeNotifierProvider<AuthProvider>.value(value: authProvider),
+          ],
+          child: const MaterialApp(
+            home: Scaffold(
+              body: ReviewsListSheet(
+                orderId: ' rfs dfsd',
+              ),
+            ),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Verify endpoint pill matches curl
+      expect(find.text('/api/v1/reviews/order/%20rfs%20dfsd'), findsOneWidget);
+      expect(find.text('Order:  rfs dfsd'), findsOneWidget);
+
+      // Verify review content rendered
+      expect(find.text('Order Reviews'), findsOneWidget);
+      expect(find.text('Masihur Rahman (Buyer)'), findsOneWidget);
+      expect(find.text('Order # rfs dfsd'), findsOneWidget);
+      expect(
+        find.text('Fresh produce, arrived promptly as described. Highly recommended!'),
+        findsOneWidget,
+      );
     });
   });
 }

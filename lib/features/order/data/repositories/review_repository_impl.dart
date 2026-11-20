@@ -24,4 +24,12 @@ class ReviewRepositoryImpl implements ReviewRepository {
   }) {
     return _remoteDataSource.getReviewsByUser(userId: userId, token: token);
   }
+
+  @override
+  Future<List<Review>> getReviewsByOrder({
+    required String orderId,
+    String? token,
+  }) {
+    return _remoteDataSource.getReviewsByOrder(orderId: orderId, token: token);
+  }
 }

@@ -10,6 +10,7 @@ import '../../../account/presentation/state/review_provider.dart';
 import '../../../auth/presentation/state/auth_provider.dart';
 import './invoice_screen.dart';
 import './rating_dialog.dart';
+import '../../../../core/presentation/widgets/reviews_list_sheet.dart';
 
 class OrderDetailsScreen extends StatelessWidget {
   final Order order;
@@ -73,15 +74,49 @@ class OrderDetailsScreen extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: hasReviewed
-                    ? Container(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        decoration: BoxDecoration(
-                          color: Colors.green.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: Colors.green.withOpacity(0.3)),
+                    ? InkWell(
+                        onTap: () {
+                          showModalBottomSheet(
+                            context: context,
+                            isScrollControlled: true,
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(24),
+                              ),
+                            ),
+                            builder: (context) => ReviewsListSheet(
+                              orderId: order.id,
+                              userId: revieweeId,
+                            ),
+                          );
+                        },
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          decoration: BoxDecoration(
+                            color: Colors.green.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(
+                              color: Colors.green.withValues(alpha: 0.3),
+                            ),
+                          ),
+                          alignment: Alignment.center,
+                          child: const Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(Icons.check_circle_outline,
+                                  color: Colors.green, size: 18),
+                              SizedBox(width: 8),
+                              Text(
+                                'You have reviewed this order • View Review',
+                                style: TextStyle(
+                                  color: Colors.green,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                        alignment: Alignment.center,
-                        child: const Text('You have reviewed this order', style: TextStyle(color: Colors.green, fontWeight: FontWeight.bold)),
                       )
                     : PrimaryButton(
                         text: 'Rate your Experience',
@@ -109,9 +144,11 @@ class OrderDetailsScreen extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
-        color: Theme.of(context).colorScheme.primary.withOpacity(0.05),
+        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: Theme.of(context).colorScheme.primary.withOpacity(0.2)),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
+        ),
       ),
       child: Row(
         children: [
@@ -119,10 +156,12 @@ class OrderDetailsScreen extends StatelessWidget {
             width: 60,
             height: 60,
             decoration: BoxDecoration(
-              color: Theme.of(context).colorScheme.primary.withOpacity(0.1),
+              color:
+                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
               borderRadius: BorderRadius.circular(12),
             ),
-            child: Icon(Icons.inventory_2, color: Theme.of(context).colorScheme.primary),
+            child: Icon(Icons.inventory_2,
+                color: Theme.of(context).colorScheme.primary),
           ),
           const SizedBox(width: 16),
           Expanded(
