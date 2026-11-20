@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 
 import '../../../../core/models/models.dart';
-import '../../../auth/presentation/state/auth_provider.dart';
-import '../../../account/presentation/state/review_provider.dart';
 import '../../../../core/presentation/widgets/reviews_list_sheet.dart';
+import '../../../account/presentation/state/review_provider.dart';
+import '../../../auth/presentation/state/auth_provider.dart';
 import '../../../order/presentation/views/rating_dialog.dart';
 
 class DemandDetailsScreen extends StatelessWidget {
@@ -36,7 +36,12 @@ class DemandDetailsScreen extends StatelessWidget {
                 children: [
                   _buildDemandHeader(context, currencyFormat),
                   const SizedBox(height: 24),
-                  _buildBuyerInfo(context, buyerId, averageRating, reviewsCount),
+                  _buildBuyerInfo(
+                    context,
+                    demand.buyerId,
+                    averageRating,
+                    reviewsCount,
+                  ),
                   const SizedBox(height: 24),
                   _buildDemandDetails(context),
                   const SizedBox(height: 40),
@@ -47,7 +52,9 @@ class DemandDetailsScreen extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () {
                           ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(content: Text('Offer submitted successfully!')),
+                            const SnackBar(
+                              content: Text('Offer submitted successfully!'),
+                            ),
                           );
                         },
                         child: const Text('Offer to Supply'),
@@ -62,7 +69,11 @@ class DemandDetailsScreen extends StatelessWidget {
                           showModalBottomSheet(
                             context: context,
                             isScrollControlled: true,
-                            shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+                            shape: const RoundedRectangleBorder(
+                              borderRadius: BorderRadius.vertical(
+                                top: Radius.circular(24),
+                              ),
+                            ),
                             builder: (context) => RatingDialog(
                               reviewerId: currentUser!.id,
                               revieweeId: buyerId,
@@ -74,7 +85,7 @@ class DemandDetailsScreen extends StatelessWidget {
                         label: const Text('Rate Buyer'),
                       ),
                     ),
-                  ]
+                  ],
                 ],
               ),
             ),
@@ -99,10 +110,7 @@ class DemandDetailsScreen extends StatelessWidget {
       flexibleSpace: FlexibleSpaceBar(
         background: Hero(
           tag: demand.id,
-          child: Image.asset(
-            demand.imageUrl,
-            fit: BoxFit.cover,
-          ),
+          child: Image.asset(demand.imageUrl, fit: BoxFit.cover),
         ),
       ),
     );
@@ -129,7 +137,10 @@ class DemandDetailsScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: demand.status == DemandStatus.active
                         ? Theme.of(context).colorScheme.primaryContainer
@@ -149,15 +160,22 @@ class DemandDetailsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 8),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 4,
+                  ),
                   decoration: BoxDecoration(
-                    color: demand.tradeType == TradeType.auction ? Colors.orange.withOpacity(0.1) : Colors.blue.withOpacity(0.1),
+                    color: demand.tradeType == TradeType.auction
+                        ? Colors.orange.withOpacity(0.1)
+                        : Colors.blue.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(16),
                   ),
                   child: Text(
                     demand.tradeType.toString().split('.').last.toUpperCase(),
                     style: TextStyle(
-                      color: demand.tradeType == TradeType.auction ? Colors.orange.shade800 : Colors.blue.shade800,
+                      color: demand.tradeType == TradeType.auction
+                          ? Colors.orange.shade800
+                          : Colors.blue.shade800,
                       fontWeight: FontWeight.bold,
                       fontSize: 10,
                     ),
@@ -182,11 +200,19 @@ class DemandDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _buildBuyerInfo(BuildContext context, String buyerId, double averageRating, int reviewsCount) {
+  Widget _buildBuyerInfo(
+    BuildContext context,
+    String buyerId,
+    double averageRating,
+    int reviewsCount,
+  ) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Posted By', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(
+          'Posted By',
+          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 12),
         Card.outlined(
           margin: EdgeInsets.zero,
@@ -195,7 +221,9 @@ class DemandDetailsScreen extends StatelessWidget {
               showModalBottomSheet(
                 context: context,
                 isScrollControlled: true,
-                shape: const RoundedRectangleBorder(borderRadius: BorderRadius.vertical(top: Radius.circular(24))),
+                shape: const RoundedRectangleBorder(
+                  borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+                ),
                 builder: (context) => ReviewsListSheet(userId: buyerId),
               );
             },
@@ -206,8 +234,13 @@ class DemandDetailsScreen extends StatelessWidget {
                 children: [
                   CircleAvatar(
                     radius: 25,
-                    backgroundColor: Theme.of(context).colorScheme.primary.withOpacity(0.1),
-                    child: Icon(Icons.person, color: Theme.of(context).colorScheme.primary),
+                    backgroundColor: Theme.of(
+                      context,
+                    ).colorScheme.primary.withOpacity(0.1),
+                    child: Icon(
+                      Icons.person,
+                      color: Theme.of(context).colorScheme.primary,
+                    ),
                   ),
                   const SizedBox(width: 16),
                   Expanded(
@@ -216,13 +249,23 @@ class DemandDetailsScreen extends StatelessWidget {
                       children: [
                         Text(
                           'Buyer ${buyerId.substring(0, 2).toUpperCase()}',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                          ),
                         ),
                         Row(
                           children: [
-                            Icon(Icons.star, color: Theme.of(context).colorScheme.secondary, size: 16),
+                            Icon(
+                              Icons.star,
+                              color: Theme.of(context).colorScheme.secondary,
+                              size: 16,
+                            ),
                             const SizedBox(width: 4),
-                            Text('${averageRating.toStringAsFixed(1)} ($reviewsCount reviews)', style: const TextStyle(fontSize: 12)),
+                            Text(
+                              '${averageRating.toStringAsFixed(1)} ($reviewsCount reviews)',
+                              style: const TextStyle(fontSize: 12),
+                            ),
                           ],
                         ),
                       ],
@@ -242,7 +285,10 @@ class DemandDetailsScreen extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text('Requirements', style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold)),
+        Text(
+          'Requirements',
+          style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+        ),
         const SizedBox(height: 16),
         Container(
           padding: const EdgeInsets.all(16),
@@ -253,11 +299,29 @@ class DemandDetailsScreen extends StatelessWidget {
           ),
           child: Column(
             children: [
-              _buildDetailRow(Icons.inventory_2_outlined, 'Quantity Required', '${demand.quantity} KG'),
-              const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider()),
-              _buildDetailRow(Icons.location_on_outlined, 'Delivery Location', demand.deliveryLocation),
-              const Padding(padding: EdgeInsets.symmetric(vertical: 12), child: Divider()),
-              _buildDetailRow(Icons.access_time, 'Expires On', DateFormat.yMMMd().format(demand.expiryTime)),
+              _buildDetailRow(
+                Icons.inventory_2_outlined,
+                'Quantity Required',
+                '${demand.quantity} KG',
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(),
+              ),
+              _buildDetailRow(
+                Icons.location_on_outlined,
+                'Delivery Location',
+                demand.deliveryLocation,
+              ),
+              const Padding(
+                padding: EdgeInsets.symmetric(vertical: 12),
+                child: Divider(),
+              ),
+              _buildDetailRow(
+                Icons.access_time,
+                'Expires On',
+                DateFormat.yMMMd().format(demand.expiryTime),
+              ),
             ],
           ),
         ),
