@@ -4,7 +4,6 @@ import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
-import '../../../../core/theme/app_colors.dart';
 import '../../../../core/utils/bangla_text_renderer.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
 import '../../../auth/presentation/providers/auth_provider.dart';
@@ -43,7 +42,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       SnackBar(
         content: Row(
           children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+            const Icon(
+              Icons.check_circle_rounded,
+              color: Colors.white,
+              size: 18,
+            ),
             const SizedBox(width: 8),
             Text(
               '$label copied to clipboard',
@@ -59,12 +62,20 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  void _showVerifyDialog(BuildContext context, AdminUserModel user, bool isBangla) {
+  void _showVerifyDialog(
+    BuildContext context,
+    AdminUserModel user,
+    bool isBangla,
+  ) {
     final targetState = !user.isVerified;
     final reasonController = TextEditingController(
       text: targetState
-          ? (isBangla ? 'জাতীয় পরিচয়পত্র যাচাই ও নিশ্চিত করা হয়েছে।' : 'Valid NID provided and matched.')
-          : (isBangla ? 'প্রশাসনিক পর্যালোচনা দ্বারা যাচাইকরণ প্রত্যাহার করা হয়েছে।' : 'Verification revoked upon administrative review.'),
+          ? (isBangla
+                ? 'জাতীয় পরিচয়পত্র যাচাই ও নিশ্চিত করা হয়েছে।'
+                : 'Valid NID provided and matched.')
+          : (isBangla
+                ? 'প্রশাসনিক পর্যালোচনা দ্বারা যাচাইকরণ প্রত্যাহার করা হয়েছে।'
+                : 'Verification revoked upon administrative review.'),
     );
 
     showDialog(
@@ -72,19 +83,28 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 12,
+        ),
         actionsPadding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: targetState ? const Color(0xFFE8F5E9) : Colors.amber.shade50,
+                color: targetState
+                    ? const Color(0xFFE8F5E9)
+                    : Colors.amber.shade50,
                 shape: BoxShape.circle,
               ),
               child: Icon(
-                targetState ? Icons.verified_user_rounded : Icons.pending_actions_rounded,
-                color: targetState ? const Color(0xFF2E7D32) : Colors.amber.shade800,
+                targetState
+                    ? Icons.verified_user_rounded
+                    : Icons.pending_actions_rounded,
+                color: targetState
+                    ? const Color(0xFF2E7D32)
+                    : Colors.amber.shade800,
                 size: 24,
               ),
             ),
@@ -92,9 +112,16 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             Expanded(
               child: Text(
                 targetState
-                    ? (isBangla ? 'কেওয়াইসি যাচাই ও অনুমোদন' : 'Verify User Identity (KYC)')
-                    : (isBangla ? 'যাচাইকরণ প্রত্যাহার' : 'Revoke Verification'),
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+                    ? (isBangla
+                          ? 'কেওয়াইসি যাচাই ও অনুমোদন'
+                          : 'Verify User Identity (KYC)')
+                    : (isBangla
+                          ? 'যাচাইকরণ প্রত্যাহার'
+                          : 'Revoke Verification'),
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
             ),
           ],
@@ -108,17 +135,27 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               Text(
                 targetState
                     ? (isBangla
-                        ? 'আপনি কি "${user.name}" এর জন্য কেওয়াইসি স্ট্যাটাস অনুমোদন করতে চান?'
-                        : 'Confirm KYC verification for "${user.name}" (${user.role.toUpperCase()})?')
+                          ? 'আপনি কি "${user.name}" এর জন্য কেওয়াইসি স্ট্যাটাস অনুমোদন করতে চান?'
+                          : 'Confirm KYC verification for "${user.name}" (${user.role.toUpperCase()})?')
                     : (isBangla
-                        ? 'আপনি কি "${user.name}" এর ভেরিফাইড স্ট্যাটাস প্রত্যাহার করতে চান?'
-                        : 'Revoke verified status for "${user.name}"?'),
-                style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey.shade800, height: 1.4),
+                          ? 'আপনি কি "${user.name}" এর ভেরিফাইড স্ট্যাটাস প্রত্যাহার করতে চান?'
+                          : 'Revoke verified status for "${user.name}"?'),
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  color: Colors.grey.shade800,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 18),
               Text(
-                isBangla ? 'যাচাইকরণের কারণ / অডিট নোট:' : 'Verification Reason / Audit Note:',
-                style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+                isBangla
+                    ? 'যাচাইকরণের কারণ / অডিট নোট:'
+                    : 'Verification Reason / Audit Note:',
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade600,
+                ),
               ),
               const SizedBox(height: 6),
               TextField(
@@ -128,10 +165,25 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   hintText: isBangla ? 'কারণ লিখুন...' : 'Enter reason...',
                   filled: true,
                   fillColor: const Color(0xFFF8F9FA),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 1.5)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(
+                      color: Color(0xFF2E7D32),
+                      width: 1.5,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ],
@@ -140,15 +192,25 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: Text(isBangla ? 'বাতিল' : 'Cancel', style: GoogleFonts.outfit(color: Colors.grey.shade700, fontWeight: FontWeight.w600)),
+            child: Text(
+              isBangla ? 'বাতিল' : 'Cancel',
+              style: GoogleFonts.outfit(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: targetState ? const Color(0xFF2E7D32) : Colors.amber.shade800,
+              backgroundColor: targetState
+                  ? const Color(0xFF2E7D32)
+                  : Colors.amber.shade800,
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () async {
               final reason = reasonController.text.trim();
@@ -165,14 +227,24 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   SnackBar(
                     content: Row(
                       children: [
-                        const Icon(Icons.check_circle_rounded, color: Colors.white, size: 18),
+                        const Icon(
+                          Icons.check_circle_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             targetState
-                                ? (isBangla ? '${user.name} এর কেওয়াইসি অনুমোদিত হয়েছে ($reason)' : '${user.name} verified: "$reason"')
-                                : (isBangla ? '${user.name} এর যাচাইকরণ প্রত্যাহার করা হয়েছে' : '${user.name} unverified: "$reason"'),
-                            style: GoogleFonts.outfit(fontWeight: FontWeight.w500),
+                                ? (isBangla
+                                      ? '${user.name} এর কেওয়াইসি অনুমোদিত হয়েছে ($reason)'
+                                      : '${user.name} verified: "$reason"')
+                                : (isBangla
+                                      ? '${user.name} এর যাচাইকরণ প্রত্যাহার করা হয়েছে'
+                                      : '${user.name} unverified: "$reason"'),
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
@@ -184,7 +256,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               }
             },
             child: Text(
-              targetState ? (isBangla ? 'অনুমোদন নিশ্চিত করুন' : 'Confirm Verify') : (isBangla ? 'প্রত্যাহার করুন' : 'Revoke Status'),
+              targetState
+                  ? (isBangla ? 'অনুমোদন নিশ্চিত করুন' : 'Confirm Verify')
+                  : (isBangla ? 'প্রত্যাহার করুন' : 'Revoke Status'),
               style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
             ),
           ),
@@ -193,12 +267,20 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  void _showBanDialog(BuildContext context, AdminUserModel user, bool isBangla) {
+  void _showBanDialog(
+    BuildContext context,
+    AdminUserModel user,
+    bool isBangla,
+  ) {
     final targetState = !user.isBanned;
     final reasonController = TextEditingController(
       text: targetState
-          ? (isBangla ? 'সন্দেহজনক কার্যকলাপ ও শর্তাবলী লঙ্ঘন।' : 'Suspicious activities / terms violation.')
-          : (isBangla ? 'প্রশাসক কর্তৃক অ্যাকাউন্ট পুনঃসক্রিয় করা হয়েছে।' : 'Account reinstated by administrator.'),
+          ? (isBangla
+                ? 'সন্দেহজনক কার্যকলাপ ও শর্তাবলী লঙ্ঘন।'
+                : 'Suspicious activities / terms violation.')
+          : (isBangla
+                ? 'প্রশাসক কর্তৃক অ্যাকাউন্ট পুনঃসক্রিয় করা হয়েছে।'
+                : 'Account reinstated by administrator.'),
     );
 
     showDialog(
@@ -206,19 +288,26 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 12,
+        ),
         actionsPadding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
         title: Row(
           children: [
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: targetState ? Colors.red.shade50 : const Color(0xFFE8F5E9),
+                color: targetState
+                    ? Colors.red.shade50
+                    : const Color(0xFFE8F5E9),
                 shape: BoxShape.circle,
               ),
               child: Icon(
                 targetState ? Icons.block_rounded : Icons.lock_open_rounded,
-                color: targetState ? Colors.red.shade700 : const Color(0xFF2E7D32),
+                color: targetState
+                    ? Colors.red.shade700
+                    : const Color(0xFF2E7D32),
                 size: 24,
               ),
             ),
@@ -226,9 +315,16 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             Expanded(
               child: Text(
                 targetState
-                    ? (isBangla ? 'অ্যাকাউন্ট স্থগিত / ব্যান' : 'Suspend / Ban User Account')
-                    : (isBangla ? 'স্থগিতাদেশ প্রত্যাহার' : 'Reactivate User Account'),
-                style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+                    ? (isBangla
+                          ? 'অ্যাকাউন্ট স্থগিত / ব্যান'
+                          : 'Suspend / Ban User Account')
+                    : (isBangla
+                          ? 'স্থগিতাদেশ প্রত্যাহার'
+                          : 'Reactivate User Account'),
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 18,
+                ),
               ),
             ),
           ],
@@ -250,14 +346,21 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.warning_amber_rounded, color: Colors.red.shade700, size: 20),
+                      Icon(
+                        Icons.warning_amber_rounded,
+                        color: Colors.red.shade700,
+                        size: 20,
+                      ),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
                           isBangla
                               ? 'স্থগিত করা হলে ব্যবহারকারী অ্যাপে লগইন, নিলাম বা পণ্য ক্রয় করতে পারবেন না।'
                               : 'Banning this user will immediately block access to bidding, selling, and orders.',
-                          style: GoogleFonts.outfit(fontSize: 12, color: Colors.red.shade800),
+                          style: GoogleFonts.outfit(
+                            fontSize: 12,
+                            color: Colors.red.shade800,
+                          ),
                         ),
                       ),
                     ],
@@ -266,17 +369,27 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               Text(
                 targetState
                     ? (isBangla
-                        ? 'আপনি কি নিশ্চিত যে "${user.name}" এর অ্যাকাউন্ট স্থগিত করতে চান?'
-                        : 'Are you sure you want to suspend access for "${user.name}"?')
+                          ? 'আপনি কি নিশ্চিত যে "${user.name}" এর অ্যাকাউন্ট স্থগিত করতে চান?'
+                          : 'Are you sure you want to suspend access for "${user.name}"?')
                     : (isBangla
-                        ? 'আপনি কি "${user.name}" এর অ্যাকাউন্ট পুনরায় সক্রিয় করতে চান?'
-                        : 'Reactivate platform access for "${user.name}"?'),
-                style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey.shade800, height: 1.4),
+                          ? 'আপনি কি "${user.name}" এর অ্যাকাউন্ট পুনরায় সক্রিয় করতে চান?'
+                          : 'Reactivate platform access for "${user.name}"?'),
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  color: Colors.grey.shade800,
+                  height: 1.4,
+                ),
               ),
               const SizedBox(height: 18),
               Text(
-                isBangla ? 'স্থগিতের কারণ / অডিট নোট:' : 'Suspension Reason / Audit Note:',
-                style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+                isBangla
+                    ? 'স্থগিতের কারণ / অডিট নোট:'
+                    : 'Suspension Reason / Audit Note:',
+                style: GoogleFonts.outfit(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.grey.shade600,
+                ),
               ),
               const SizedBox(height: 6),
               TextField(
@@ -286,10 +399,27 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   hintText: isBangla ? 'কারণ লিখুন...' : 'Enter reason...',
                   filled: true,
                   fillColor: const Color(0xFFF8F9FA),
-                  border: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                  enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: Colors.grey.shade300)),
-                  focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(12), borderSide: BorderSide(color: targetState ? Colors.red.shade700 : const Color(0xFF2E7D32), width: 1.5)),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: Colors.grey.shade300),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(
+                      color: targetState
+                          ? Colors.red.shade700
+                          : const Color(0xFF2E7D32),
+                      width: 1.5,
+                    ),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 12,
+                  ),
                 ),
               ),
             ],
@@ -298,15 +428,25 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(dialogCtx),
-            child: Text(isBangla ? 'বাতিল' : 'Cancel', style: GoogleFonts.outfit(color: Colors.grey.shade700, fontWeight: FontWeight.w600)),
+            child: Text(
+              isBangla ? 'বাতিল' : 'Cancel',
+              style: GoogleFonts.outfit(
+                color: Colors.grey.shade700,
+                fontWeight: FontWeight.w600,
+              ),
+            ),
           ),
           ElevatedButton(
             style: ElevatedButton.styleFrom(
-              backgroundColor: targetState ? Colors.red.shade700 : const Color(0xFF2E7D32),
+              backgroundColor: targetState
+                  ? Colors.red.shade700
+                  : const Color(0xFF2E7D32),
               foregroundColor: Colors.white,
               elevation: 0,
               padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             onPressed: () async {
               final reason = reasonController.text.trim();
@@ -323,26 +463,42 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   SnackBar(
                     content: Row(
                       children: [
-                        Icon(targetState ? Icons.block_rounded : Icons.check_circle_rounded, color: Colors.white, size: 18),
+                        Icon(
+                          targetState
+                              ? Icons.block_rounded
+                              : Icons.check_circle_rounded,
+                          color: Colors.white,
+                          size: 18,
+                        ),
                         const SizedBox(width: 8),
                         Expanded(
                           child: Text(
                             targetState
-                                ? (isBangla ? '${user.name} এর অ্যাকাউন্ট স্থগিত করা হয়েছে ($reason)' : '${user.name} suspended: "$reason"')
-                                : (isBangla ? '${user.name} এর স্থগিতাদেশ প্রত্যাহার করা হয়েছে ($reason)' : '${user.name} unsuspended: "$reason"'),
-                            style: GoogleFonts.outfit(fontWeight: FontWeight.w500),
+                                ? (isBangla
+                                      ? '${user.name} এর অ্যাকাউন্ট স্থগিত করা হয়েছে ($reason)'
+                                      : '${user.name} suspended: "$reason"')
+                                : (isBangla
+                                      ? '${user.name} এর স্থগিতাদেশ প্রত্যাহার করা হয়েছে ($reason)'
+                                      : '${user.name} unsuspended: "$reason"'),
+                            style: GoogleFonts.outfit(
+                              fontWeight: FontWeight.w500,
+                            ),
                           ),
                         ),
                       ],
                     ),
-                    backgroundColor: targetState ? Colors.red.shade700 : const Color(0xFF2E7D32),
+                    backgroundColor: targetState
+                        ? Colors.red.shade700
+                        : const Color(0xFF2E7D32),
                     behavior: SnackBarBehavior.floating,
                   ),
                 );
               }
             },
             child: Text(
-              targetState ? (isBangla ? 'স্থগিত নিশ্চিত করুন' : 'Confirm Suspension') : (isBangla ? 'সক্রিয় করুন' : 'Confirm Reactivation'),
+              targetState
+                  ? (isBangla ? 'স্থগিত নিশ্চিত করুন' : 'Confirm Suspension')
+                  : (isBangla ? 'সক্রিয় করুন' : 'Confirm Reactivation'),
               style: GoogleFonts.outfit(fontWeight: FontWeight.bold),
             ),
           ),
@@ -351,13 +507,20 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  void _showUserDetailsDialog(BuildContext context, AdminUserModel user, bool isBangla) {
+  void _showUserDetailsDialog(
+    BuildContext context,
+    AdminUserModel user,
+    bool isBangla,
+  ) {
     showDialog(
       context: context,
       builder: (dialogCtx) => AlertDialog(
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 12),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 24,
+          vertical: 12,
+        ),
         actionsPadding: const EdgeInsets.fromLTRB(24, 12, 24, 20),
         title: Row(
           children: [
@@ -401,17 +564,37 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               children: [
                 const Divider(),
                 const SizedBox(height: 8),
-                _buildModalDetailRow(Icons.phone_android_rounded, isBangla ? 'ফোন নম্বর' : 'Phone', user.phone, onCopy: () => _copyToClipboard(user.phone, 'Phone')),
+                _buildModalDetailRow(
+                  Icons.phone_android_rounded,
+                  isBangla ? 'ফোন নম্বর' : 'Phone',
+                  user.phone,
+                  onCopy: () => _copyToClipboard(user.phone, 'Phone'),
+                ),
                 if (user.email != null && user.email!.isNotEmpty)
-                  _buildModalDetailRow(Icons.email_outlined, isBangla ? 'ইমেইল' : 'Email', user.email!, onCopy: () => _copyToClipboard(user.email!, 'Email')),
+                  _buildModalDetailRow(
+                    Icons.email_outlined,
+                    isBangla ? 'ইমেইল' : 'Email',
+                    user.email!,
+                    onCopy: () => _copyToClipboard(user.email!, 'Email'),
+                  ),
                 if (user.district != null && user.district!.isNotEmpty)
-                  _buildModalDetailRow(Icons.location_on_outlined, isBangla ? 'জেলা' : 'District', user.district!),
+                  _buildModalDetailRow(
+                    Icons.location_on_outlined,
+                    isBangla ? 'জেলা' : 'District',
+                    user.district!,
+                  ),
                 if (user.nid != null && user.nid!.isNotEmpty)
-                  _buildModalDetailRow(Icons.badge_outlined, isBangla ? 'এনআইডি নম্বর' : 'National ID', user.nid!),
+                  _buildModalDetailRow(
+                    Icons.badge_outlined,
+                    isBangla ? 'এনআইডি নম্বর' : 'National ID',
+                    user.nid!,
+                  ),
                 _buildModalDetailRow(
                   Icons.account_balance_wallet_outlined,
                   isBangla ? 'ব্যালেন্স' : 'Wallet Balance',
-                  isBangla ? BanglaTextRenderer.formatTaka(user.walletBalance) : '৳${user.walletBalance.toStringAsFixed(2)}',
+                  isBangla
+                      ? BanglaTextRenderer.formatTaka(user.walletBalance)
+                      : '৳${user.walletBalance.toStringAsFixed(2)}',
                 ),
                 _buildModalDetailRow(
                   Icons.star_rounded,
@@ -422,7 +605,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   Icons.calendar_today_rounded,
                   isBangla ? 'যোগদানের তারিখ' : 'Member Since',
                   user.createdAt != null
-                      ? DateFormat('dd MMM yyyy, hh:mm a').format(user.createdAt!)
+                      ? DateFormat(
+                          'dd MMM yyyy, hh:mm a',
+                        ).format(user.createdAt!)
                       : 'N/A',
                 ),
                 const SizedBox(height: 12),
@@ -445,16 +630,25 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               Navigator.pop(dialogCtx);
               _showVerifyDialog(context, user, isBangla);
             },
-            icon: Icon(user.isVerified ? Icons.pending_actions_rounded : Icons.check_circle_outline, size: 18),
+            icon: Icon(
+              user.isVerified
+                  ? Icons.pending_actions_rounded
+                  : Icons.check_circle_outline,
+              size: 18,
+            ),
             label: Text(
               user.isVerified
                   ? (isBangla ? 'যাচাইকরণ প্রত্যাহার' : 'Revoke Verification')
                   : (isBangla ? 'কেওয়াইসি অনুমোদন করুন' : 'Approve KYC'),
             ),
             style: ElevatedButton.styleFrom(
-              backgroundColor: user.isVerified ? Colors.amber.shade800 : const Color(0xFF2E7D32),
+              backgroundColor: user.isVerified
+                  ? Colors.amber.shade800
+                  : const Color(0xFF2E7D32),
               foregroundColor: Colors.white,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
           OutlinedButton.icon(
@@ -462,16 +656,27 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               Navigator.pop(dialogCtx);
               _showBanDialog(context, user, isBangla);
             },
-            icon: Icon(user.isBanned ? Icons.lock_open_rounded : Icons.block_rounded, size: 18),
+            icon: Icon(
+              user.isBanned ? Icons.lock_open_rounded : Icons.block_rounded,
+              size: 18,
+            ),
             label: Text(
               user.isBanned
                   ? (isBangla ? 'স্থগিতাদেশ প্রত্যাহার' : 'Unban Account')
                   : (isBangla ? 'অ্যাকাউন্ট স্থগিত করুন' : 'Suspend Account'),
             ),
             style: OutlinedButton.styleFrom(
-              foregroundColor: user.isBanned ? const Color(0xFF2E7D32) : Colors.red.shade700,
-              side: BorderSide(color: user.isBanned ? const Color(0xFF2E7D32) : Colors.red.shade300),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              foregroundColor: user.isBanned
+                  ? const Color(0xFF2E7D32)
+                  : Colors.red.shade700,
+              side: BorderSide(
+                color: user.isBanned
+                    ? const Color(0xFF2E7D32)
+                    : Colors.red.shade300,
+              ),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
         ],
@@ -479,7 +684,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
     );
   }
 
-  Widget _buildModalDetailRow(IconData icon, String label, String value, {VoidCallback? onCopy}) {
+  Widget _buildModalDetailRow(
+    IconData icon,
+    String label,
+    String value, {
+    VoidCallback? onCopy,
+  }) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Row(
@@ -488,17 +698,28 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           const SizedBox(width: 12),
           Text(
             '$label: ',
-            style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade600),
+            style: GoogleFonts.outfit(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
           ),
           Expanded(
             child: Text(
               value,
-              style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF0F172A)),
+              style: GoogleFonts.outfit(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: const Color(0xFF0F172A),
+              ),
             ),
           ),
           if (onCopy != null)
             IconButton(
-              icon: Icon(Icons.copy_rounded, size: 16, color: Colors.grey.shade600),
+              icon: Icon(
+                Icons.copy_rounded,
+                size: 16,
+                color: Colors.grey.shade600,
+              ),
               constraints: const BoxConstraints(),
               padding: const EdgeInsets.all(4),
               onPressed: onCopy,
@@ -521,7 +742,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       backgroundColor: const Color(0xFFF8F9FA),
       body: RefreshIndicator(
         color: const Color(0xFF2E7D32),
-        onRefresh: () => userProvider.fetchUsers(token: authProvider.token, isRefresh: true),
+        onRefresh: () =>
+            userProvider.fetchUsers(token: authProvider.token, isRefresh: true),
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 24.0, vertical: 24.0),
@@ -562,7 +784,12 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                       separatorBuilder: (_, __) => const SizedBox(height: 14),
                       itemBuilder: (context, index) {
                         final user = users[index];
-                        return _buildUserCard(context, user, userProvider, isBangla);
+                        return _buildUserCard(
+                          context,
+                          user,
+                          userProvider,
+                          isBangla,
+                        );
                       },
                     ),
 
@@ -584,7 +811,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   // ─── Header ─────────────────────────────────────────────────────────────────
 
-  Widget _buildHeader(BuildContext context, AdminUserProvider provider, bool isBangla) {
+  Widget _buildHeader(
+    BuildContext context,
+    AdminUserProvider provider,
+    bool isBangla,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
@@ -593,7 +824,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(
-                isBangla ? 'ব্যবহারকারী ডিরেক্টরি ও ব্যবস্থাপনা' : 'User Directory & Management',
+                isBangla
+                    ? 'ব্যবহারকারী ডিরেক্টরি ও ব্যবস্থাপনা'
+                    : 'User Directory & Management',
                 style: GoogleFonts.outfit(
                   fontSize: 26,
                   fontWeight: FontWeight.bold,
@@ -606,7 +839,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 isBangla
                     ? 'কৃষক, ক্রেতা ও অ্যাডমিন অ্যাকাউন্ট ফিল্টারিং, যাচাইকরণ ও নিয়ন্ত্রণ'
                     : 'Search, filter, audit, verify KYC, and manage platform participants',
-                style: GoogleFonts.outfit(fontSize: 14, color: Colors.grey.shade600),
+                style: GoogleFonts.outfit(
+                  fontSize: 14,
+                  color: Colors.grey.shade600,
+                ),
               ),
             ],
           ),
@@ -617,16 +853,26 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             _searchController.text = 'Rafiq';
             provider.applyFarmerVerifiedCurlFilter();
           },
-          icon: const Icon(Icons.flash_on_rounded, size: 16, color: Color(0xFF2E7D32)),
+          icon: const Icon(
+            Icons.flash_on_rounded,
+            size: 16,
+            color: Color(0xFF2E7D32),
+          ),
           label: Text(
             isBangla ? 'কৃষক ফিল্টার (Curl)' : 'Preset: Rafiq (Farmer)',
-            style: GoogleFonts.outfit(fontSize: 13, fontWeight: FontWeight.w600, color: const Color(0xFF2E7D32)),
+            style: GoogleFonts.outfit(
+              fontSize: 13,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF2E7D32),
+            ),
           ),
           style: OutlinedButton.styleFrom(
             side: const BorderSide(color: Color(0xFF81C784)),
             backgroundColor: const Color(0xFFE8F5E9),
             padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
           ),
         ),
       ],
@@ -635,7 +881,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
   // ─── Filter Bar ─────────────────────────────────────────────────────────────
 
-  Widget _buildFilterBar(BuildContext context, AdminUserProvider provider, bool isBangla) {
+  Widget _buildFilterBar(
+    BuildContext context,
+    AdminUserProvider provider,
+    bool isBangla,
+  ) {
     return Container(
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
@@ -660,9 +910,18 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 child: TextField(
                   controller: _searchController,
                   decoration: InputDecoration(
-                    hintText: isBangla ? 'নাম, ফোন বা জেলা দিয়ে অনুসন্ধান করুন...' : 'Search by name, phone, email, or district...',
-                    hintStyle: GoogleFonts.outfit(color: Colors.grey.shade400, fontSize: 14),
-                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF2E7D32), size: 22),
+                    hintText: isBangla
+                        ? 'নাম, ফোন বা জেলা দিয়ে অনুসন্ধান করুন...'
+                        : 'Search by name, phone, email, or district...',
+                    hintStyle: GoogleFonts.outfit(
+                      color: Colors.grey.shade400,
+                      fontSize: 14,
+                    ),
+                    prefixIcon: const Icon(
+                      Icons.search_rounded,
+                      color: Color(0xFF2E7D32),
+                      size: 22,
+                    ),
                     suffixIcon: _searchController.text.isNotEmpty
                         ? IconButton(
                             icon: const Icon(Icons.close_rounded, size: 18),
@@ -684,9 +943,15 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     ),
                     focusedBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12),
-                      borderSide: const BorderSide(color: Color(0xFF2E7D32), width: 1.5),
+                      borderSide: const BorderSide(
+                        color: Color(0xFF2E7D32),
+                        width: 1.5,
+                      ),
                     ),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 12,
+                    ),
                   ),
                   onSubmitted: (val) => provider.setSearch(val),
                   onChanged: (val) {
@@ -701,8 +966,13 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   backgroundColor: const Color(0xFF2E7D32),
                   foregroundColor: Colors.white,
                   elevation: 0,
-                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 20,
+                    vertical: 14,
+                  ),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 child: Text(
                   isBangla ? 'খুঁজুন' : 'Search',
@@ -723,10 +993,24 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   label: isBangla ? 'ভূমিকা' : 'Role',
                   value: provider.role,
                   items: [
-                    DropdownMenuItem(value: null, child: Text(isBangla ? 'সকল ভূমিকা' : 'All Roles')),
-                    DropdownMenuItem(value: 'farmer', child: Text(isBangla ? 'কৃষক (Farmer)' : 'Farmers Only')),
-                    DropdownMenuItem(value: 'buyer', child: Text(isBangla ? 'ক্রেতা (Buyer)' : 'Buyers Only')),
-                    DropdownMenuItem(value: 'admin', child: Text(isBangla ? 'অ্যাডমিন (Admin)' : 'Admins Only')),
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text(isBangla ? 'সকল ভূমিকা' : 'All Roles'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'farmer',
+                      child: Text(isBangla ? 'কৃষক (Farmer)' : 'Farmers Only'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'buyer',
+                      child: Text(isBangla ? 'ক্রেতা (Buyer)' : 'Buyers Only'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'admin',
+                      child: Text(
+                        isBangla ? 'অ্যাডমিন (Admin)' : 'Admins Only',
+                      ),
+                    ),
                   ],
                   onChanged: (v) => provider.setRole(v),
                 ),
@@ -737,9 +1021,24 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   label: isBangla ? 'কেওয়াইসি' : 'Verification',
                   value: provider.isVerified,
                   items: [
-                    DropdownMenuItem(value: null, child: Text(isBangla ? 'সকল কেওয়াইসি' : 'All Verification')),
-                    DropdownMenuItem(value: true, child: Text(isBangla ? 'যাচাইকৃত (Verified)' : 'Verified Only')),
-                    DropdownMenuItem(value: false, child: Text(isBangla ? 'অপেক্ষমাণ (Pending)' : 'Pending KYC')),
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text(
+                        isBangla ? 'সকল কেওয়াইসি' : 'All Verification',
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: true,
+                      child: Text(
+                        isBangla ? 'যাচাইকৃত (Verified)' : 'Verified Only',
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: false,
+                      child: Text(
+                        isBangla ? 'অপেক্ষমাণ (Pending)' : 'Pending KYC',
+                      ),
+                    ),
                   ],
                   onChanged: (v) => provider.setVerified(v),
                 ),
@@ -750,9 +1049,22 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   label: isBangla ? 'স্ট্যাটাস' : 'Status',
                   value: provider.isBanned,
                   items: [
-                    DropdownMenuItem(value: null, child: Text(isBangla ? 'সকল স্ট্যাটাস' : 'All Status')),
-                    DropdownMenuItem(value: false, child: Text(isBangla ? 'সক্রিয় (Active)' : 'Active Only')),
-                    DropdownMenuItem(value: true, child: Text(isBangla ? 'স্থগিত (Banned)' : 'Suspended Only')),
+                    DropdownMenuItem(
+                      value: null,
+                      child: Text(isBangla ? 'সকল স্ট্যাটাস' : 'All Status'),
+                    ),
+                    DropdownMenuItem(
+                      value: false,
+                      child: Text(
+                        isBangla ? 'সক্রিয় (Active)' : 'Active Only',
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: true,
+                      child: Text(
+                        isBangla ? 'স্থগিত (Banned)' : 'Suspended Only',
+                      ),
+                    ),
                   ],
                   onChanged: (v) => provider.setBanned(v),
                 ),
@@ -763,11 +1075,32 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                   label: isBangla ? 'সাজান' : 'Sort',
                   value: '${provider.sortBy}_${provider.sortOrder}',
                   items: [
-                    DropdownMenuItem(value: 'created_at_desc', child: Text(isBangla ? 'নতুনতম প্রথমে' : 'Newest First')),
-                    DropdownMenuItem(value: 'created_at_asc', child: Text(isBangla ? 'পুরাতনতম প্রথমে' : 'Oldest First')),
-                    DropdownMenuItem(value: 'name_asc', child: Text(isBangla ? 'নাম (A to Z)' : 'Name (A to Z)')),
-                    DropdownMenuItem(value: 'rating_desc', child: Text(isBangla ? 'সর্বোচ্চ রেটিং' : 'Highest Rating')),
-                    DropdownMenuItem(value: 'walletBalance_desc', child: Text(isBangla ? 'সর্বোচ্চ ব্যালেন্স' : 'Highest Balance')),
+                    DropdownMenuItem(
+                      value: 'created_at_desc',
+                      child: Text(isBangla ? 'নতুনতম প্রথমে' : 'Newest First'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'created_at_asc',
+                      child: Text(
+                        isBangla ? 'পুরাতনতম প্রথমে' : 'Oldest First',
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'name_asc',
+                      child: Text(isBangla ? 'নাম (A to Z)' : 'Name (A to Z)'),
+                    ),
+                    DropdownMenuItem(
+                      value: 'rating_desc',
+                      child: Text(
+                        isBangla ? 'সর্বোচ্চ রেটিং' : 'Highest Rating',
+                      ),
+                    ),
+                    DropdownMenuItem(
+                      value: 'walletBalance_desc',
+                      child: Text(
+                        isBangla ? 'সর্বোচ্চ ব্যালেন্স' : 'Highest Balance',
+                      ),
+                    ),
                   ],
                   onChanged: (v) {
                     if (v != null) {
@@ -804,7 +1137,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           value: value,
           isDense: true,
           icon: const Icon(Icons.arrow_drop_down, color: Color(0xFF2E7D32)),
-          style: GoogleFonts.outfit(color: const Color(0xFF0F172A), fontSize: 13, fontWeight: FontWeight.w500),
+          style: GoogleFonts.outfit(
+            color: const Color(0xFF0F172A),
+            fontSize: 13,
+            fontWeight: FontWeight.w500,
+          ),
           items: items,
           onChanged: onChanged,
         ),
@@ -822,7 +1159,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       children: [
         Text(
           isBangla ? 'প্রয়োগকৃত ফিল্টার:' : 'Active Filters:',
-          style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.w600, color: Colors.grey.shade600),
+          style: GoogleFonts.outfit(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: Colors.grey.shade600,
+          ),
         ),
         if (provider.search.isNotEmpty)
           _buildPill('Search: "${provider.search}"', () {
@@ -830,11 +1171,20 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             provider.setSearch('');
           }),
         if (provider.role != null)
-          _buildPill('Role: ${provider.role!.toUpperCase()}', () => provider.setRole(null)),
+          _buildPill(
+            'Role: ${provider.role!.toUpperCase()}',
+            () => provider.setRole(null),
+          ),
         if (provider.isVerified != null)
-          _buildPill(provider.isVerified! ? 'Verified Only' : 'Pending KYC', () => provider.setVerified(null)),
+          _buildPill(
+            provider.isVerified! ? 'Verified Only' : 'Pending KYC',
+            () => provider.setVerified(null),
+          ),
         if (provider.isBanned != null)
-          _buildPill(provider.isBanned! ? 'Suspended' : 'Active Only', () => provider.setBanned(null)),
+          _buildPill(
+            provider.isBanned! ? 'Suspended' : 'Active Only',
+            () => provider.setBanned(null),
+          ),
         TextButton(
           onPressed: () {
             _searchController.clear();
@@ -846,7 +1196,10 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           ),
           child: Text(
             isBangla ? 'সমস্ত ফিল্টার সাফ করুন' : 'Clear All Filters',
-            style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold),
+            style: GoogleFonts.outfit(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+            ),
           ),
         ),
       ],
@@ -866,13 +1219,21 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         children: [
           Text(
             label,
-            style: GoogleFonts.outfit(fontSize: 11, fontWeight: FontWeight.w600, color: const Color(0xFF2E7D32)),
+            style: GoogleFonts.outfit(
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              color: const Color(0xFF2E7D32),
+            ),
           ),
           const SizedBox(width: 2),
           InkWell(
             onTap: onRemove,
             borderRadius: BorderRadius.circular(10),
-            child: const Icon(Icons.close_rounded, size: 14, color: Color(0xFF2E7D32)),
+            child: const Icon(
+              Icons.close_rounded,
+              size: 14,
+              color: Color(0xFF2E7D32),
+            ),
           ),
         ],
       ),
@@ -960,7 +1321,8 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                             ),
                             _buildRoleBadge(user.role, isBangla),
                             _buildVerificationBadge(user.isVerified, isBangla),
-                            if (user.isBanned) _buildBanBadge(user.isBanned, isBangla),
+                            if (user.isBanned)
+                              _buildBanBadge(user.isBanned, isBangla),
                           ],
                         ),
                         const SizedBox(height: 6),
@@ -968,13 +1330,30 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           spacing: 16,
                           runSpacing: 4,
                           children: [
-                            _buildDetailChip(Icons.phone_outlined, user.phone, onCopy: () => _copyToClipboard(user.phone, 'Phone')),
-                            if (user.district != null && user.district!.isNotEmpty)
-                              _buildDetailChip(Icons.location_on_outlined, user.district!),
-                            _buildDetailChip(Icons.star_rounded, '${user.rating.toStringAsFixed(1)} ★', color: const Color(0xFFD97706)),
+                            _buildDetailChip(
+                              Icons.phone_outlined,
+                              user.phone,
+                              onCopy: () =>
+                                  _copyToClipboard(user.phone, 'Phone'),
+                            ),
+                            if (user.district != null &&
+                                user.district!.isNotEmpty)
+                              _buildDetailChip(
+                                Icons.location_on_outlined,
+                                user.district!,
+                              ),
+                            _buildDetailChip(
+                              Icons.star_rounded,
+                              '${user.rating.toStringAsFixed(1)} ★',
+                              color: const Color(0xFFD97706),
+                            ),
                             _buildDetailChip(
                               Icons.account_balance_wallet_outlined,
-                              isBangla ? BanglaTextRenderer.formatTaka(user.walletBalance) : '৳${user.walletBalance.toStringAsFixed(2)}',
+                              isBangla
+                                  ? BanglaTextRenderer.formatTaka(
+                                      user.walletBalance,
+                                    )
+                                  : '৳${user.walletBalance.toStringAsFixed(2)}',
                               color: const Color(0xFF2E7D32),
                             ),
                           ],
@@ -990,23 +1369,37 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 children: [
                   if (!user.isVerified)
                     OutlinedButton.icon(
-                      onPressed: () => _showVerifyDialog(context, user, isBangla),
+                      onPressed: () =>
+                          _showVerifyDialog(context, user, isBangla),
                       icon: const Icon(Icons.check_circle_outline, size: 16),
                       label: Text(
                         isBangla ? 'অনুমোদন' : 'Verify KYC',
-                        style: GoogleFonts.outfit(fontSize: 12, fontWeight: FontWeight.bold),
+                        style: GoogleFonts.outfit(
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: const Color(0xFF2E7D32),
                         side: const BorderSide(color: Color(0xFF2E7D32)),
-                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 12,
+                          vertical: 8,
+                        ),
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(10),
+                        ),
                       ),
                     ),
                   const SizedBox(width: 8),
                   PopupMenuButton<String>(
-                    icon: Icon(Icons.more_vert_rounded, color: Colors.grey.shade600),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+                    icon: Icon(
+                      Icons.more_vert_rounded,
+                      color: Colors.grey.shade600,
+                    ),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14),
+                    ),
                     onSelected: (val) {
                       switch (val) {
                         case 'view':
@@ -1033,7 +1426,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           children: [
                             const Icon(Icons.visibility_outlined, size: 18),
                             const SizedBox(width: 10),
-                            Text(isBangla ? 'সম্পূর্ণ প্রোফাইল দেখুন' : 'View Full Details'),
+                            Text(
+                              isBangla
+                                  ? 'সম্পূর্ণ প্রোফাইল দেখুন'
+                                  : 'View Full Details',
+                            ),
                           ],
                         ),
                       ),
@@ -1042,15 +1439,21 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         child: Row(
                           children: [
                             Icon(
-                              user.isVerified ? Icons.pending_actions_rounded : Icons.verified_rounded,
+                              user.isVerified
+                                  ? Icons.pending_actions_rounded
+                                  : Icons.verified_rounded,
                               size: 18,
                               color: const Color(0xFF2E7D32),
                             ),
                             const SizedBox(width: 10),
                             Text(
                               user.isVerified
-                                  ? (isBangla ? 'যাচাইকরণ প্রত্যাহার' : 'Revoke Verification')
-                                  : (isBangla ? 'কেওয়াইসি অনুমোদন করুন' : 'Approve KYC'),
+                                  ? (isBangla
+                                        ? 'যাচাইকরণ প্রত্যাহার'
+                                        : 'Revoke Verification')
+                                  : (isBangla
+                                        ? 'কেওয়াইসি অনুমোদন করুন'
+                                        : 'Approve KYC'),
                             ),
                           ],
                         ),
@@ -1060,15 +1463,23 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                         child: Row(
                           children: [
                             Icon(
-                              user.isBanned ? Icons.lock_open_rounded : Icons.block_rounded,
+                              user.isBanned
+                                  ? Icons.lock_open_rounded
+                                  : Icons.block_rounded,
                               size: 18,
-                              color: user.isBanned ? const Color(0xFF2E7D32) : Colors.red,
+                              color: user.isBanned
+                                  ? const Color(0xFF2E7D32)
+                                  : Colors.red,
                             ),
                             const SizedBox(width: 10),
                             Text(
                               user.isBanned
-                                  ? (isBangla ? 'স্থগিতাদেশ প্রত্যাহার' : 'Unsuspend Account')
-                                  : (isBangla ? 'অ্যাকাউন্ট স্থগিত করুন' : 'Suspend User'),
+                                  ? (isBangla
+                                        ? 'স্থগিতাদেশ প্রত্যাহার'
+                                        : 'Unsuspend Account')
+                                  : (isBangla
+                                        ? 'অ্যাকাউন্ট স্থগিত করুন'
+                                        : 'Suspend User'),
                             ),
                           ],
                         ),
@@ -1080,7 +1491,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           children: [
                             const Icon(Icons.tag_rounded, size: 18),
                             const SizedBox(width: 10),
-                            Text(isBangla ? 'ইউজার আইডি কপি করুন' : 'Copy User ID'),
+                            Text(
+                              isBangla ? 'ইউজার আইডি কপি করুন' : 'Copy User ID',
+                            ),
                           ],
                         ),
                       ),
@@ -1090,7 +1503,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                           children: [
                             const Icon(Icons.copy_rounded, size: 18),
                             const SizedBox(width: 10),
-                            Text(isBangla ? 'ফোন নম্বর কপি করুন' : 'Copy Phone Number'),
+                            Text(
+                              isBangla
+                                  ? 'ফোন নম্বর কপি করুন'
+                                  : 'Copy Phone Number',
+                            ),
                           ],
                         ),
                       ),
@@ -1160,14 +1577,22 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                     errorBuilder: (_, __, ___) => Center(
                       child: Text(
                         initial,
-                        style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: size * 0.45, color: fg),
+                        style: GoogleFonts.outfit(
+                          fontWeight: FontWeight.bold,
+                          fontSize: size * 0.45,
+                          color: fg,
+                        ),
                       ),
                     ),
                   )
                 : Center(
                     child: Text(
                       initial,
-                      style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: size * 0.45, color: fg),
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: size * 0.45,
+                        color: fg,
+                      ),
                     ),
                   ),
           ),
@@ -1206,10 +1631,17 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
 
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
-      decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(8)),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(8),
+      ),
       child: Text(
         label,
-        style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: fg),
+        style: GoogleFonts.outfit(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: fg,
+        ),
       ),
     );
   }
@@ -1227,7 +1659,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           Icon(
             isVerified ? Icons.check_circle_rounded : Icons.pending_rounded,
             size: 12,
-            color: isVerified ? const Color(0xFF2E7D32) : const Color(0xFFD97706),
+            color: isVerified
+                ? const Color(0xFF2E7D32)
+                : const Color(0xFFD97706),
           ),
           const SizedBox(width: 4),
           Text(
@@ -1237,7 +1671,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
             style: GoogleFonts.outfit(
               fontSize: 10,
               fontWeight: FontWeight.bold,
-              color: isVerified ? const Color(0xFF2E7D32) : const Color(0xFFD97706),
+              color: isVerified
+                  ? const Color(0xFF2E7D32)
+                  : const Color(0xFFD97706),
             ),
           ),
         ],
@@ -1255,12 +1691,21 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       ),
       child: Text(
         isBangla ? 'স্থগিত' : 'BANNED',
-        style: GoogleFonts.outfit(fontSize: 10, fontWeight: FontWeight.bold, color: const Color(0xFFE11D48)),
+        style: GoogleFonts.outfit(
+          fontSize: 10,
+          fontWeight: FontWeight.bold,
+          color: const Color(0xFFE11D48),
+        ),
       ),
     );
   }
 
-  Widget _buildDetailChip(IconData icon, String text, {Color? color, VoidCallback? onCopy}) {
+  Widget _buildDetailChip(
+    IconData icon,
+    String text, {
+    Color? color,
+    VoidCallback? onCopy,
+  }) {
     final effectiveColor = color ?? Colors.grey.shade600;
     return InkWell(
       onTap: onCopy,
@@ -1272,7 +1717,11 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           const SizedBox(width: 4),
           Text(
             text,
-            style: GoogleFonts.outfit(fontSize: 12, color: effectiveColor, fontWeight: FontWeight.w500),
+            style: GoogleFonts.outfit(
+              fontSize: 12,
+              color: effectiveColor,
+              fontWeight: FontWeight.w500,
+            ),
           ),
         ],
       ),
@@ -1287,7 +1736,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
       children: [
         IconButton(
           icon: const Icon(Icons.chevron_left_rounded),
-          onPressed: provider.page > 1 ? () => provider.setPage(provider.page - 1) : null,
+          onPressed: provider.page > 1
+              ? () => provider.setPage(provider.page - 1)
+              : null,
         ),
         const SizedBox(width: 8),
         for (int p = 1; p <= provider.totalPages; p++)
@@ -1301,17 +1752,23 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
                 height: 36,
                 alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color: provider.page == p ? const Color(0xFF2E7D32) : Colors.white,
+                  color: provider.page == p
+                      ? const Color(0xFF2E7D32)
+                      : Colors.white,
                   borderRadius: BorderRadius.circular(8),
                   border: Border.all(
-                    color: provider.page == p ? const Color(0xFF2E7D32) : Colors.grey.shade300,
+                    color: provider.page == p
+                        ? const Color(0xFF2E7D32)
+                        : Colors.grey.shade300,
                   ),
                 ),
                 child: Text(
                   isBangla ? BanglaTextRenderer.toBanglaNumber(p) : '$p',
                   style: GoogleFonts.outfit(
                     fontWeight: FontWeight.bold,
-                    color: provider.page == p ? Colors.white : Colors.grey.shade700,
+                    color: provider.page == p
+                        ? Colors.white
+                        : Colors.grey.shade700,
                   ),
                 ),
               ),
@@ -1320,7 +1777,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
         const SizedBox(width: 8),
         IconButton(
           icon: const Icon(Icons.chevron_right_rounded),
-          onPressed: provider.page < provider.totalPages ? () => provider.setPage(provider.page + 1) : null,
+          onPressed: provider.page < provider.totalPages
+              ? () => provider.setPage(provider.page + 1)
+              : null,
         ),
       ],
     );
@@ -1342,15 +1801,24 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
           Icon(Icons.search_off_rounded, size: 54, color: Colors.grey.shade400),
           const SizedBox(height: 16),
           Text(
-            isBangla ? 'কোনো ব্যবহারকারী পাওয়া যায়নি' : 'No users match your criteria',
-            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold, color: const Color(0xFF0F172A)),
+            isBangla
+                ? 'কোনো ব্যবহারকারী পাওয়া যায়নি'
+                : 'No users match your criteria',
+            style: GoogleFonts.outfit(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: const Color(0xFF0F172A),
+            ),
           ),
           const SizedBox(height: 6),
           Text(
             isBangla
                 ? 'আপনার ফিল্টার বা অনুসন্ধান শব্দ পরিবর্তন করে আবার চেষ্টা করুন'
                 : 'Try adjusting your search query, role filter, or verification status',
-            style: GoogleFonts.outfit(fontSize: 13, color: Colors.grey.shade600),
+            style: GoogleFonts.outfit(
+              fontSize: 13,
+              color: Colors.grey.shade600,
+            ),
           ),
           const SizedBox(height: 20),
           ElevatedButton(
@@ -1362,7 +1830,9 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               backgroundColor: const Color(0xFF2E7D32),
               foregroundColor: Colors.white,
               elevation: 0,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
             child: Text(
               isBangla ? 'সকল ফিল্টার রিসেট করুন' : 'Reset All Filters',
@@ -1390,16 +1860,27 @@ class _UserManagementScreenState extends State<UserManagementScreen> {
               Container(
                 width: 50,
                 height: 50,
-                decoration: BoxDecoration(color: Colors.grey.shade100, shape: BoxShape.circle),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  shape: BoxShape.circle,
+                ),
               ),
               const SizedBox(width: 16),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Container(width: 140, height: 16, color: Colors.grey.shade100),
+                    Container(
+                      width: 140,
+                      height: 16,
+                      color: Colors.grey.shade100,
+                    ),
                     const SizedBox(height: 8),
-                    Container(width: 220, height: 12, color: Colors.grey.shade100),
+                    Container(
+                      width: 220,
+                      height: 12,
+                      color: Colors.grey.shade100,
+                    ),
                   ],
                 ),
               ),
