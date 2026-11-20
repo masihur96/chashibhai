@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../features/account/presentation/state/app_state_provider.dart';
 import '../../features/account/presentation/views/profile_screen.dart';
 import '../../features/account/presentation/views/settings_screen.dart';
+import '../../features/buyer/presentation/views/negotiations_list_screen.dart';
 import '../../features/auth/presentation/providers/auth_provider.dart';
 import '../../features/auth/presentation/views/login_screen.dart';
 import '../models/models.dart';
@@ -109,6 +110,14 @@ class AppDrawer extends StatelessWidget {
             leading: const Icon(Icons.shopping_bag_outlined),
             title: Text('orders'.tr(languageCode)),
             onTap: () => Navigator.pop(context),
+          ),
+          ListTile(
+            leading: const Icon(Icons.handshake_outlined),
+            title: const Text('Negotiations'),
+            onTap: () {
+              Navigator.pop(context);
+              Navigator.push(context, MaterialPageRoute(builder: (_) => const NegotiationsListScreen()));
+            },
           ),
           ListTile(
             leading: const Icon(Icons.account_balance_wallet_outlined),

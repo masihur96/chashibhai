@@ -18,6 +18,7 @@ import './post_demand_screen.dart';
 import './my_demands_screen.dart';
 import './category_products_screen.dart';
 import './notification_screen.dart';
+import './negotiations_list_screen.dart';
 import '../../../group/presentation/views/groups_list_screen.dart';
 import '../../../group/presentation/views/group_detail_screen.dart';
 import '../../../../core/utils/localization.dart';
@@ -1480,6 +1481,13 @@ class _HomeTabState extends State<_HomeTab> {
                   activeColor: Colors.white,
                   backgroundColor: Colors.white24,
                   inactiveColor: Colors.white70,
+                ),
+                IconButton(
+                  icon: const Icon(Icons.handshake_outlined, color: Colors.white),
+                  tooltip: 'My Negotiations',
+                  onPressed: () {
+                    Navigator.push(context, MaterialPageRoute(builder: (context) => const NegotiationsListScreen()));
+                  },
                 ),
                 const SizedBox(width: 4),
                 Stack(

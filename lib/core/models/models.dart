@@ -319,6 +319,15 @@ class Negotiation {
   final String buyerId;
   final String farmerId;
   final NegotiationStatus status;
+  final double? offerPrice;
+  final double? counterPrice;
+  final String? productName;
+  final String? productImageUrl;
+  final String? farmerName;
+  final String? buyerName;
+  final String? message;
+  final DateTime? createdAt;
+  final DateTime? updatedAt;
 
   Negotiation({
     required this.id,
@@ -326,7 +335,140 @@ class Negotiation {
     required this.buyerId,
     required this.farmerId,
     required this.status,
+    this.offerPrice,
+    this.counterPrice,
+    this.productName,
+    this.productImageUrl,
+    this.farmerName,
+    this.buyerName,
+    this.message,
+    this.createdAt,
+    this.updatedAt,
   });
+
+  Negotiation copyWith({
+    String? id,
+    String? productId,
+    String? buyerId,
+    String? farmerId,
+    NegotiationStatus? status,
+    double? offerPrice,
+    double? counterPrice,
+    String? productName,
+    String? productImageUrl,
+    String? farmerName,
+    String? buyerName,
+    String? message,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+  }) {
+    return Negotiation(
+      id: id ?? this.id,
+      productId: productId ?? this.productId,
+      buyerId: buyerId ?? this.buyerId,
+      farmerId: farmerId ?? this.farmerId,
+      status: status ?? this.status,
+      offerPrice: offerPrice ?? this.offerPrice,
+      counterPrice: counterPrice ?? this.counterPrice,
+      productName: productName ?? this.productName,
+      productImageUrl: productImageUrl ?? this.productImageUrl,
+      farmerName: farmerName ?? this.farmerName,
+      buyerName: buyerName ?? this.buyerName,
+      message: message ?? this.message,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+    );
+  }
+
+  factory Negotiation.fromJson(Map<String, dynamic> json) {
+    NegotiationStatus parseStatus(dynamic val) {
+      switch (val?.toString().toLowerCase()) {
+        case 'accepted': return NegotiationStatus.accepted;
+        case 'rejected': return NegotiationStatus.rejected;
+        case 'countered': return NegotiationStatus.countered;
+        default: return NegotiationStatus.pending;
+      }
+    }
+
+    double? parseDouble(dynamic val) {
+      if (val == null) return null;
+      if (val is num) return val.toDouble();
+      return double.tryParse(val.toString());
+    }
+
+    DateTime? parseDate(dynamic val) {
+      if (val == null) return null;
+      return DateTime.tryParse(val.toString());
+    }
+
+    // Extract nested product info
+    String? productName;
+    String? productImageUrl;
+    final productMap = json['product'];
+    if (productMap is Map<String, dynamic>) {
+      productName = productMap['productName']?.toString() ??
+          productMap['product_name']?.toString() ??
+          productMap['name']?.toString();
+      productImageUrl = productMap['imageUrl']?.toString() ??
+          productMap['image_url']?.toString() ??
+          productMap['image']?.toString();
+    }
+    productName ??= json['productName']?.toString() ?? json['product_name']?.toString();
+    productImageUrl ??= json['productImageUrl']?.toString() ?? json['product_image_url']?.toString();
+
+    // Extract nested farmer info
+    String? farmerName;
+    final farmerMap = json['farmer'] ?? json['seller'];
+    if (farmerMap is Map<String, dynamic>) {
+      farmerName = farmerMap['name']?.toString() ??
+          farmerMap['fullName']?.toString() ??
+          farmerMap['phone']?.toString();
+    }
+    farmerName ??= json['farmerName']?.toString() ?? json['farmer_name']?.toString();
+
+    // Extract nested buyer info
+    String? buyerName;
+    final buyerMap = json['buyer'];
+    if (buyerMap is Map<String, dynamic>) {
+      buyerName = buyerMap['name']?.toString() ??
+          buyerMap['fullName']?.toString() ??
+          buyerMap['phone']?.toString();
+    }
+    buyerName ??= json['buyerName']?.toString() ?? json['buyer_name']?.toString();
+
+    return Negotiation(
+      id: (json['id'] ?? json['_id'] ?? 'n_${DateTime.now().millisecondsSinceEpoch}').toString(),
+      productId: (json['productId'] ?? json['product_id'] ??
+          (productMap is Map ? productMap['id'] : '') ?? '').toString(),
+      buyerId: (json['buyerId'] ?? json['buyer_id'] ?? json['userId'] ?? '').toString(),
+      farmerId: (json['farmerId'] ?? json['farmer_id'] ?? '').toString(),
+      status: parseStatus(json['status']),
+      offerPrice: parseDouble(json['offerPrice'] ?? json['offer_price'] ?? json['price'] ?? json['amount']),
+      counterPrice: parseDouble(json['counterPrice'] ?? json['counter_price'] ?? json['counterOffer']),
+      productName: productName,
+      productImageUrl: productImageUrl,
+      farmerName: farmerName,
+      buyerName: buyerName,
+      message: json['message']?.toString() ?? json['note']?.toString(),
+      createdAt: parseDate(json['createdAt'] ?? json['created_at']),
+      updatedAt: parseDate(json['updatedAt'] ?? json['updated_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'productId': productId,
+    'product_id': productId,
+    'buyerId': buyerId,
+    'buyer_id': buyerId,
+    'farmerId': farmerId,
+    'farmer_id': farmerId,
+    'status': status.name,
+    if (offerPrice != null) 'offerPrice': offerPrice,
+    if (counterPrice != null) 'counterPrice': counterPrice,
+    if (message != null) 'message': message,
+    if (createdAt != null) 'createdAt': createdAt!.toUtc().toIso8601String(),
+  };
 }
 
 class NegotiationOffer {

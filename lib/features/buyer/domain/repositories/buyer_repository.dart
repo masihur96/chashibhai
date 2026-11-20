@@ -48,4 +48,8 @@ abstract class BuyerRepository {
     required String productId,
     String? token,
   });
+
+  Future<List<Negotiation>> getMyNegotiations({
+    String? token,
+  });
 }

@@ -141,6 +141,13 @@ class MockBuyerRepository implements BuyerRepository {
   }) async {
     return [];
   }
+
+  @override
+  Future<List<Negotiation>> getMyNegotiations({
+    String? token,
+  }) async {
+    return [];
+  }
 }
 
 void main() {

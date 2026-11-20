@@ -133,6 +133,29 @@ class TestMockBuyerRepository implements BuyerRepository {
       ),
     ];
   }
+
+  @override
+  Future<List<Negotiation>> getMyNegotiations({
+    String? token,
+  }) async {
+    return [
+      Negotiation(
+        id: 'neg_test_1',
+        productId: 'p3',
+        productName: 'Vine Ripened Tomatoes',
+        productImageUrl: 'assets/images/tomato.png',
+        farmerId: 'f1',
+        farmerName: 'Farmer Abdul',
+        buyerId: '395e2439-099f-41da-a739-019f5a08e504',
+        buyerName: 'Masihur Rahman',
+        offerPrice: 72.0,
+        counterPrice: 75.0,
+        status: NegotiationStatus.countered,
+        message: 'Can we settle on ৳72?',
+        createdAt: DateTime.now().subtract(const Duration(hours: 1)),
+      ),
+    ];
+  }
 }
 
 void main() {
