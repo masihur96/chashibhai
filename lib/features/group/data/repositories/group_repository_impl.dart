@@ -64,4 +64,32 @@ class GroupRepositoryImpl implements GroupRepository {
   }) {
     return _remoteDataSource.leaveGroup(groupId: groupId, token: token);
   }
+
+  @override
+  Future<List<GroupMessage>> getGroupMessages({
+    required String groupId,
+    int page = 1,
+    int limit = 50,
+    String? token,
+  }) {
+    return _remoteDataSource.getGroupMessages(
+      groupId: groupId,
+      page: page,
+      limit: limit,
+      token: token,
+    );
+  }
+
+  @override
+  Future<GroupMessage> sendGroupMessage({
+    required String groupId,
+    required String message,
+    String? token,
+  }) {
+    return _remoteDataSource.sendGroupMessage(
+      groupId: groupId,
+      message: message,
+      token: token,
+    );
+  }
 }

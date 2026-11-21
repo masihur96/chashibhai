@@ -40,6 +40,19 @@ abstract class GroupRemoteDataSource {
     required String groupId,
     String? token,
   });
+
+  Future<List<GroupMessage>> getGroupMessages({
+    required String groupId,
+    int page = 1,
+    int limit = 50,
+    String? token,
+  });
+
+  Future<GroupMessage> sendGroupMessage({
+    required String groupId,
+    required String message,
+    String? token,
+  });
 }
 
 class GroupRemoteDataSourceImpl implements GroupRemoteDataSource {
@@ -712,6 +725,258 @@ class GroupRemoteDataSourceImpl implements GroupRemoteDataSource {
       if (stopwatch.isRunning) stopwatch.stop();
       rethrow;
     }
+  }
+
+  @override
+  Future<List<GroupMessage>> getGroupMessages({
+    required String groupId,
+    int page = 1,
+    int limit = 50,
+    String? token,
+  }) async {
+    final baseUri = Uri.parse(ApiPath.groupMessages(groupId));
+    final uri = baseUri.replace(queryParameters: {
+      'page': '$page',
+      'limit': '$limit',
+    });
+    final stopwatch = Stopwatch()..start();
+
+    String resolvedToken = await _resolveToken(token);
+    final headers = {
+      'accept': '*/*',
+      'Authorization': 'Bearer $resolvedToken',
+    };
+
+    ApiLogger.logRequest(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+    );
+
+    try {
+      var httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      var httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      var responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 401) {
+        final newToken = await _attemptRefreshToken();
+        if (newToken != null && newToken.isNotEmpty) {
+          resolvedToken = newToken;
+          headers['Authorization'] = 'Bearer $resolvedToken';
+          stopwatch.reset();
+          stopwatch.start();
+
+          httpRequest = await _client.getUrl(uri);
+          headers.forEach((key, value) => httpRequest.headers.set(key, value));
+          httpResponse = await httpRequest.close();
+          stopwatch.stop();
+          responseBody = await httpResponse.transform(utf8.decoder).join();
+          try {
+            decodedJson = jsonDecode(responseBody);
+          } catch (_) {
+            decodedJson = null;
+          }
+        }
+      }
+
+      if (httpResponse.statusCode == 200) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        return _parseMessagesList(decodedJson, groupId);
+      } else {
+        final errorMsg = decodedJson is Map && decodedJson['error'] != null
+            ? decodedJson['error'].toString()
+            : decodedJson is Map && decodedJson['message'] != null
+                ? decodedJson['message'].toString()
+                : 'Failed to fetch messages (Status: ${httpResponse.statusCode})';
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMsg,
+          body: responseBody,
+        );
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      if (stopwatch.isRunning) stopwatch.stop();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<GroupMessage> sendGroupMessage({
+    required String groupId,
+    required String message,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.groupMessages(groupId);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    String resolvedToken = await _resolveToken(token);
+    final requestPayload = {
+      'message': message.trim(),
+    };
+
+    final headers = {
+      'accept': '*/*',
+      'Authorization': 'Bearer $resolvedToken',
+      'Content-Type': 'application/json',
+    };
+
+    ApiLogger.logRequest(
+      method: 'POST',
+      uri: uri,
+      headers: headers,
+      body: requestPayload,
+    );
+
+    try {
+      var httpRequest = await _client.postUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final bodyBytes = utf8.encode(jsonEncode(requestPayload));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
+
+      var httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      var responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 401) {
+        final newToken = await _attemptRefreshToken();
+        if (newToken != null && newToken.isNotEmpty) {
+          resolvedToken = newToken;
+          headers['Authorization'] = 'Bearer $resolvedToken';
+          stopwatch.reset();
+          stopwatch.start();
+
+          httpRequest = await _client.postUrl(uri);
+          headers.forEach((key, value) => httpRequest.headers.set(key, value));
+          httpRequest.contentLength = bodyBytes.length;
+          httpRequest.add(bodyBytes);
+
+          httpResponse = await httpRequest.close();
+          stopwatch.stop();
+          responseBody = await httpResponse.transform(utf8.decoder).join();
+          try {
+            decodedJson = jsonDecode(responseBody);
+          } catch (_) {
+            decodedJson = null;
+          }
+        }
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        if (decodedJson is Map<String, dynamic>) {
+          if (decodedJson['data'] is Map<String, dynamic>) {
+            return GroupMessage.fromJson(decodedJson['data'] as Map<String, dynamic>);
+          }
+          if (decodedJson['message'] is Map<String, dynamic>) {
+            return GroupMessage.fromJson(decodedJson['message'] as Map<String, dynamic>);
+          }
+          if (decodedJson.containsKey('id') || decodedJson.containsKey('message')) {
+            return GroupMessage.fromJson(decodedJson);
+          }
+        }
+
+        return GroupMessage(
+          id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
+          groupId: groupId,
+          senderId: '',
+          senderName: 'You',
+          message: message,
+          createdAt: DateTime.now(),
+        );
+      } else {
+        final errorMsg = decodedJson is Map && decodedJson['error'] != null
+            ? decodedJson['error'].toString()
+            : decodedJson is Map && decodedJson['message'] != null
+                ? decodedJson['message'].toString()
+                : 'Failed to send message (Status: ${httpResponse.statusCode})';
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMsg,
+          body: responseBody,
+        );
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      if (stopwatch.isRunning) stopwatch.stop();
+      rethrow;
+    }
+  }
+
+  List<GroupMessage> _parseMessagesList(dynamic decodedJson, String fallbackGroupId) {
+    if (decodedJson == null) return [];
+    if (decodedJson is List) {
+      return decodedJson
+          .map((e) => e is Map<String, dynamic> ? GroupMessage.fromJson(e) : null)
+          .whereType<GroupMessage>()
+          .toList();
+    }
+    if (decodedJson is Map<String, dynamic>) {
+      if (decodedJson['data'] is List) {
+        return (decodedJson['data'] as List)
+            .map((e) => e is Map<String, dynamic> ? GroupMessage.fromJson(e) : null)
+            .whereType<GroupMessage>()
+            .toList();
+      }
+      if (decodedJson['messages'] is List) {
+        return (decodedJson['messages'] as List)
+            .map((e) => e is Map<String, dynamic> ? GroupMessage.fromJson(e) : null)
+            .whereType<GroupMessage>()
+            .toList();
+      }
+      if (decodedJson['data'] is Map && decodedJson['data']['messages'] is List) {
+        return (decodedJson['data']['messages'] as List)
+            .map((e) => e is Map<String, dynamic> ? GroupMessage.fromJson(e) : null)
+            .whereType<GroupMessage>()
+            .toList();
+      }
+      if (decodedJson['data'] is Map<String, dynamic>) {
+        return [GroupMessage.fromJson(decodedJson['data'] as Map<String, dynamic>)];
+      }
+    }
+    return [];
   }
 
   List<BuyingGroup> _parseGroupsList(dynamic decodedJson) {

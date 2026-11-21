@@ -974,12 +974,31 @@ class GroupMessage {
       }
     }
 
+    final senderObj = json['sender'] is Map<String, dynamic> ? json['sender'] as Map<String, dynamic> : null;
+    final userObj = json['user'] is Map<String, dynamic> ? json['user'] as Map<String, dynamic> : null;
+
+    final sId = json['senderId']?.toString() ??
+        json['sender_id']?.toString() ??
+        json['userId']?.toString() ??
+        json['user_id']?.toString() ??
+        senderObj?['id']?.toString() ??
+        userObj?['id']?.toString() ??
+        '';
+
+    final sName = json['senderName']?.toString() ??
+        json['sender_name']?.toString() ??
+        json['userName']?.toString() ??
+        json['user_name']?.toString() ??
+        senderObj?['name']?.toString() ??
+        userObj?['name']?.toString() ??
+        'User';
+
     return GroupMessage(
-      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? 'msg_${DateTime.now().millisecondsSinceEpoch}',
       groupId: json['groupId']?.toString() ?? json['group_id']?.toString() ?? '',
-      senderId: json['senderId']?.toString() ?? json['sender_id']?.toString() ?? '',
-      senderName: json['senderName']?.toString() ?? json['sender_name']?.toString() ?? 'User',
-      message: json['message']?.toString() ?? json['content']?.toString() ?? '',
+      senderId: sId,
+      senderName: sName,
+      message: json['message']?.toString() ?? json['content']?.toString() ?? json['text']?.toString() ?? '',
       createdAt: parseDate(json['createdAt'] ?? json['created_at']),
     );
   }

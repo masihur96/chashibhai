@@ -33,4 +33,17 @@ abstract class GroupRepository {
     required String groupId,
     String? token,
   });
+
+  Future<List<GroupMessage>> getGroupMessages({
+    required String groupId,
+    int page = 1,
+    int limit = 50,
+    String? token,
+  });
+
+  Future<GroupMessage> sendGroupMessage({
+    required String groupId,
+    required String message,
+    String? token,
+  });
 }

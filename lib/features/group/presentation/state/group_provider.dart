@@ -8,10 +8,12 @@ import '../../data/repositories/group_repository_impl.dart';
 import '../../domain/repositories/group_repository.dart';
 import '../../domain/usecases/create_group_usecase.dart';
 import '../../domain/usecases/get_group_by_id_usecase.dart';
+import '../../domain/usecases/get_group_messages_usecase.dart';
 import '../../domain/usecases/get_groups_usecase.dart';
 import '../../domain/usecases/get_my_groups_usecase.dart';
 import '../../domain/usecases/join_group_usecase.dart';
 import '../../domain/usecases/leave_group_usecase.dart';
+import '../../domain/usecases/send_group_message_usecase.dart';
 
 class GroupProvider extends ChangeNotifier {
   final GroupRepository _groupRepository;
@@ -21,6 +23,8 @@ class GroupProvider extends ChangeNotifier {
   final GetGroupByIdUseCase _getGroupByIdUseCase;
   final JoinGroupUseCase _joinGroupUseCase;
   final LeaveGroupUseCase _leaveGroupUseCase;
+  final GetGroupMessagesUseCase _getGroupMessagesUseCase;
+  final SendGroupMessageUseCase _sendGroupMessageUseCase;
 
   /// Default cURL bearer token for group operations
   static const String defaultGroupCurlToken =
@@ -29,6 +33,7 @@ class GroupProvider extends ChangeNotifier {
   List<BuyingGroup> _groups = [];
   List<BuyingGroup> _myGroups = [];
   BuyingGroup? _currentGroupDetails;
+  final Map<String, List<GroupMessage>> _groupMessages = {};
 
   bool _isCreatingGroup = false;
   String? _createGroupError;
@@ -48,6 +53,12 @@ class GroupProvider extends ChangeNotifier {
   bool _isLeavingGroup = false;
   String? _leaveGroupError;
 
+  bool _isLoadingMessages = false;
+  String? _messagesError;
+
+  bool _isSendingMessage = false;
+  String? _sendMessageError;
+
   GroupProvider({
     GroupRepository? groupRepository,
     CreateGroupUseCase? createGroupUseCase,
@@ -56,6 +67,8 @@ class GroupProvider extends ChangeNotifier {
     GetGroupByIdUseCase? getGroupByIdUseCase,
     JoinGroupUseCase? joinGroupUseCase,
     LeaveGroupUseCase? leaveGroupUseCase,
+    GetGroupMessagesUseCase? getGroupMessagesUseCase,
+    SendGroupMessageUseCase? sendGroupMessageUseCase,
   })  : _groupRepository = groupRepository ?? GroupRepositoryImpl(),
         _createGroupUseCase = createGroupUseCase ??
             CreateGroupUseCase(groupRepository ?? GroupRepositoryImpl()),
@@ -68,7 +81,11 @@ class GroupProvider extends ChangeNotifier {
         _joinGroupUseCase = joinGroupUseCase ??
             JoinGroupUseCase(groupRepository ?? GroupRepositoryImpl()),
         _leaveGroupUseCase = leaveGroupUseCase ??
-            LeaveGroupUseCase(groupRepository ?? GroupRepositoryImpl());
+            LeaveGroupUseCase(groupRepository ?? GroupRepositoryImpl()),
+        _getGroupMessagesUseCase = getGroupMessagesUseCase ??
+            GetGroupMessagesUseCase(groupRepository ?? GroupRepositoryImpl()),
+        _sendGroupMessageUseCase = sendGroupMessageUseCase ??
+            SendGroupMessageUseCase(groupRepository ?? GroupRepositoryImpl());
 
   // Getters
   GroupRepository get groupRepository => _groupRepository;
@@ -93,6 +110,19 @@ class GroupProvider extends ChangeNotifier {
 
   bool get isLeavingGroup => _isLeavingGroup;
   String? get leaveGroupError => _leaveGroupError;
+
+  bool get isLoadingMessages => _isLoadingMessages;
+  String? get messagesError => _messagesError;
+
+  bool get isSendingMessage => _isSendingMessage;
+  String? get sendMessageError => _sendMessageError;
+
+  List<GroupMessage> getMessagesForGroup(String groupId) {
+    if (_groupMessages.containsKey(groupId)) {
+      return _groupMessages[groupId]!;
+    }
+    return getGroupById(groupId)?.messages ?? [];
+  }
 
   void setGroups(List<BuyingGroup> groups) {
     _groups = groups;
@@ -350,6 +380,97 @@ class GroupProvider extends ChangeNotifier {
       rethrow;
     } finally {
       _isLeavingGroup = false;
+      notifyListeners();
+    }
+  }
+
+  /// Fetches group chat messages using GET /api/v1/groups/:id/messages?page=1&limit=50
+  Future<List<GroupMessage>> fetchGroupMessages(
+    String groupId, {
+    int page = 1,
+    int limit = 50,
+    String? token,
+  }) async {
+    _isLoadingMessages = true;
+    _messagesError = null;
+    notifyListeners();
+
+    try {
+      final msgs = await _getGroupMessagesUseCase(
+        groupId: groupId,
+        page: page,
+        limit: limit,
+        token: token ?? defaultGroupCurlToken,
+      );
+
+      _groupMessages[groupId] = msgs;
+
+      // Update in BuyingGroup
+      final grp = getGroupById(groupId);
+      if (grp != null) {
+        final updatedGrp = grp.copyWith(messages: msgs);
+        final gIdx = _groups.indexWhere((g) => g.id == groupId);
+        if (gIdx >= 0) _groups[gIdx] = updatedGrp;
+        final mgIdx = _myGroups.indexWhere((g) => g.id == groupId);
+        if (mgIdx >= 0) _myGroups[mgIdx] = updatedGrp;
+        if (_currentGroupDetails?.id == groupId) _currentGroupDetails = updatedGrp;
+      }
+
+      return msgs;
+    } catch (e) {
+      _messagesError = e.toString().replaceFirst('Exception: ', '');
+      debugPrint('⚠️ [GROUP_PROVIDER] fetchGroupMessages error: $e');
+      return _groupMessages[groupId] ?? [];
+    } finally {
+      _isLoadingMessages = false;
+      notifyListeners();
+    }
+  }
+
+  /// Sends a group chat message using POST /api/v1/groups/:id/messages
+  Future<GroupMessage> sendGroupMessage(
+    String groupId,
+    String message, {
+    String? token,
+  }) async {
+    _isSendingMessage = true;
+    _sendMessageError = null;
+    notifyListeners();
+
+    try {
+      final newMsg = await _sendGroupMessageUseCase(
+        groupId: groupId,
+        message: message,
+        token: token ?? defaultGroupCurlToken,
+      );
+
+      // Append locally
+      final currentList = _groupMessages[groupId] ?? getGroupById(groupId)?.messages ?? [];
+      _groupMessages[groupId] = [...currentList, newMsg];
+
+      // Update in BuyingGroup
+      final grp = getGroupById(groupId);
+      if (grp != null) {
+        final updatedGrp = grp.copyWith(messages: _groupMessages[groupId]!);
+        final gIdx = _groups.indexWhere((g) => g.id == groupId);
+        if (gIdx >= 0) _groups[gIdx] = updatedGrp;
+        final mgIdx = _myGroups.indexWhere((g) => g.id == groupId);
+        if (mgIdx >= 0) _myGroups[mgIdx] = updatedGrp;
+        if (_currentGroupDetails?.id == groupId) _currentGroupDetails = updatedGrp;
+      }
+      notifyListeners();
+
+      // Silently refresh to ensure server timestamp and sender details sync
+      try {
+        await fetchGroupMessages(groupId, page: 1, limit: 50, token: token ?? defaultGroupCurlToken);
+      } catch (_) {}
+
+      return newMsg;
+    } catch (e) {
+      _sendMessageError = e.toString().replaceFirst('Exception: ', '');
+      rethrow;
+    } finally {
+      _isSendingMessage = false;
       notifyListeners();
     }
   }
