@@ -72,6 +72,10 @@ class ApiPath {
 
   // Groups
   static String get groups => '$baseUrl/groups';
+  static String get myGroups => '$baseUrl/groups/my';
+  static String groupById(String id) => '$baseUrl/groups/$id';
+  static String joinGroup(String id) => '$baseUrl/groups/$id/join';
+  static String leaveGroup(String id) => '$baseUrl/groups/$id/leave';
 
   // Reviews
   static String get reviews => '$baseUrl/reviews';

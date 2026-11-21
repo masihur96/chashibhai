@@ -963,6 +963,35 @@ class GroupMessage {
     required this.message,
     required this.createdAt,
   });
+
+  factory GroupMessage.fromJson(Map<String, dynamic> json) {
+    DateTime parseDate(dynamic val) {
+      if (val == null) return DateTime.now();
+      try {
+        return DateTime.parse(val.toString());
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+
+    return GroupMessage(
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? '',
+      groupId: json['groupId']?.toString() ?? json['group_id']?.toString() ?? '',
+      senderId: json['senderId']?.toString() ?? json['sender_id']?.toString() ?? '',
+      senderName: json['senderName']?.toString() ?? json['sender_name']?.toString() ?? 'User',
+      message: json['message']?.toString() ?? json['content']?.toString() ?? '',
+      createdAt: parseDate(json['createdAt'] ?? json['created_at']),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'groupId': groupId,
+    'senderId': senderId,
+    'senderName': senderName,
+    'message': message,
+    'createdAt': createdAt.toIso8601String(),
+  };
 }
 
 class GroupMember {
@@ -979,6 +1008,38 @@ class GroupMember {
     this.isPaid = false,
     this.phone = '',
   });
+
+  factory GroupMember.fromJson(Map<String, dynamic> json) {
+    final userObj = json['user'] is Map<String, dynamic> ? json['user'] as Map<String, dynamic> : null;
+    final qty = (json['contributionQuantity'] ??
+            json['contribution_quantity'] ??
+            json['quantity'] ??
+            json['contribution'] ??
+            0)
+        .toDouble();
+
+    return GroupMember(
+      userId: json['userId']?.toString() ??
+          json['user_id']?.toString() ??
+          userObj?['id']?.toString() ??
+          json['id']?.toString() ??
+          '',
+      name: json['name']?.toString() ??
+          userObj?['name']?.toString() ??
+          'Member',
+      contributionQuantity: qty,
+      isPaid: json['isPaid'] == true || json['is_paid'] == true,
+      phone: json['phone']?.toString() ?? userObj?['phone']?.toString() ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'userId': userId,
+    'name': name,
+    'contributionQuantity': contributionQuantity,
+    'isPaid': isPaid,
+    'phone': phone,
+  };
 }
 
 class BuyingGroup {
@@ -996,6 +1057,8 @@ class BuyingGroup {
   final DateTime expiryDate;
   final GroupBuyStatus status;
   final String? linkedDemandId;
+  final double initialContribution;
+  final DateTime? createdAt;
 
   BuyingGroup({
     required this.id,
@@ -1012,6 +1075,8 @@ class BuyingGroup {
     required this.expiryDate,
     this.status = GroupBuyStatus.open,
     this.linkedDemandId,
+    this.initialContribution = 0.0,
+    this.createdAt,
   });
 
   BuyingGroup copyWith({
@@ -1020,6 +1085,8 @@ class BuyingGroup {
     double? filledQuantity,
     GroupBuyStatus? status,
     String? linkedDemandId,
+    double? initialContribution,
+    DateTime? createdAt,
   }) {
     return BuyingGroup(
       id: id,
@@ -1036,8 +1103,93 @@ class BuyingGroup {
       expiryDate: expiryDate,
       status: status ?? this.status,
       linkedDemandId: linkedDemandId ?? this.linkedDemandId,
+      initialContribution: initialContribution ?? this.initialContribution,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
+
+  factory BuyingGroup.fromJson(Map<String, dynamic> json) {
+    GroupBuyStatus parseStatus(dynamic val) {
+      final str = val?.toString().toLowerCase();
+      if (str == 'active') return GroupBuyStatus.active;
+      if (str == 'fulfilled') return GroupBuyStatus.fulfilled;
+      if (str == 'cancelled' || str == 'canceled') return GroupBuyStatus.cancelled;
+      return GroupBuyStatus.open;
+    }
+
+    DateTime parseDate(dynamic val, DateTime fallback) {
+      if (val == null) return fallback;
+      try {
+        return DateTime.parse(val.toString());
+      } catch (_) {
+        return fallback;
+      }
+    }
+
+    final membersList = (json['members'] as List?)
+            ?.map((m) => m is Map<String, dynamic> ? GroupMember.fromJson(m) : null)
+            .whereType<GroupMember>()
+            .toList() ??
+        [];
+
+    final messagesList = (json['messages'] as List?)
+            ?.map((m) => m is Map<String, dynamic> ? GroupMessage.fromJson(m) : null)
+            .whereType<GroupMessage>()
+            .toList() ??
+        [];
+
+    final createdByVal = json['createdBy'] ?? json['created_by'] ?? json['creatorId'] ?? json['userId'];
+    final creatorId = createdByVal is Map ? (createdByVal['id']?.toString() ?? '') : (createdByVal?.toString() ?? '');
+
+    final targetQty = (json['targetQuantity'] ?? json['target_quantity'] ?? 0).toDouble();
+    final initContrib = (json['initialContribution'] ?? json['initial_contribution'] ?? 0).toDouble();
+    final filledQty = (json['filledQuantity'] ??
+            json['filled_quantity'] ??
+            json['currentQuantity'] ??
+            json['current_quantity'] ??
+            (initContrib > 0 ? initContrib : 0))
+        .toDouble();
+
+    return BuyingGroup(
+      id: json['id']?.toString() ?? json['_id']?.toString() ?? json['groupId']?.toString() ?? '',
+      name: json['name']?.toString() ?? '',
+      productName: json['productName']?.toString() ?? json['product_name']?.toString() ?? '',
+      category: json['category']?.toString() ?? 'Vegetables',
+      targetQuantity: targetQty,
+      filledQuantity: filledQty,
+      pricePerKg: (json['pricePerKg'] ?? json['price_per_kg'] ?? 0).toDouble(),
+      deliveryLocation: json['deliveryLocation']?.toString() ?? json['delivery_location']?.toString() ?? '',
+      createdBy: creatorId,
+      members: membersList,
+      messages: messagesList,
+      expiryDate: parseDate(json['expiryDate'] ?? json['expiry_date'], DateTime.now().add(const Duration(days: 7))),
+      status: parseStatus(json['status']),
+      linkedDemandId: json['linkedDemandId']?.toString() ?? json['linked_demand_id']?.toString(),
+      initialContribution: initContrib,
+      createdAt: json['createdAt'] != null || json['created_at'] != null
+          ? parseDate(json['createdAt'] ?? json['created_at'], DateTime.now())
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'name': name,
+    'productName': productName,
+    'category': category,
+    'targetQuantity': targetQuantity,
+    'filledQuantity': filledQuantity,
+    'pricePerKg': pricePerKg,
+    'deliveryLocation': deliveryLocation,
+    'createdBy': createdBy,
+    'members': members.map((m) => m.toJson()).toList(),
+    'messages': messages.map((m) => m.toJson()).toList(),
+    'expiryDate': expiryDate.toIso8601String(),
+    'status': status.name,
+    'linkedDemandId': linkedDemandId,
+    'initialContribution': initialContribution,
+    'createdAt': createdAt?.toIso8601String(),
+  };
 }
 
 class Review {
