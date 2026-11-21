@@ -25,15 +25,25 @@ class _MyDemandsScreenState extends State<MyDemandsScreen> {
   String _selectedStatus = 'Active';
 
   @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      context.read<DemandProvider>().fetchMyDemands();
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
     final languageCode = context.watch<AppStateProvider>().appLocale;
     final currentUser = context.watch<AuthProvider>().currentUser;
-    final allDemands = context.watch<DemandProvider>().demands;
+    final demandProvider = context.watch<DemandProvider>();
 
-    // Filter demands for current user
-    final myDemands = allDemands
-        .where((d) => d.buyerId == currentUser?.id)
-        .toList();
+    // Use fetched myDemands or fallback to filtered demands
+    final myDemands = demandProvider.myDemands.isNotEmpty
+        ? demandProvider.myDemands
+        : demandProvider.demands
+            .where((d) => currentUser != null && d.buyerId == currentUser.id)
+            .toList();
 
     // Apply search and status filters
     final filteredDemands = myDemands.where((demand) {
@@ -90,7 +100,7 @@ class _MyDemandsScreenState extends State<MyDemandsScreen> {
                     icon: Icons.assignment_outlined,
                     title: 'No demands found',
                     subtitle:
-                        'Try adjusting your filters or create a new demand.',
+                        'You haven\'t posted any purchase demands yet. Post your requirements to start receiving offers from farmers across Bangladesh.',
                   )
                 : ListView.builder(
                     padding: const EdgeInsets.symmetric(horizontal: 16),

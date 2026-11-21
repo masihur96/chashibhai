@@ -8,6 +8,7 @@ import '../state/demand_provider.dart';
 import '../../../wallet/presentation/state/order_provider.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
 import '../../../../core/models/models.dart';
+import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import 'package:intl/intl.dart';
 
 class NotificationScreen extends StatelessWidget {
@@ -36,17 +37,15 @@ class NotificationScreen extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       body: notifications.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.notifications_off_outlined, size: 80, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'No new notifications',
-                    style: TextStyle(color: Colors.grey, fontSize: 16),
-                  ),
-                ],
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: EmptyStateWidget(
+                  icon: Icons.notifications_off_outlined,
+                  title: 'No Notifications Yet',
+                  subtitle:
+                      'You are all caught up! Updates regarding your orders, bids, demand offers, and price alerts will appear here.',
+                ),
               ),
             )
           : ListView.separated(

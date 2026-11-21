@@ -219,11 +219,13 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Farmer Abdul',
-                      style: TextStyle(
+                    Text(
+                      widget.product.farmerId.isNotEmpty
+                          ? 'Verified Farmer (${widget.product.farmerId.length > 8 ? widget.product.farmerId.substring(0, 8) : widget.product.farmerId})'
+                          : 'Verified Farmer',
+                      style: const TextStyle(
                         fontWeight: FontWeight.bold,
-                        fontSize: 16,
+                        fontSize: 15,
                       ),
                     ),
                     Row(
@@ -235,7 +237,9 @@ class _ProductDetailsScreenState extends State<ProductDetailsScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          '${averageRating.toStringAsFixed(1)} ($reviewsCount reviews)',
+                          reviewsCount > 0
+                              ? '${averageRating.toStringAsFixed(1)} ($reviewsCount reviews)'
+                              : 'No reviews yet',
                           style: const TextStyle(fontSize: 12),
                         ),
                       ],

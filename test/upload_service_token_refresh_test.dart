@@ -5,7 +5,6 @@ import 'dart:typed_data';
 
 import 'package:flutter_test/flutter_test.dart';
 import 'package:hive_flutter/hive_flutter.dart';
-import 'package:chashibhai/core/constants/api_path.dart';
 import 'package:chashibhai/core/services/token_refresh_service.dart';
 import 'package:chashibhai/core/services/upload_service.dart';
 import 'package:chashibhai/core/utils/storage_service.dart';

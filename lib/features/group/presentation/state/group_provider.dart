@@ -1,9 +1,8 @@
 import 'package:flutter/material.dart';
 import '../../../../core/models/models.dart';
-import '../../../../core/models/mock_data.dart';
 
 class GroupProvider extends ChangeNotifier {
-  List<BuyingGroup> _groups = MockData.demoGroups;
+  List<BuyingGroup> _groups = [];
 
   List<BuyingGroup> get groups => _groups;
 

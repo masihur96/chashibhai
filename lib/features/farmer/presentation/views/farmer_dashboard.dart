@@ -1392,17 +1392,35 @@ class _FarmerDashboardState extends State<FarmerDashboard>
   }
 
   Widget _noDemandsCard() => Container(
-        padding:
-            const EdgeInsets.symmetric(vertical: 32, horizontal: 16),
+        padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 20),
         decoration: BoxDecoration(
-            color: Colors.white, borderRadius: BorderRadius.circular(16)),
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: Colors.grey.shade200),
+        ),
         child: Center(
           child: Column(children: [
-            Icon(Icons.inbox_outlined, size: 38, color: Colors.grey[300]),
-            const SizedBox(height: 8),
-            Text('No recent buyer demands',
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.grey.shade50,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(Icons.campaign_outlined, size: 36, color: Colors.grey[400]),
+            ),
+            const SizedBox(height: 12),
+            Text('No Buyer Demands Found',
                 style: GoogleFonts.outfit(
-                    color: AppColors.textSecondary, fontSize: 13)),
+                    color: AppColors.textPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 4),
+            Text('There are currently no active purchase demands from buyers. Pull to refresh or check back soon.',
+                textAlign: TextAlign.center,
+                style: GoogleFonts.outfit(
+                    color: AppColors.textSecondary,
+                    fontSize: 12,
+                    height: 1.4)),
           ]),
         ),
       );

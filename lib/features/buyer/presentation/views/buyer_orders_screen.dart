@@ -4,6 +4,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../../../core/models/models.dart';
+import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import '../../../../features/order/presentation/views/order_details_screen.dart';
 import '../../../wallet/presentation/state/order_provider.dart';
 
@@ -28,21 +29,15 @@ class BuyerOrdersScreen extends StatelessWidget {
         foregroundColor: Colors.white,
       ),
       body: orders.isEmpty
-          ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(
-                    Icons.shopping_bag_outlined,
-                    size: 80,
-                    color: Colors.grey[300],
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No orders found',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
-                  ),
-                ],
+          ? const Center(
+              child: Padding(
+                padding: EdgeInsets.all(24.0),
+                child: EmptyStateWidget(
+                  icon: Icons.shopping_bag_outlined,
+                  title: 'No Orders Placed Yet',
+                  subtitle:
+                      'You haven\'t placed any orders yet. Discover fresh agricultural supplies and start purchasing directly from farmers.',
+                ),
               ),
             )
           : ListView.separated(

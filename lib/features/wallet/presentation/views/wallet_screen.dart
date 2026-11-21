@@ -1,17 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 import '../../../auth/presentation/state/auth_provider.dart';
-import '../../../buyer/presentation/state/product_provider.dart';
-import '../../../group/presentation/state/group_provider.dart';
-import '../../../buyer/presentation/state/demand_provider.dart';
 import '../state/order_provider.dart';
-import '../../../account/presentation/state/app_state_provider.dart';
-import '../../../../core/models/models.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
 
 import '../../../../core/presentation/widgets/wallet_card.dart';
 import '../../../../core/presentation/widgets/transaction_card.dart';
+import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import './deposit_screen.dart';
 import './withdraw_screen.dart';
 import './escrow_screen.dart';
@@ -85,19 +81,31 @@ class WalletScreen extends StatelessWidget {
             ),
           ),
           Expanded(
-            child: ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: transactions.length > 5 ? 5 : transactions.length, // Show up to 5 recent
-              itemBuilder: (context, index) {
-                final tx = transactions[index];
-                final shortId = tx.id.length > 6 ? tx.id.substring(0, 6) : tx.id;
-                return TransactionCard(
-                  transaction: tx,
-                  description: 'Transaction #$shortId',
-                  currencyFormat: currencyFormat,
-                );
-              },
-            ),
+            child: transactions.isEmpty
+                ? const Center(
+                    child: Padding(
+                      padding: EdgeInsets.all(24.0),
+                      child: EmptyStateWidget(
+                        icon: Icons.receipt_long_outlined,
+                        title: 'No Recent Transactions',
+                        subtitle:
+                            'Your wallet deposits, payments, and transaction history will appear here once activity begins.',
+                      ),
+                    ),
+                  )
+                : ListView.builder(
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: transactions.length > 5 ? 5 : transactions.length, // Show up to 5 recent
+                    itemBuilder: (context, index) {
+                      final tx = transactions[index];
+                      final shortId = tx.id.length > 6 ? tx.id.substring(0, 6) : tx.id;
+                      return TransactionCard(
+                        transaction: tx,
+                        description: 'Transaction #$shortId',
+                        currencyFormat: currencyFormat,
+                      );
+                    },
+                  ),
           ),
         ],
       ),

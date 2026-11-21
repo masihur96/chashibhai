@@ -7,6 +7,7 @@ import '../state/demand_provider.dart';
 import '../../../wallet/presentation/state/order_provider.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
 import '../../../../core/presentation/widgets/product_card.dart';
+import '../../../../core/presentation/widgets/empty_state_widget.dart';
 import './product_details.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -32,16 +33,15 @@ class CategoryProductsScreen extends StatelessWidget {
       ),
       body: products.isEmpty
           ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Icon(Icons.inventory_2_outlined, size: 80, color: Colors.grey[300]),
-                  const SizedBox(height: 16),
-                  Text(
-                    'No products available in this category',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 16),
-                  ),
-                ],
+              child: Padding(
+                padding: const EdgeInsets.all(24.0),
+                child: EmptyStateWidget(
+                  icon: Icons.inventory_2_outlined,
+                  title: 'No Products in this Category',
+                  subtitle: category == 'All'
+                      ? 'No agricultural supplies are listed at this time. Check back later or refresh.'
+                      : 'There are currently no products listed under "$category". Try exploring other categories.',
+                ),
               ),
             )
           : GridView.builder(

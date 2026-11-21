@@ -91,7 +91,6 @@ class _MockReviewHttpClientRequest implements HttpClientRequest {
   @override
   int contentLength = 0;
 
-  @override
   Encoding encoding = utf8;
 
   @override
@@ -110,7 +109,6 @@ class _MockReviewHttpHeaders implements HttpHeaders {
   @override
   int contentLength = 0;
 
-  @override
   Encoding encoding = utf8;
 
   @override
@@ -143,7 +141,6 @@ class _MockReviewHttpClientResponse extends Stream<List<int>>
   @override
   int contentLength = 0;
 
-  @override
   Encoding encoding = utf8;
 
   @override

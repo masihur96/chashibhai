@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import '../../../../core/models/models.dart';
-import '../../../../core/models/mock_data.dart';
 import '../../../../core/services/upload_service.dart';
 import '../../data/models/create_demand_request_model.dart';
 import '../../data/models/create_bid_request_model.dart';
@@ -19,9 +18,9 @@ import '../../domain/usecases/accept_demand_offer_usecase.dart';
 import '../../data/models/create_demand_offer_request_model.dart';
 
 class DemandProvider extends ChangeNotifier {
-  List<DemandPost> _demands = List<DemandPost>.from(MockData.demoDemands);
+  List<DemandPost> _demands = [];
   List<DemandPost> _myDemands = [];
-  List<Bid> _bids = List<Bid>.from(MockData.demoBids);
+  List<Bid> _bids = [];
   List<Bid> _myBids = [];
   final Map<String, List<DemandOffer>> _demandOffersMap = {};
   final Map<String, DemandPost> _demandDetailsMap = {};
@@ -201,15 +200,6 @@ class DemandProvider extends ChangeNotifier {
     } catch (e) {
       _isProductBidsLoading = false;
       _productBidsError = e.toString().replaceFirst('Exception: ', '');
-
-      // Offline / fallback handling: if no bids present for this product, load matching demoBids
-      final existingForProduct = _bids.where((b) => b.productId == productId).toList();
-      if (existingForProduct.isEmpty) {
-        final mockBids = MockData.demoBids.where((b) => b.productId == productId).toList();
-        if (mockBids.isNotEmpty) {
-          _bids.insertAll(0, mockBids);
-        }
-      }
       notifyListeners();
       rethrow;
     }
@@ -350,9 +340,6 @@ class DemandProvider extends ChangeNotifier {
       return fetched;
     } catch (e) {
       _demandsError = e.toString().replaceFirst('Exception: ', '');
-      if (_demands.isEmpty) {
-        _demands = List<DemandPost>.from(MockData.demoDemands);
-      }
       return _demands;
     } finally {
       _isDemandsLoading = false;

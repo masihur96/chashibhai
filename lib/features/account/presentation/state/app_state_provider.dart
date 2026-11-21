@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/models/models.dart';
-import '../../../../core/models/mock_data.dart';
 
 class AppStateProvider extends ChangeNotifier {
   String _appLocale = 'en';
-  List<AppNotification> _notifications = MockData.demoNotifications;
+  List<AppNotification> _notifications = [];
 
   String get appLocale => _appLocale;
   bool get isBangla => _appLocale == 'bn';

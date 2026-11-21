@@ -4,7 +4,6 @@ import 'package:flutter/foundation.dart';
 import 'package:uuid/uuid.dart';
 
 import '../../../../core/models/models.dart';
-import '../../../../core/models/mock_data.dart';
 import '../../../../core/utils/storage_service.dart';
 import '../../../order/data/datasources/review_remote_data_source.dart';
 import '../../../order/data/models/create_review_request_model.dart';
@@ -16,7 +15,7 @@ class ReviewProvider with ChangeNotifier {
   final ReviewRepository _reviewRepository;
   final GetOrderReviewsUseCase _getOrderReviewsUseCase;
   final HttpClient _client;
-  final List<Review> _reviews = List.from(MockData.demoReviews);
+  final List<Review> _reviews = [];
 
   bool _isSubmitting = false;
   String? _submitError;

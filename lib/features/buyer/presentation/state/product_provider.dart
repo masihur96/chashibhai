@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import '../../../../core/models/mock_data.dart';
 import '../../../../core/models/models.dart';
 import '../../../../core/services/upload_service.dart';
 import '../../../farmer/data/models/create_product_request_model.dart';
@@ -12,7 +11,7 @@ import '../../domain/repositories/buyer_repository.dart';
 import '../../data/repositories/buyer_repository_impl.dart';
 
 class ProductProvider extends ChangeNotifier {
-  List<Product> _products = List<Product>.from(MockData.demoProducts);
+  List<Product> _products = [];
   List<Product> _myProducts = [];
   bool _isMyProductsLoading = false;
   String? _myProductsError;
@@ -146,38 +145,13 @@ class ProductProvider extends ChangeNotifier {
         } catch (_) {}
       }
 
-      if (fetched.isNotEmpty) {
-        _products = fetched;
-      }
+      _products = fetched;
       _isAvailableProductsLoading = false;
       notifyListeners();
       return _products;
     } catch (e) {
       _isAvailableProductsLoading = false;
       _availableProductsError = e.toString().replaceFirst('Exception: ', '');
-
-      // Fallback: Ensure target product ee9ac1a6-bb66-45d0-a6de-8e390702be0e is in _products
-      const targetId = 'ee9ac1a6-bb66-45d0-a6de-8e390702be0e';
-      if (!_products.any((p) => p.id == targetId)) {
-        final mockTarget = MockData.demoProducts.firstWhere(
-          (p) => p.id == targetId,
-          orElse: () => Product(
-            id: targetId,
-            farmerId: 'f1',
-            productName: 'Fresh Diamond Potatoes',
-            imageUrl: 'assets/images/potato.png',
-            quantity: 500,
-            unit: 'KG',
-            minimumPrice: 55.0,
-            tradeType: TradeType.auction,
-            startTime: DateTime.now().subtract(const Duration(hours: 4)),
-            endTime: DateTime.now().add(const Duration(days: 2, hours: 6)),
-            category: 'Vegetables',
-          ),
-        );
-        _products.insert(0, mockTarget);
-      }
-
       notifyListeners();
       return _products;
     }

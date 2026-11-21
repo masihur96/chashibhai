@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import '../../../../core/models/models.dart';
-import '../../../../core/models/mock_data.dart';
 
 class OrderProvider extends ChangeNotifier {
-  List<Order> _orders = MockData.demoOrders;
-  List<Transaction> _transactions = MockData.demoTransactions;
+  List<Order> _orders = [];
+  List<Transaction> _transactions = [];
 
   List<Order> get orders => _orders;
   List<Transaction> get transactions => _transactions;

@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
-import '../../../../core/models/mock_data.dart';
 import '../../../../core/models/models.dart';
 import '../../data/repositories/buyer_repository_impl.dart';
 import '../../domain/repositories/buyer_repository.dart';
 import '../../domain/usecases/get_my_negotiations_usecase.dart';
 
 class NegotiationProvider extends ChangeNotifier {
-  List<Negotiation> _negotiations = List<Negotiation>.from(MockData.demoNegotiations);
+  List<Negotiation> _negotiations = [];
   bool _isLoading = false;
   String? _errorMessage;
   String _selectedStatus = 'All';
@@ -71,20 +70,13 @@ class NegotiationProvider extends ChangeNotifier {
 
     try {
       final fetched = await _getMyNegotiationsUseCase(token: token);
-      if (fetched.isNotEmpty) {
-        _negotiations = fetched;
-      }
+      _negotiations = fetched;
       _isLoading = false;
       notifyListeners();
       return _negotiations;
     } catch (e) {
       _isLoading = false;
       _errorMessage = e.toString().replaceFirst('Exception: ', '');
-
-      // Offline fallback: keep mock negotiations
-      if (_negotiations.isEmpty) {
-        _negotiations = List<Negotiation>.from(MockData.demoNegotiations);
-      }
       notifyListeners();
       return _negotiations;
     }
