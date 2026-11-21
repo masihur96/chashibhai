@@ -15,6 +15,7 @@ import '../../domain/usecases/get_my_bids_usecase.dart';
 import '../../domain/usecases/submit_demand_offer_usecase.dart';
 import '../../domain/usecases/get_demand_offers_usecase.dart';
 import '../../domain/usecases/get_demand_by_id_usecase.dart';
+import '../../domain/usecases/accept_demand_offer_usecase.dart';
 import '../../data/models/create_demand_offer_request_model.dart';
 
 class DemandProvider extends ChangeNotifier {
@@ -33,6 +34,7 @@ class DemandProvider extends ChangeNotifier {
   bool _isSubmittingOffer = false;
   bool _isOffersLoading = false;
   bool _isDemandDetailsLoading = false;
+  bool _isAcceptingOffer = false;
   String? _errorMessage;
   String? _demandsError;
   String? _myDemandsError;
@@ -42,8 +44,10 @@ class DemandProvider extends ChangeNotifier {
   String? _submitOfferError;
   String? _offersError;
   String? _demandDetailsError;
+  String? _acceptOfferError;
   String? _lastLoadedProductId;
   DemandOffer? _lastSubmittedOffer;
+  AcceptDemandOfferResult? _lastAcceptedOfferResult;
   final List<DemandOffer> _myOffers = [];
 
   final CreateDemandUseCase _createDemandUseCase;
@@ -55,6 +59,7 @@ class DemandProvider extends ChangeNotifier {
   final SubmitDemandOfferUseCase _submitDemandOfferUseCase;
   final GetDemandOffersUseCase _getDemandOffersUseCase;
   final GetDemandByIdUseCase _getDemandByIdUseCase;
+  final AcceptDemandOfferUseCase _acceptDemandOfferUseCase;
   final BuyerRepository _buyerRepository;
 
   DemandProvider({
@@ -67,6 +72,7 @@ class DemandProvider extends ChangeNotifier {
     SubmitDemandOfferUseCase? submitDemandOfferUseCase,
     GetDemandOffersUseCase? getDemandOffersUseCase,
     GetDemandByIdUseCase? getDemandByIdUseCase,
+    AcceptDemandOfferUseCase? acceptDemandOfferUseCase,
     BuyerRepository? buyerRepository,
   })  : _buyerRepository = buyerRepository ?? BuyerRepositoryImpl(),
         _createDemandUseCase = createDemandUseCase ??
@@ -86,7 +92,9 @@ class DemandProvider extends ChangeNotifier {
         _getDemandOffersUseCase = getDemandOffersUseCase ??
             GetDemandOffersUseCase(buyerRepository ?? BuyerRepositoryImpl()),
         _getDemandByIdUseCase = getDemandByIdUseCase ??
-            GetDemandByIdUseCase(buyerRepository ?? BuyerRepositoryImpl());
+            GetDemandByIdUseCase(buyerRepository ?? BuyerRepositoryImpl()),
+        _acceptDemandOfferUseCase = acceptDemandOfferUseCase ??
+            AcceptDemandOfferUseCase(buyerRepository ?? BuyerRepositoryImpl());
 
   List<DemandPost> get demands => _demands;
   List<DemandPost> get myDemands => _myDemands;
@@ -117,6 +125,9 @@ class DemandProvider extends ChangeNotifier {
   String? get offersError => _offersError;
   bool get isDemandDetailsLoading => _isDemandDetailsLoading;
   String? get demandDetailsError => _demandDetailsError;
+  bool get isAcceptingOffer => _isAcceptingOffer;
+  String? get acceptOfferError => _acceptOfferError;
+  AcceptDemandOfferResult? get lastAcceptedOfferResult => _lastAcceptedOfferResult;
   DemandOffer? get lastSubmittedOffer => _lastSubmittedOffer;
   List<DemandOffer> get myOffers => List.unmodifiable(_myOffers);
   String? get lastLoadedProductId => _lastLoadedProductId;
@@ -467,6 +478,54 @@ class DemandProvider extends ChangeNotifier {
     } catch (e) {
       _isDemandDetailsLoading = false;
       _demandDetailsError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Accepts an offer on a demand post using POST /api/v1/demands/{demandId}/offers/{offerId}/accept
+  Future<AcceptDemandOfferResult> acceptDemandOffer({
+    required String demandId,
+    required String offerId,
+    String? token,
+  }) async {
+    _isAcceptingOffer = true;
+    _acceptOfferError = null;
+    notifyListeners();
+
+    try {
+      final result = await _acceptDemandOfferUseCase(
+        demandId: demandId,
+        offerId: offerId,
+        token: token,
+      );
+      _lastAcceptedOfferResult = result;
+
+      // Update cached demand status to fulfilled
+      if (_demandDetailsMap.containsKey(demandId)) {
+        _demandDetailsMap[demandId] = _demandDetailsMap[demandId]!.copyWith(
+          status: DemandStatus.fulfilled,
+        );
+      }
+      final myDemIdx = _myDemands.indexWhere((d) => d.id == demandId);
+      if (myDemIdx != -1) {
+        _myDemands[myDemIdx] = _myDemands[myDemIdx].copyWith(
+          status: DemandStatus.fulfilled,
+        );
+      }
+      final demIdx = _demands.indexWhere((d) => d.id == demandId);
+      if (demIdx != -1) {
+        _demands[demIdx] = _demands[demIdx].copyWith(
+          status: DemandStatus.fulfilled,
+        );
+      }
+
+      _isAcceptingOffer = false;
+      notifyListeners();
+      return result;
+    } catch (e) {
+      _isAcceptingOffer = false;
+      _acceptOfferError = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
       rethrow;
     }

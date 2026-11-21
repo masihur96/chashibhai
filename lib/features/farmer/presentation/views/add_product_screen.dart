@@ -639,6 +639,14 @@ class _AddProductScreenState extends State<AddProductScreen> {
         }
       }
 
+      // Synchronize latest access token in case token was refreshed during upload
+      try {
+        final latestToken = await StorageService().getAccessToken();
+        if (latestToken != null && latestToken.isNotEmpty) {
+          token = latestToken;
+        }
+      } catch (_) {}
+
       setState(() => _submissionStatus = 'Creating product listing...');
 
       // 2. Prepare effective image URLs

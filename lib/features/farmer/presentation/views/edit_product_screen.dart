@@ -427,6 +427,14 @@ class _EditProductScreenState extends State<EditProductScreen> {
         }
       }
 
+      // Synchronize latest access token in case token was refreshed during upload
+      try {
+        final latestToken = await StorageService().getAccessToken();
+        if (latestToken != null && latestToken.isNotEmpty) {
+          token = latestToken;
+        }
+      } catch (_) {}
+
       setState(() => _submissionStatus = 'Updating product on server...');
 
       // 2. Compute final image URLs list

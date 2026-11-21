@@ -240,6 +240,13 @@ class TestMockBuyerRepository implements BuyerRepository {
   }) async {
     throw UnimplementedError();
   }
+
+  @override
+  Future<AcceptDemandOfferResult> acceptDemandOffer({
+    required String demandId,
+    required String offerId,
+    String? token,
+  }) async => throw UnimplementedError();
 }
 
 void main() {

@@ -384,6 +384,14 @@ class _PostDemandScreenState extends State<PostDemandScreen> {
         }
       }
 
+      // Synchronize latest access token in case token was refreshed during upload
+      try {
+        final latestToken = await StorageService().getAccessToken();
+        if (latestToken != null && latestToken.isNotEmpty) {
+          token = latestToken;
+        }
+      } catch (_) {}
+
       setState(() => _submissionStatus = 'Publishing demand...');
 
       final qty = double.tryParse(_quantityController.text.trim()) ?? 0;

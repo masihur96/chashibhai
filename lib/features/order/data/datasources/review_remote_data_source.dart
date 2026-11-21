@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../../../configs/network/api_logger.dart';
 import '../../../../core/constants/api_path.dart';
 import '../../../../core/models/models.dart';
+import '../../../../core/services/token_refresh_service.dart';
 import '../../../../core/utils/storage_service.dart';
 import '../models/create_review_request_model.dart';
 
@@ -44,30 +45,10 @@ class ReviewRemoteDataSourceImpl implements ReviewRemoteDataSource {
 
   Future<String?> _attemptRefreshToken(String refreshToken) async {
     try {
-      final refreshUri = Uri.parse(ApiPath.refresh);
-      final req = await _client.postUrl(refreshUri);
-      req.headers.set('Content-Type', 'application/json; charset=utf-8');
-      req.headers.set('accept', '*/*');
-      req.write(jsonEncode({'refreshToken': refreshToken}));
-      final res = await req.close();
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final body = await res.transform(utf8.decoder).join();
-        final json = jsonDecode(body);
-        if (json is Map<String, dynamic>) {
-          final data =
-              json['data'] is Map<String, dynamic> ? json['data'] : json;
-          final newAccess =
-              data['accessToken'] ?? data['access_token'] ?? data['token'];
-          final newRefresh = data['refreshToken'] ?? data['refresh_token'];
-          if (newAccess != null) {
-            await StorageService().saveAuthTokens(
-              accessToken: newAccess.toString(),
-              refreshToken: newRefresh?.toString(),
-            );
-            return newAccess.toString();
-          }
-        }
-      }
+      return await TokenRefreshManager().refresh(
+        explicitRefreshToken: refreshToken,
+        client: _client,
+      );
     } catch (_) {}
     return null;
   }

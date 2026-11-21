@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:local_auth/local_auth.dart';
 
 import '../../../../core/models/models.dart';
+import '../../../../core/services/token_refresh_service.dart';
 import '../../../../core/utils/storage_service.dart';
 import '../../data/datasources/auth_remote_data_source.dart';
 import '../../data/repositories/auth_repository_impl.dart';
@@ -48,7 +49,15 @@ class AuthProvider extends ChangeNotifier {
        _logoutUseCase =
            logoutUseCase ?? LogoutUseCase(AuthRepositoryImpl()),
        _updateProfileUseCase =
-           updateProfileUseCase ?? UpdateProfileUseCase(AuthRepositoryImpl());
+           updateProfileUseCase ?? UpdateProfileUseCase(AuthRepositoryImpl()) {
+    TokenRefreshManager().addTokenListener((newAccessToken, newRefreshToken) {
+      _token = newAccessToken;
+      if (newRefreshToken != null && newRefreshToken.isNotEmpty) {
+        _refreshToken = newRefreshToken;
+      }
+      notifyListeners();
+    });
+  }
 
   // Getters
   AppUser? get currentUser => _currentUser;
@@ -74,6 +83,15 @@ class AuthProvider extends ChangeNotifier {
 
   void setBiometricEnabled(bool enabled) {
     _biometricEnabled = enabled;
+    notifyListeners();
+  }
+
+  /// Updates in-memory access and refresh tokens (e.g. after background refresh)
+  void updateTokens({required String accessToken, String? refreshToken}) {
+    _token = accessToken;
+    if (refreshToken != null && refreshToken.isNotEmpty) {
+      _refreshToken = refreshToken;
+    }
     notifyListeners();
   }
 

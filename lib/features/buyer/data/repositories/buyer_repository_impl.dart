@@ -180,4 +180,17 @@ class BuyerRepositoryImpl implements BuyerRepository {
       token: token,
     );
   }
+
+  @override
+  Future<AcceptDemandOfferResult> acceptDemandOffer({
+    required String demandId,
+    required String offerId,
+    String? token,
+  }) async {
+    return await remoteDataSource.acceptDemandOffer(
+      demandId: demandId,
+      offerId: offerId,
+      token: token,
+    );
+  }
 }

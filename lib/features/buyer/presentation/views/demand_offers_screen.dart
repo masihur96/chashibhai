@@ -756,6 +756,9 @@ class _DemandOffersScreenState extends State<DemandOffersScreen> {
     final priceDiff = callingPrice - offer.offerPrice;
     final isCheaper = priceDiff > 0.01;
     final isMoreExpensive = priceDiff < -0.01;
+    final isFulfilled = demand?.status == DemandStatus.fulfilled;
+    final lastAcceptedOfferId = context.watch<DemandProvider>().lastAcceptedOfferResult?.offerId;
+    final isThisOfferAccepted = lastAcceptedOfferId == offer.id;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -1165,19 +1168,36 @@ class _DemandOffersScreenState extends State<DemandOffersScreen> {
                     ],
                     Expanded(
                       child: ElevatedButton.icon(
-                        onPressed: () => _showAcceptOfferModal(
-                          offer: offer,
-                          demand: demand,
-                          farmerName: farmerName,
-                          phone: phone,
-                          quantity: quantity,
-                          totalPrice: totalOfferPrice,
+                        onPressed: isFulfilled
+                            ? null
+                            : () => _showAcceptOfferModal(
+                                offer: offer,
+                                demand: demand,
+                                farmerName: farmerName,
+                                phone: phone,
+                                quantity: quantity,
+                                totalPrice: totalOfferPrice,
+                              ),
+                        icon: Icon(
+                          isThisOfferAccepted
+                              ? Icons.verified_rounded
+                              : (isFulfilled
+                                  ? Icons.lock_outline_rounded
+                                  : Icons.check_circle_outline),
+                          size: 16,
                         ),
-                        icon: const Icon(Icons.check_circle_outline, size: 16),
-                        label: const Text('Accept Offer'),
+                        label: Text(
+                          isThisOfferAccepted
+                              ? 'Offer Accepted'
+                              : (isFulfilled ? 'Demand Fulfilled' : 'Accept Offer'),
+                        ),
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
+                          backgroundColor: isThisOfferAccepted
+                              ? AppColors.primary
+                              : (isFulfilled ? Colors.grey.shade300 : AppColors.primary),
+                          foregroundColor: isFulfilled && !isThisOfferAccepted
+                              ? Colors.grey.shade600
+                              : Colors.white,
                           elevation: 0,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(10),
@@ -1397,26 +1417,110 @@ class _DemandOffersScreenState extends State<DemandOffersScreen> {
     );
   }
 
-  void _confirmAcceptOffer(DemandOffer offer, String farmerName) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Row(
-          children: [
-            const Icon(Icons.check_circle_rounded, color: Colors.white),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                'Offer accepted from $farmerName! Order initiated with escrow protection.',
-                style: GoogleFonts.outfit(),
+  Future<void> _confirmAcceptOffer(DemandOffer offer, String farmerName) async {
+    final provider = context.read<DemandProvider>();
+
+    // Show loading dialog while processing acceptance
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (dialogContext) => Center(
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.1),
+                blurRadius: 16,
               ),
-            ),
-          ],
+            ],
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const CircularProgressIndicator(color: AppColors.primary),
+              const SizedBox(height: 16),
+              Text(
+                'Accepting offer & creating order...',
+                style: GoogleFonts.outfit(
+                  fontWeight: FontWeight.w600,
+                  fontSize: 14,
+                  color: AppColors.textPrimary,
+                ),
+              ),
+            ],
+          ),
         ),
-        backgroundColor: AppColors.primary,
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       ),
     );
+
+    try {
+      final result = await provider.acceptDemandOffer(
+        demandId: _effectiveDemandId,
+        offerId: offer.id,
+      );
+
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // dismiss loading dialog
+
+      // Update local state
+      setState(() {
+        if (_currentDemand != null) {
+          _currentDemand = _currentDemand!.copyWith(status: DemandStatus.fulfilled);
+        }
+      });
+      _loadData();
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  result.message.isNotEmpty
+                      ? result.message
+                      : 'Offer accepted! Order created for $farmerName.',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.primary,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      Navigator.of(context, rootNavigator: true).pop(); // dismiss loading dialog
+
+      final errMsg = e.toString().replaceFirst('Exception: ', '');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Row(
+            children: [
+              const Icon(Icons.error_outline_rounded, color: Colors.white),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Text(
+                  errMsg,
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.w500),
+                ),
+              ),
+            ],
+          ),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+          duration: const Duration(seconds: 4),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        ),
+      );
+    }
   }
 
   void _handleCallFarmer(String phone, String name) {

@@ -134,6 +134,13 @@ class FakeBuyerRepository implements BuyerRepository {
     required String demandId,
     String? token,
   }) async => throw UnimplementedError();
+
+  @override
+  Future<AcceptDemandOfferResult> acceptDemandOffer({
+    required String demandId,
+    required String offerId,
+    String? token,
+  }) async => throw UnimplementedError();
 }
 
 class FakeFarmerRepository implements FarmerRepository {

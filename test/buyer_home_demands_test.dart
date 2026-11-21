@@ -108,6 +108,21 @@ class MockBuyerRepository implements BuyerRepository {
   }
 
   @override
+  Future<AcceptDemandOfferResult> acceptDemandOffer({
+    required String demandId,
+    required String offerId,
+    String? token,
+  }) async {
+    return AcceptDemandOfferResult(
+      success: true,
+      message: 'Offer accepted successfully',
+      demandId: demandId,
+      offerId: offerId,
+      status: 'fulfilled',
+    );
+  }
+
+  @override
   Future<DemandPost> createDemand({
     required CreateDemandRequestModel request,
     String? token,

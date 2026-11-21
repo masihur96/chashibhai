@@ -82,4 +82,10 @@ abstract class BuyerRepository {
     required String demandId,
     String? token,
   });
+
+  Future<AcceptDemandOfferResult> acceptDemandOffer({
+    required String demandId,
+    required String offerId,
+    String? token,
+  });
 }

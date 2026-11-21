@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../../../configs/network/api_logger.dart';
 import '../../../../core/constants/api_path.dart';
 import '../../../../core/models/models.dart';
+import '../../../../core/services/token_refresh_service.dart';
 import '../../../../core/services/upload_service.dart';
 import '../../../../core/utils/storage_service.dart';
 import '../models/create_product_request_model.dart';
@@ -159,6 +160,35 @@ class FarmerRemoteDataSourceImpl implements FarmerRemoteDataSource {
             status: 'active',
           );
         }
+      } else if (httpResponse.statusCode == 401) {
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await addProduct(
+              request: request,
+              token: refreshedToken,
+            );
+          }
+        }
+
+        String errorMessage = 'Unauthorized or token expired';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
       } else {
         String errorMessage =
             'Failed to add product (Status code ${httpResponse.statusCode})';
@@ -468,6 +498,35 @@ class FarmerRemoteDataSourceImpl implements FarmerRemoteDataSource {
         } else {
           throw Exception('Invalid product data response');
         }
+      } else if (httpResponse.statusCode == 401) {
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await getProductById(
+              id: id,
+              token: refreshedToken,
+            );
+          }
+        }
+
+        String errorMessage = 'Unauthorized or token expired';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
       } else {
         String errorMessage =
             'Failed to fetch product (Status code ${httpResponse.statusCode})';
@@ -604,6 +663,36 @@ class FarmerRemoteDataSourceImpl implements FarmerRemoteDataSource {
             status: request.status,
           );
         }
+      } else if (httpResponse.statusCode == 401) {
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await updateProduct(
+              id: id,
+              request: request,
+              token: refreshedToken,
+            );
+          }
+        }
+
+        String errorMessage = 'Unauthorized or token expired';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'PATCH',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
       } else {
         String errorMessage =
             'Failed to update product (Status code ${httpResponse.statusCode})';
@@ -709,6 +798,35 @@ class FarmerRemoteDataSourceImpl implements FarmerRemoteDataSource {
           body: decodedJson ?? responseBody,
         );
         return true;
+      } else if (httpResponse.statusCode == 401) {
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await deleteProduct(
+              id: id,
+              token: refreshedToken,
+            );
+          }
+        }
+
+        String errorMessage = 'Unauthorized or token expired';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'DELETE',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
       } else {
         String errorMessage =
             'Failed to delete product (Status code ${httpResponse.statusCode})';
@@ -759,28 +877,10 @@ class FarmerRemoteDataSourceImpl implements FarmerRemoteDataSource {
 
   Future<String?> _attemptRefreshToken(String refreshToken) async {
     try {
-      final refreshUri = Uri.parse(ApiPath.refresh);
-      final req = await _client.postUrl(refreshUri);
-      req.headers.set('Content-Type', 'application/json; charset=utf-8');
-      req.headers.set('accept', '*/*');
-      req.write(jsonEncode({'refreshToken': refreshToken}));
-      final res = await req.close();
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final body = await res.transform(utf8.decoder).join();
-        final json = jsonDecode(body);
-        if (json is Map<String, dynamic>) {
-          final data = json['data'] is Map<String, dynamic> ? json['data'] : json;
-          final newAccess = data['accessToken'] ?? data['access_token'] ?? data['token'];
-          final newRefresh = data['refreshToken'] ?? data['refresh_token'];
-          if (newAccess != null) {
-            await StorageService().saveAuthTokens(
-              accessToken: newAccess.toString(),
-              refreshToken: newRefresh?.toString(),
-            );
-            return newAccess.toString();
-          }
-        }
-      }
+      return await TokenRefreshManager().refresh(
+        explicitRefreshToken: refreshToken,
+        client: _client,
+      );
     } catch (_) {}
     return null;
   }

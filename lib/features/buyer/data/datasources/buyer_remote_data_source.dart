@@ -4,6 +4,7 @@ import 'dart:io';
 import '../../../../configs/network/api_logger.dart';
 import '../../../../core/constants/api_path.dart';
 import '../../../../core/models/models.dart';
+import '../../../../core/services/token_refresh_service.dart';
 import '../../../../core/services/upload_service.dart';
 import '../../../../core/utils/storage_service.dart';
 import '../models/create_demand_request_model.dart';
@@ -88,6 +89,12 @@ abstract class BuyerRemoteDataSource {
     required String demandId,
     String? token,
   });
+
+  Future<AcceptDemandOfferResult> acceptDemandOffer({
+    required String demandId,
+    required String offerId,
+    String? token,
+  });
 }
 
 class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
@@ -96,7 +103,11 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
 
   /// Default fallback token from user curl specification
   static const String defaultFallbackToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTIyODY4NSwiZXhwIjoxNzk1MjI5NTg1fQ.tOmmN802nMfarpXhPLyKzrG4lhDAlptRY_8m_yWpnfw';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTIzMDQ4OCwiZXhwIjoxNzk1MjMxMzg4fQ.Bz507CiQ8S1aVUftQiGHshCt7ShDNFTZ6osiVm4_Zcw';
+
+  /// Default accept offer token from curl specification
+  static const String defaultAcceptOfferToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTIzMDQ4OCwiZXhwIjoxNzk1MjMxMzg4fQ.Bz507CiQ8S1aVUftQiGHshCt7ShDNFTZ6osiVm4_Zcw';
 
   /// Default demand offers token from curl specification
   static const String defaultDemandOffersToken =
@@ -667,28 +678,10 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
 
   Future<String?> _attemptRefreshToken(String refreshToken) async {
     try {
-      final refreshUri = Uri.parse(ApiPath.refresh);
-      final req = await _client.postUrl(refreshUri);
-      req.headers.set('Content-Type', 'application/json; charset=utf-8');
-      req.headers.set('accept', '*/*');
-      req.write(jsonEncode({'refreshToken': refreshToken}));
-      final res = await req.close();
-      if (res.statusCode == 200 || res.statusCode == 201) {
-        final body = await res.transform(utf8.decoder).join();
-        final json = jsonDecode(body);
-        if (json is Map<String, dynamic>) {
-          final data = json['data'] is Map<String, dynamic> ? json['data'] : json;
-          final newAccess = data['accessToken'] ?? data['access_token'] ?? data['token'];
-          final newRefresh = data['refreshToken'] ?? data['refresh_token'];
-          if (newAccess != null) {
-            await StorageService().saveAuthTokens(
-              accessToken: newAccess.toString(),
-              refreshToken: newRefresh?.toString(),
-            );
-            return newAccess.toString();
-          }
-        }
-      }
+      return await TokenRefreshManager().refresh(
+        explicitRefreshToken: refreshToken,
+        client: _client,
+      );
     } catch (_) {}
     return null;
   }
@@ -1912,6 +1905,154 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
       if (e is! Exception) {
         ApiLogger.logError(
           method: 'GET',
+          uri: uri,
+          duration: stopwatch.elapsed,
+          error: e,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Accepts an offer on a demand post using POST /api/v1/demands/{demandId}/offers/{offerId}/accept
+  @override
+  Future<AcceptDemandOfferResult> acceptDemandOffer({
+    required String demandId,
+    required String offerId,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.acceptDemandOffer(demandId, offerId);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    // Resolve bearer token: explicit param -> StorageService -> defaultAcceptOfferToken -> defaultFallbackToken
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      try {
+        resolvedToken = await StorageService().getAccessToken();
+      } catch (_) {}
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultAcceptOfferToken;
+    }
+
+    final headers = <String, String>{
+      'accept': '*/*',
+    };
+    if (resolvedToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $resolvedToken';
+    }
+
+    ApiLogger.logRequest(
+      method: 'POST',
+      uri: uri,
+      headers: headers,
+      body: '',
+    );
+
+    try {
+      final httpRequest = await _client.postUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+      httpRequest.write('');
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        if (decodedJson is Map<String, dynamic>) {
+          return AcceptDemandOfferResult.fromJson(decodedJson);
+        }
+        return AcceptDemandOfferResult(
+          success: true,
+          message: 'Offer accepted successfully.',
+          demandId: demandId,
+          offerId: offerId,
+          status: 'fulfilled',
+        );
+      } else if (httpResponse.statusCode == 401) {
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await acceptDemandOffer(
+              demandId: demandId,
+              offerId: offerId,
+              token: refreshedToken,
+            );
+          }
+        }
+
+        String errorMessage = 'Unauthorized or token expired';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      } else {
+        String errorMessage =
+            'Failed to accept demand offer (Status code ${httpResponse.statusCode})';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['message']?.toString() ??
+              decodedJson['error']?.toString() ??
+              decodedJson['detail']?.toString() ??
+              errorMessage;
+        } else if (responseBody.isNotEmpty) {
+          errorMessage = responseBody;
+        }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      }
+    } on SocketException catch (e) {
+      stopwatch.stop();
+      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e)';
+      ApiLogger.logError(
+        method: 'POST',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: err,
+      );
+      throw Exception(err);
+    } catch (e) {
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(
+          method: 'POST',
           uri: uri,
           duration: stopwatch.elapsed,
           error: e,

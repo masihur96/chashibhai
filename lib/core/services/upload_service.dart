@@ -1,6 +1,5 @@
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 
 import 'package:flutter/foundation.dart';
 import 'package:image_picker/image_picker.dart';
@@ -8,6 +7,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../configs/network/api_logger.dart';
 import '../constants/api_path.dart';
 import '../utils/storage_service.dart';
+import 'token_refresh_service.dart';
 
 /// Represents a single file payload for multipart upload
 class UploadFileItem {
@@ -95,6 +95,7 @@ class UploadService {
     required List<UploadFileItem> items,
     String? token,
     String? customUrl,
+    int retryCount = 0,
   }) async {
     if (items.isEmpty) {
       return [];
@@ -192,6 +193,36 @@ class UploadService {
           debugPrint('⚠️ [UPLOAD] Status 200/201 but no explicit URLs parsed. Response: $responseBody');
         }
         return urls;
+      } else if (httpResponse.statusCode == 401 && retryCount < 1) {
+        debugPrint('🔄 [UPLOAD] Received HTTP 401 Unauthorized for image upload. Attempting automatic token refresh...');
+        final refreshedToken = await _attemptRefreshToken();
+        if (refreshedToken != null && refreshedToken.isNotEmpty) {
+          debugPrint('🔄 [UPLOAD] Token refreshed successfully. Retrying image upload...');
+          return await uploadFiles(
+            items: items,
+            token: refreshedToken,
+            customUrl: customUrl,
+            retryCount: retryCount + 1,
+          );
+        }
+
+        String errorMessage = 'Token has expired. Please refresh your session.';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
       } else {
         String errorMessage = 'Failed to upload images (Status code ${httpResponse.statusCode})';
         if (decodedJson is Map<String, dynamic>) {
@@ -235,6 +266,15 @@ class UploadService {
         );
       }
       rethrow;
+    }
+  }
+
+  Future<String?> _attemptRefreshToken() async {
+    try {
+      return await TokenRefreshManager().refresh(client: _client);
+    } catch (e) {
+      debugPrint('⚠️ [UPLOAD] Error during token refresh: $e');
+      return null;
     }
   }
 

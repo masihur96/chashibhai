@@ -840,6 +840,51 @@ class DemandOffer {
   }
 }
 
+class AcceptDemandOfferResult {
+  final bool success;
+  final String message;
+  final String demandId;
+  final String offerId;
+  final String status;
+  final Map<String, dynamic>? order;
+
+  AcceptDemandOfferResult({
+    required this.success,
+    required this.message,
+    required this.demandId,
+    required this.offerId,
+    required this.status,
+    this.order,
+  });
+
+  factory AcceptDemandOfferResult.fromJson(Map<String, dynamic> json) {
+    final data = json['data'] is Map<String, dynamic>
+        ? json['data'] as Map<String, dynamic>
+        : json;
+    return AcceptDemandOfferResult(
+      success: json['success'] == true,
+      message: (json['message'] ?? 'Offer accepted successfully').toString(),
+      demandId: (data['demandId'] ?? data['demand_id'] ?? '').toString(),
+      offerId: (data['offerId'] ?? data['offer_id'] ?? '').toString(),
+      status: (data['status'] ?? 'fulfilled').toString(),
+      order: data['order'] is Map<String, dynamic>
+          ? data['order'] as Map<String, dynamic>
+          : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'success': success,
+      'message': message,
+      'demandId': demandId,
+      'offerId': offerId,
+      'status': status,
+      if (order != null) 'order': order,
+    };
+  }
+}
+
 class Order {
   final String id;
   final String? supplyId;
