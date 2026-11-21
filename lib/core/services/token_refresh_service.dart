@@ -64,7 +64,6 @@ class TokenRefreshManager {
 
       final effectiveClient = customClient ?? _client;
       final req = await effectiveClient.postUrl(refreshUri);
-      req.encoding = utf8;
       req.headers.set('Content-Type', 'application/json; charset=utf-8');
       req.headers.set('accept', '*/*');
 

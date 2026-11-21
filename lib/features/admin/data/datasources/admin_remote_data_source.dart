@@ -566,7 +566,6 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
 
     try {
       final httpRequest = await _client.openUrl('PATCH', uri);
-      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
       final bodyBytes = utf8.encode(jsonEncode(payload));
@@ -662,7 +661,6 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
 
     try {
       final httpRequest = await _client.openUrl('PATCH', uri);
-      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
       final bodyBytes = utf8.encode(jsonEncode(payload));

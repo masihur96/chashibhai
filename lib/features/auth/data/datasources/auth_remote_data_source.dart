@@ -55,7 +55,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
-      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
       final bodyBytes = utf8.encode(jsonEncode(request.toJson()));
@@ -149,7 +148,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
-      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
       final bodyBytes = utf8.encode(jsonEncode(request.toJson()));
@@ -337,7 +335,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
-      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
       final bodyBytes = utf8.encode(jsonEncode(request.toJson()));
@@ -494,7 +491,6 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     try {
       final httpRequest = await _client.patchUrl(uri);
-      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
       final bodyBytes = utf8.encode(jsonEncode(data));

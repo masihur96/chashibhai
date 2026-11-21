@@ -173,7 +173,6 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
-      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
       final bodyBytes = utf8.encode(jsonEncode(requestPayload));
@@ -723,7 +722,6 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
-      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
       final bodyBytes = utf8.encode(jsonEncode(requestPayload));
@@ -1493,7 +1491,6 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
-      httpRequest.encoding = utf8;
       headers.forEach((key, value) {
         httpRequest.headers.set(key, value);
       });
@@ -1533,7 +1530,6 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
             );
 
             final retryRequest = await _client.postUrl(uri);
-            retryRequest.encoding = utf8;
             retryHeaders.forEach((key, value) {
               retryRequest.headers.set(key, value);
             });

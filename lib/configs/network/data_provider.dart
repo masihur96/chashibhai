@@ -86,7 +86,6 @@ class DefaultDataProvider implements DataProvider {
         request.headers.set(HttpHeaders.contentTypeHeader, 'application/json; charset=utf-8');
       }
 
-      request.encoding = utf8;
       if (body != null) {
         final bodyStr = body is String ? body : jsonEncode(body);
         final bodyBytes = utf8.encode(bodyStr);
@@ -142,7 +141,6 @@ class DefaultDataProvider implements DataProvider {
       final request = await _client.putUrl(uri);
       headers?.forEach((key, value) => request.headers.set(key, value));
 
-      request.encoding = utf8;
       if (body != null) {
         final bodyStr = body is String ? body : jsonEncode(body);
         final bodyBytes = utf8.encode(bodyStr);
