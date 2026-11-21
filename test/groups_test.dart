@@ -10,10 +10,12 @@ import 'package:chashibhai/features/group/data/models/join_group_request_model.d
 import 'package:chashibhai/features/group/domain/repositories/group_repository.dart';
 import 'package:chashibhai/features/group/domain/usecases/create_group_usecase.dart';
 import 'package:chashibhai/features/group/domain/usecases/get_group_by_id_usecase.dart';
+import 'package:chashibhai/features/group/domain/usecases/get_group_messages_usecase.dart';
 import 'package:chashibhai/features/group/domain/usecases/get_groups_usecase.dart';
 import 'package:chashibhai/features/group/domain/usecases/get_my_groups_usecase.dart';
 import 'package:chashibhai/features/group/domain/usecases/join_group_usecase.dart';
 import 'package:chashibhai/features/group/domain/usecases/leave_group_usecase.dart';
+import 'package:chashibhai/features/group/domain/usecases/send_group_message_usecase.dart';
 import 'package:chashibhai/features/group/presentation/state/group_provider.dart';
 import 'package:chashibhai/features/group/presentation/views/group_detail_screen.dart';
 import 'package:chashibhai/features/group/presentation/views/groups_list_screen.dart';
@@ -143,6 +145,46 @@ class MockGroupRepository implements GroupRepository {
     myGroups.removeWhere((g) => g.id == groupId);
     return true;
   }
+
+  Map<String, List<GroupMessage>> groupMessagesMap = {};
+  String? lastFetchedMessagesGroupId;
+  int? lastFetchedMessagesPage;
+  int? lastFetchedMessagesLimit;
+  String? lastSentMessageGroupId;
+  String? lastSentMessageText;
+
+  @override
+  Future<List<GroupMessage>> getGroupMessages({
+    required String groupId,
+    int page = 1,
+    int limit = 50,
+    String? token,
+  }) async {
+    lastFetchedMessagesGroupId = groupId;
+    lastFetchedMessagesPage = page;
+    lastFetchedMessagesLimit = limit;
+    return List.from(groupMessagesMap[groupId] ?? []);
+  }
+
+  @override
+  Future<GroupMessage> sendGroupMessage({
+    required String groupId,
+    required String message,
+    String? token,
+  }) async {
+    lastSentMessageGroupId = groupId;
+    lastSentMessageText = message;
+    final newMsg = GroupMessage(
+      id: 'msg_test_${DateTime.now().millisecondsSinceEpoch}',
+      groupId: groupId,
+      senderId: 'u_tester',
+      senderName: 'Tester',
+      message: message,
+      createdAt: DateTime.now(),
+    );
+    groupMessagesMap[groupId] = [...(groupMessagesMap[groupId] ?? []), newMsg];
+    return newMsg;
+  }
 }
 
 void main() {
@@ -241,7 +283,46 @@ void main() {
         getGroupByIdUseCase: GetGroupByIdUseCase(mockRepo),
         joinGroupUseCase: JoinGroupUseCase(mockRepo),
         leaveGroupUseCase: LeaveGroupUseCase(mockRepo),
+        getGroupMessagesUseCase: GetGroupMessagesUseCase(mockRepo),
+        sendGroupMessageUseCase: SendGroupMessageUseCase(mockRepo),
       );
+    });
+
+    test('fetchGroupMessages calls repository with exact page and limit', () async {
+      final sampleMessage = GroupMessage(
+        id: 'msg_1',
+        groupId: '66d1f893-cf97-4e66-97fa-54d2bcc69fac',
+        senderId: 'u1',
+        senderName: 'John',
+        message: 'Hello everyone! When are we finalizing our bulk order?',
+        createdAt: DateTime.now(),
+      );
+      mockRepo.groupMessagesMap['66d1f893-cf97-4e66-97fa-54d2bcc69fac'] = [sampleMessage];
+
+      final messages = await provider.fetchGroupMessages(
+        '66d1f893-cf97-4e66-97fa-54d2bcc69fac',
+        page: 1,
+        limit: 50,
+      );
+
+      expect(mockRepo.lastFetchedMessagesGroupId, '66d1f893-cf97-4e66-97fa-54d2bcc69fac');
+      expect(mockRepo.lastFetchedMessagesPage, 1);
+      expect(mockRepo.lastFetchedMessagesLimit, 50);
+      expect(messages.length, 1);
+      expect(messages.first.message, 'Hello everyone! When are we finalizing our bulk order?');
+    });
+
+    test('sendGroupMessage calls repository with group id and message', () async {
+      const msgText = 'Hello everyone! When are we finalizing our bulk order?';
+      final sent = await provider.sendGroupMessage(
+        '66d1f893-cf97-4e66-97fa-54d2bcc69fac',
+        msgText,
+      );
+
+      expect(mockRepo.lastSentMessageGroupId, '66d1f893-cf97-4e66-97fa-54d2bcc69fac');
+      expect(mockRepo.lastSentMessageText, msgText);
+      expect(sent.message, msgText);
+      expect(provider.getMessagesForGroup('66d1f893-cf97-4e66-97fa-54d2bcc69fac').length, 1);
     });
 
     test('createGroup creates group and immediately fetches myGroups', () async {
@@ -337,6 +418,8 @@ void main() {
         getGroupByIdUseCase: GetGroupByIdUseCase(mockRepo),
         joinGroupUseCase: JoinGroupUseCase(mockRepo),
         leaveGroupUseCase: LeaveGroupUseCase(mockRepo),
+        getGroupMessagesUseCase: GetGroupMessagesUseCase(mockRepo),
+        sendGroupMessageUseCase: SendGroupMessageUseCase(mockRepo),
       );
       authProvider = AuthProvider();
       appStateProvider = AppStateProvider();
@@ -543,6 +626,76 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(mockRepo.lastLeftGroupId, '66d1f893-cf97-4e66-97fa-54d2bcc69fac');
+    });
+
+    testWidgets('GroupDetailScreen chat tab fetches messages, displays preset chip, and sends message', (tester) async {
+      tester.view.physicalSize = const Size(1200, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final sampleGroup = BuyingGroup(
+        id: '66d1f893-cf97-4e66-97fa-54d2bcc69fac',
+        name: 'Dhaka Potato Bulk Buy',
+        productName: 'Potatoes (Diamant)',
+        category: 'vegetables',
+        targetQuantity: 1000,
+        filledQuantity: 250,
+        pricePerKg: 25,
+        deliveryLocation: 'Mirpur-10, Dhaka',
+        createdBy: 'user_creator',
+        members: [
+          GroupMember(userId: 'user_creator', name: 'Leader', contributionQuantity: 100),
+          GroupMember(userId: 'u_test_user', name: 'Test User', contributionQuantity: 150),
+        ],
+        messages: [],
+        expiryDate: DateTime.now().add(const Duration(days: 7)),
+      );
+      mockRepo.openGroups = [sampleGroup];
+      mockRepo.myGroups = [sampleGroup];
+
+      authProvider.setCurrentUser(
+        AppUser(
+          id: 'u_test_user',
+          name: 'Test User',
+          phone: '01407070311',
+          role: UserRole.buyer,
+          isVerified: true,
+        ),
+      );
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: groupProvider),
+            ChangeNotifierProvider.value(value: authProvider),
+            ChangeNotifierProvider.value(value: appStateProvider),
+          ],
+          child: const MaterialApp(
+            home: GroupDetailScreen(groupId: '66d1f893-cf97-4e66-97fa-54d2bcc69fac'),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Switch to Chat Tab
+      await tester.tap(find.textContaining('Chat'));
+      await tester.pumpAndSettle();
+
+      // Check cURL banner and preset chip
+      expect(find.textContaining('/messages?page=1&limit=50'), findsOneWidget);
+      expect(find.textContaining('Hello everyone! When are we finalizing our bulk order?'), findsOneWidget);
+
+      // Tap preset chip and send
+      await tester.tap(find.textContaining('Hello everyone! When are we finalizing our bulk order?'));
+      await tester.pumpAndSettle();
+      await tester.tap(find.byIcon(Icons.send_rounded));
+      await tester.pumpAndSettle();
+
+      // Verify message was sent
+      expect(mockRepo.lastSentMessageGroupId, '66d1f893-cf97-4e66-97fa-54d2bcc69fac');
+      expect(mockRepo.lastSentMessageText, 'Hello everyone! When are we finalizing our bulk order?');
     });
   });
 }

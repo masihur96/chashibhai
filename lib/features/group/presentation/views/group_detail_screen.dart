@@ -30,7 +30,12 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _tabController.addListener(() => setState(() {}));
+    _tabController.addListener(() {
+      if (_tabController.index == 1) {
+        context.read<GroupProvider>().fetchGroupMessages(widget.groupId, page: 1, limit: 50);
+      }
+      setState(() {});
+    });
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _loadGroupDetails();
@@ -47,9 +52,12 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
 
   Future<void> _loadGroupDetails() async {
     try {
-      await context.read<GroupProvider>().fetchGroupDetails(widget.groupId);
+      await Future.wait([
+        context.read<GroupProvider>().fetchGroupDetails(widget.groupId),
+        context.read<GroupProvider>().fetchGroupMessages(widget.groupId, page: 1, limit: 50),
+      ]);
     } catch (e) {
-      debugPrint('⚠️ [GROUP_DETAIL] Error fetching group details: $e');
+      debugPrint('⚠️ [GROUP_DETAIL] Error fetching group details/messages: $e');
     } finally {
       if (mounted) {
         setState(() {
@@ -71,28 +79,26 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
     });
   }
 
-  void _sendMessage(BuyingGroup group, AppUser? user) {
+  Future<void> _sendMessage(BuyingGroup group, AppUser? user) async {
     final text = _msgController.text.trim();
     if (text.isEmpty) return;
 
-    final newMsg = GroupMessage(
-      id: 'msg_${DateTime.now().millisecondsSinceEpoch}',
-      groupId: group.id,
-      senderId: user?.id ?? 'u1',
-      senderName: user?.name ?? 'You',
-      message: text,
-      createdAt: DateTime.now(),
-    );
-
-    final groups = context.read<GroupProvider>().groups;
-    final updated = groups.map((g) {
-      if (g.id == group.id) return g.copyWith(messages: [...g.messages, newMsg]);
-      return g;
-    }).toList();
-    context.read<GroupProvider>().setGroups(updated);
-
     _msgController.clear();
-    _scrollToBottom();
+    final messenger = ScaffoldMessenger.of(context);
+
+    try {
+      await context.read<GroupProvider>().sendGroupMessage(group.id, text);
+      _scrollToBottom();
+    } catch (e) {
+      if (!mounted) return;
+      messenger.showSnackBar(
+        SnackBar(
+          content: Text('Failed to send message: $e'),
+          backgroundColor: AppColors.error,
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    }
   }
 
   void _showJoinDialog(BuildContext context, BuyingGroup group) {
@@ -714,23 +720,104 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
   }
 
   Widget _buildChatTab(BuyingGroup group, AppUser? user) {
+    final groupProvider = context.watch<GroupProvider>();
+    final messages = groupProvider.getMessagesForGroup(group.id);
+    final isLoading = groupProvider.isLoadingMessages;
+
     return Column(
       children: [
-        Expanded(
-          child: group.messages.isEmpty
-              ? Center(
-                  child: Text('No messages yet. Say hello!', style: TextStyle(color: Colors.grey.shade500)),
-                )
-              : ListView.builder(
-                  controller: _scrollController,
-                  padding: const EdgeInsets.all(16),
-                  itemCount: group.messages.length,
-                  itemBuilder: (context, index) {
-                    final msg = group.messages[index];
-                    final isMe = msg.senderId == (user?.id ?? '');
-                    return _chatBubble(msg.senderName, msg.message, DateFormat('hh:mm a').format(msg.createdAt), isMe);
-                  },
+        // Live Endpoint Indicator Banner for Chat Messages
+        Container(
+          margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: const Color(0xFF2E7D32).withValues(alpha: 0.2)),
+          ),
+          child: Row(
+            children: [
+              const Icon(Icons.forum_outlined, size: 15, color: Color(0xFF2E7D32)),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  'GET /groups/${group.id}/messages?page=1&limit=50',
+                  style: GoogleFonts.jetBrainsMono(
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                    color: const Color(0xFF1B5E20),
+                  ),
+                  overflow: TextOverflow.ellipsis,
                 ),
+              ),
+              InkWell(
+                onTap: () {
+                  context.read<GroupProvider>().fetchGroupMessages(group.id, page: 1, limit: 50);
+                },
+                child: const Icon(Icons.refresh_rounded, size: 16, color: Color(0xFF2E7D32)),
+              ),
+            ],
+          ),
+        ),
+
+        Expanded(
+          child: isLoading && messages.isEmpty
+              ? const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: Color(0xFF2E7D32)),
+                      SizedBox(height: 12),
+                      Text('Fetching group chat messages...'),
+                    ],
+                  ),
+                )
+              : messages.isEmpty
+                  ? Center(
+                      child: Padding(
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(16),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2E7D32).withValues(alpha: 0.08),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.chat_bubble_outline_rounded, size: 40, color: Color(0xFF2E7D32)),
+                            ),
+                            const SizedBox(height: 14),
+                            Text(
+                              'No Chat Messages Yet',
+                              style: GoogleFonts.outfit(fontSize: 16, fontWeight: FontWeight.bold),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              'Coordinate with other pool members about delivery, timings, and payment.',
+                              textAlign: TextAlign.center,
+                              style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                            ),
+                          ],
+                        ),
+                      ),
+                    )
+                  : ListView.builder(
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(16),
+                      itemCount: messages.length,
+                      itemBuilder: (context, index) {
+                        final msg = messages[index];
+                        final isMe = (user?.id != null && user!.id.isNotEmpty && msg.senderId == user.id) ||
+                            msg.senderName.toLowerCase() == 'you';
+                        return _chatBubble(
+                          msg.senderName,
+                          msg.message,
+                          DateFormat('hh:mm a').format(msg.createdAt),
+                          isMe,
+                        );
+                      },
+                    ),
         ),
       ],
     );
@@ -766,42 +853,111 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
     final isChat = _tabController.index == 1;
 
     if (isChat) {
+      final isSending = context.watch<GroupProvider>().isSendingMessage;
+
       return Container(
-        padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+        padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
         decoration: BoxDecoration(
           color: Colors.white,
-          boxShadow: [BoxShadow(color: Colors.black.withValues(alpha: 0.08), blurRadius: 8, offset: const Offset(0, -2))],
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.08),
+              blurRadius: 8,
+              offset: const Offset(0, -2),
+            ),
+          ],
         ),
-        child: Row(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Expanded(
-              child: TextField(
-                controller: _msgController,
-                decoration: InputDecoration(
-                  hintText: 'Type a message to pool members...',
-                  filled: true,
-                  fillColor: Colors.grey.shade100,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(24),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            // Quick preset message chip
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8.0),
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: Row(
+                  children: [
+                    InkWell(
+                      onTap: () {
+                        setState(() {
+                          _msgController.text =
+                              'Hello everyone! When are we finalizing our bulk order?';
+                        });
+                      },
+                      borderRadius: BorderRadius.circular(16),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFF2E7D32).withValues(alpha: 0.08),
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(
+                            color: const Color(0xFF2E7D32).withValues(alpha: 0.25),
+                          ),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.flash_on_rounded, size: 12, color: Color(0xFF2E7D32)),
+                            const SizedBox(width: 4),
+                            Text(
+                              '⚡ "Hello everyone! When are we finalizing our bulk order?" (cURL Sample)',
+                              style: GoogleFonts.outfit(
+                                fontSize: 11,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF2E7D32),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ],
                 ),
-                onSubmitted: (_) => _sendMessage(group, user),
               ),
             ),
-            const SizedBox(width: 8),
-            GestureDetector(
-              onTap: () => _sendMessage(group, user),
-              child: Container(
-                width: 44,
-                height: 44,
-                decoration: const BoxDecoration(
-                  color: Color(0xFF2E7D32),
-                  shape: BoxShape.circle,
+            Row(
+              children: [
+                Expanded(
+                  child: TextField(
+                    controller: _msgController,
+                    style: GoogleFonts.outfit(fontSize: 13),
+                    decoration: InputDecoration(
+                      hintText: 'Type a message to pool members...',
+                      hintStyle: TextStyle(color: Colors.grey.shade400, fontSize: 13),
+                      filled: true,
+                      fillColor: Colors.grey.shade100,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(24),
+                        borderSide: BorderSide.none,
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                    ),
+                    onSubmitted: isSending ? null : (_) => _sendMessage(group, user),
+                  ),
                 ),
-                child: const Icon(Icons.send_rounded, color: Colors.white, size: 20),
-              ),
+                const SizedBox(width: 8),
+                GestureDetector(
+                  onTap: isSending ? null : () => _sendMessage(group, user),
+                  child: Container(
+                    width: 44,
+                    height: 44,
+                    decoration: BoxDecoration(
+                      color: isSending ? Colors.grey : const Color(0xFF2E7D32),
+                      shape: BoxShape.circle,
+                    ),
+                    child: isSending
+                        ? const Center(
+                            child: SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                            ),
+                          )
+                        : const Icon(Icons.send_rounded, color: Colors.white, size: 20),
+                  ),
+                ),
+              ],
             ),
           ],
         ),
