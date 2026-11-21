@@ -103,7 +103,11 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
 
   /// Default fallback token from user curl specification
   static const String defaultFallbackToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTIzMDQ4OCwiZXhwIjoxNzk1MjMxMzg4fQ.Bz507CiQ8S1aVUftQiGHshCt7ShDNFTZ6osiVm4_Zcw';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTI0MzEwNSwiZXhwIjoxNzk1MjQ0MDA1fQ.BtzvQslgjVYxDxLMLX1w_QmrRcZCI6acecmsbrvzByk';
+
+  /// Default my demands filter token from curl specification
+  static const String defaultMyDemandsFilterToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTI0MzEwNSwiZXhwIjoxNzk1MjQ0MDA1fQ.BtzvQslgjVYxDxLMLX1w_QmrRcZCI6acecmsbrvzByk';
 
   /// Default accept offer token from curl specification
   static const String defaultAcceptOfferToken =
@@ -325,16 +329,21 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
       queryParameters['search'] = search;
     }
     if (productName != null && productName.isNotEmpty) {
-      queryParameters['productName'] = productName;
       queryParameters['product_name'] = productName;
     }
     if (minPrice != null) {
-      queryParameters['minPrice'] = minPrice.toString();
-      queryParameters['min_price'] = minPrice.toString();
+      final minStr = minPrice.truncateToDouble() == minPrice
+          ? minPrice.toInt().toString()
+          : minPrice.toString();
+      queryParameters['minPrice'] = minStr;
+      queryParameters['min_price'] = minStr;
     }
     if (maxPrice != null) {
-      queryParameters['maxPrice'] = maxPrice.toString();
-      queryParameters['max_price'] = maxPrice.toString();
+      final maxStr = maxPrice.truncateToDouble() == maxPrice
+          ? maxPrice.toInt().toString()
+          : maxPrice.toString();
+      queryParameters['maxPrice'] = maxStr;
+      queryParameters['max_price'] = maxStr;
     }
     if (tradeType != null && tradeType.isNotEmpty) {
       queryParameters['tradeType'] = tradeType;
@@ -346,13 +355,13 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
 
     final uri = baseUri.replace(queryParameters: queryParameters);
 
-    // Resolve bearer token: explicit param -> StorageService -> default fallback token
+    // Resolve bearer token: explicit param -> StorageService -> defaultMyDemandsFilterToken -> defaultFallbackToken
     String? resolvedToken = token;
     if (resolvedToken == null || resolvedToken.isEmpty) {
       resolvedToken = await StorageService().getAccessToken();
     }
     if (resolvedToken == null || resolvedToken.isEmpty) {
-      resolvedToken = defaultFallbackToken;
+      resolvedToken = defaultMyDemandsFilterToken;
     }
 
     final headers = {

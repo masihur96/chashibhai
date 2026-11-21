@@ -275,16 +275,20 @@ class DemandProvider extends ChangeNotifier {
     );
   }
 
+  /// Default token from user's latest cURL specification
+  static const String defaultMyDemandsCurlToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTI0MzEwNSwiZXhwIjoxNzk1MjQ0MDA1fQ.BtzvQslgjVYxDxLMLX1w_QmrRcZCI6acecmsbrvzByk';
+
   /// Fetches the buyer's own demands using GET /api/v1/demands/my
   Future<List<DemandPost>> fetchMyDemands({
     int page = 1,
     int limit = 10,
-    String? search = 'Potato',
+    String? search,
     String? productName = 'Potato',
     double? minPrice = 20,
     double? maxPrice = 50,
     String? tradeType = 'both',
-    String? status = 'active',
+    String? status = 'all',
     String? token,
   }) async {
     _isMyDemandsLoading = true;
@@ -301,7 +305,7 @@ class DemandProvider extends ChangeNotifier {
         maxPrice: maxPrice,
         tradeType: tradeType,
         status: status,
-        token: token,
+        token: token ?? defaultMyDemandsCurlToken,
       );
       _myDemands = fetched;
       return fetched;
