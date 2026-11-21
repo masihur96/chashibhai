@@ -89,6 +89,25 @@ class MockBuyerRepository implements BuyerRepository {
   }
 
   @override
+  Future<List<DemandOffer>> getDemandOffers({
+    required String demandId,
+    String? token,
+  }) async {
+    return [];
+  }
+
+  @override
+  Future<DemandPost> getDemandById({
+    required String demandId,
+    String? token,
+  }) async {
+    return mockDemands.firstWhere(
+      (d) => d.id == demandId,
+      orElse: () => mockDemands.first,
+    );
+  }
+
+  @override
   Future<DemandPost> createDemand({
     required CreateDemandRequestModel request,
     String? token,

@@ -11,6 +11,7 @@ import '../../../../core/presentation/widgets/filter_chips_list.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
 import '../../../auth/presentation/state/auth_provider.dart';
 import '../state/demand_provider.dart';
+import './demand_offers_screen.dart';
 
 class MyDemandsScreen extends StatefulWidget {
   const MyDemandsScreen({super.key});
@@ -100,7 +101,12 @@ class _MyDemandsScreenState extends State<MyDemandsScreen> {
                         demand: demand,
                         currencyFormat: currencyFormat,
                         onTap: () {
-                          // Navigate to DemandOffersScreen (Phase 2)
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (_) => DemandOffersScreen(demand: demand),
+                            ),
+                          );
                         },
                       );
                     },

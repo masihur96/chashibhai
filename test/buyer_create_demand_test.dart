@@ -163,6 +163,18 @@ class MockBuyerRepository implements BuyerRepository {
   }) async {
     return [];
   }
+
+  @override
+  Future<List<DemandOffer>> getDemandOffers({
+    required String demandId,
+    String? token,
+  }) async => [];
+
+  @override
+  Future<DemandPost> getDemandById({
+    required String demandId,
+    String? token,
+  }) async => throw UnimplementedError();
 }
 
 void main() {

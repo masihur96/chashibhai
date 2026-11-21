@@ -1,33 +1,35 @@
+import 'package:chashibhai/features/buyer/presentation/views/demand_offers_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:provider/provider.dart';
-import '../../../auth/presentation/state/auth_provider.dart';
-import '../state/product_provider.dart';
-import '../../../group/presentation/state/group_provider.dart';
-import '../state/demand_provider.dart';
-import '../../../account/presentation/state/app_state_provider.dart';
-import '../../../../core/presentation/widgets/product_card.dart';
-import '../../../../core/presentation/widgets/product_image_view.dart';
-import '../../../../core/presentation/widgets/demand_card.dart';
-import '../../../../core/presentation/widgets/custom_search_bar.dart';
-import '../../../../core/presentation/widgets/filter_chips_list.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import './product_details.dart';
-import './post_demand_screen.dart';
-import './my_demands_screen.dart';
-import './category_products_screen.dart';
-import './notification_screen.dart';
-import './negotiations_list_screen.dart';
-import './my_bids_screen.dart';
-import '../../../group/presentation/views/groups_list_screen.dart';
-import '../../../group/presentation/views/group_detail_screen.dart';
+import 'package:provider/provider.dart';
+
+import '../../../../core/models/models.dart';
+import '../../../../core/presentation/widgets/custom_search_bar.dart';
+import '../../../../core/presentation/widgets/demand_card.dart';
+import '../../../../core/presentation/widgets/filter_chips_list.dart';
+import '../../../../core/presentation/widgets/product_card.dart';
+import '../../../../core/presentation/widgets/product_image_view.dart';
 import '../../../../core/utils/localization.dart';
 import '../../../../core/utils/storage_service.dart';
 import '../../../../core/widgets/language_toggle_button.dart';
-import '../../../../core/models/models.dart';
+import '../../../account/presentation/state/app_state_provider.dart';
 import '../../../account/presentation/views/profile_screen.dart';
+import '../../../auth/presentation/state/auth_provider.dart';
+import '../../../group/presentation/state/group_provider.dart';
+import '../../../group/presentation/views/group_detail_screen.dart';
+import '../../../group/presentation/views/groups_list_screen.dart';
+import '../state/demand_provider.dart';
+import '../state/product_provider.dart';
 import './buyer_orders_screen.dart';
+import './category_products_screen.dart';
+import './my_bids_screen.dart';
+import './my_demands_screen.dart';
+import './negotiations_list_screen.dart';
+import './notification_screen.dart';
+import './post_demand_screen.dart';
+import './product_details.dart';
 
 class BuyerHomeScreen extends StatefulWidget {
   const BuyerHomeScreen({super.key});
@@ -89,12 +91,17 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                 onPressed: () async {
                   await Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const PostDemandScreen()),
+                    MaterialPageRoute(
+                      builder: (context) => const PostDemandScreen(),
+                    ),
                   );
                   _homeTabKey.currentState?.fetchMyDemands();
                 },
                 backgroundColor: Theme.of(context).colorScheme.primary,
-                label: const Text('Call Price (Demand)', style: TextStyle(color: Colors.white)),
+                label: const Text(
+                  'Call Price (Demand)',
+                  style: TextStyle(color: Colors.white),
+                ),
                 icon: const Icon(Icons.campaign, color: Colors.white),
               ),
             )
@@ -166,7 +173,9 @@ class _HomeTabState extends State<_HomeTab> {
       }
       if (!mounted) return;
 
-      await context.read<ProductProvider>().fetchAvailableProducts(token: token);
+      await context.read<ProductProvider>().fetchAvailableProducts(
+        token: token,
+      );
     } catch (e) {
       debugPrint('⚠️ [BUYER_HOME] fetchAvailableSupplies error: $e');
     }
@@ -177,7 +186,9 @@ class _HomeTabState extends State<_HomeTab> {
     final languageCode = context.watch<AppStateProvider>().appLocale;
     final productProvider = context.watch<ProductProvider>();
     final selectedCategory = productProvider.selectedCategory;
-    final myGroups = context.watch<GroupProvider>().getMyGroups(context.watch<AuthProvider>().currentUser?.id);
+    final myGroups = context.watch<GroupProvider>().getMyGroups(
+      context.watch<AuthProvider>().currentUser?.id,
+    );
     final demandProvider = context.watch<DemandProvider>();
 
     return Column(
@@ -186,10 +197,7 @@ class _HomeTabState extends State<_HomeTab> {
         Expanded(
           child: RefreshIndicator(
             onRefresh: () async {
-              await Future.wait([
-                fetchMyDemands(),
-                fetchAvailableSupplies(),
-              ]);
+              await Future.wait([fetchMyDemands(), fetchAvailableSupplies()]);
             },
             child: Center(
               child: ConstrainedBox(
@@ -200,13 +208,22 @@ class _HomeTabState extends State<_HomeTab> {
                   children: [
                     CustomSearchBar(
                       hintText: 'search_placeholder'.tr(languageCode),
-                      onChanged: (value) => context.read<ProductProvider>().setSearchQuery(value),
+                      onChanged: (value) =>
+                          context.read<ProductProvider>().setSearchQuery(value),
                     ),
                     const SizedBox(height: 20),
                     FilterChipsList(
-                      categories: const ['All', 'Vegetables', 'Fruits', 'Grains', 'Spices'],
+                      categories: const [
+                        'All',
+                        'Vegetables',
+                        'Fruits',
+                        'Grains',
+                        'Spices',
+                      ],
                       selectedCategory: selectedCategory,
-                      onSelected: (category) => context.read<ProductProvider>().setSelectedCategory(category),
+                      onSelected: (category) => context
+                          .read<ProductProvider>()
+                          .setSelectedCategory(category),
                       languageCode: languageCode,
                       categoryTranslationKeys: const {
                         'All': 'cat_all',
@@ -225,10 +242,18 @@ class _HomeTabState extends State<_HomeTab> {
                         children: [
                           Text(
                             'My Buying Groups',
-                            style: GoogleFonts.outfit(fontSize: 18, fontWeight: FontWeight.bold),
+                            style: GoogleFonts.outfit(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                           TextButton(
-                            onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupsListScreen())),
+                            onPressed: () => Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (_) => const GroupsListScreen(),
+                              ),
+                            ),
                             child: const Text('View all'),
                           ),
                         ],
@@ -251,7 +276,11 @@ class _HomeTabState extends State<_HomeTab> {
                     ],
 
                     // ─── My Demands Section ───
-                    _buildMyDemandsSection(context, demandProvider, languageCode),
+                    _buildMyDemandsSection(
+                      context,
+                      demandProvider,
+                      languageCode,
+                    ),
                     const SizedBox(height: 20),
 
                     // ─── Available Supplies Section ───
@@ -325,7 +354,10 @@ class _HomeTabState extends State<_HomeTab> {
                 const SizedBox(width: 8),
                 if (!isLoading)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
@@ -422,7 +454,11 @@ class _HomeTabState extends State<_HomeTab> {
             ),
             child: Column(
               children: [
-                Icon(Icons.campaign_outlined, size: 40, color: Colors.grey[400]),
+                Icon(
+                  Icons.campaign_outlined,
+                  size: 40,
+                  color: Colors.grey[400],
+                ),
                 const SizedBox(height: 8),
                 const Text(
                   'No active demands found for Potato (৳20 - ৳50)',
@@ -440,7 +476,9 @@ class _HomeTabState extends State<_HomeTab> {
                   onPressed: () {
                     Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const PostDemandScreen()),
+                      MaterialPageRoute(
+                        builder: (_) => const PostDemandScreen(),
+                      ),
                     ).then((_) => fetchMyDemands());
                   },
                   icon: const Icon(Icons.add, size: 16),
@@ -465,7 +503,9 @@ class _HomeTabState extends State<_HomeTab> {
                 onTap: () {
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (_) => const MyDemandsScreen()),
+                    MaterialPageRoute(
+                      builder: (_) => DemandOffersScreen(demand: demand),
+                    ),
                   );
                 },
               );
@@ -490,8 +530,12 @@ class _HomeTabState extends State<_HomeTab> {
     final currencyFormat = NumberFormat.currency(symbol: '৳', decimalDigits: 0);
 
     const targetProductId = 'ee9ac1a6-bb66-45d0-a6de-8e390702be0e';
-    final targetProduct = products.where((p) => p.id == targetProductId).firstOrNull;
-    final otherProducts = products.where((p) => p.id != targetProductId).toList();
+    final targetProduct = products
+        .where((p) => p.id == targetProductId)
+        .firstOrNull;
+    final otherProducts = products
+        .where((p) => p.id != targetProductId)
+        .toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -511,7 +555,10 @@ class _HomeTabState extends State<_HomeTab> {
                 const SizedBox(width: 8),
                 if (!isLoading)
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 2,
+                    ),
                     decoration: BoxDecoration(
                       color: Theme.of(context).colorScheme.primaryContainer,
                       borderRadius: BorderRadius.circular(12),
@@ -539,7 +586,10 @@ class _HomeTabState extends State<_HomeTab> {
                     );
                   },
                   icon: const Icon(Icons.gavel_outlined, size: 15),
-                  label: const Text('My Bids', style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                  label: const Text(
+                    'My Bids',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                  ),
                   style: TextButton.styleFrom(
                     foregroundColor: const Color(0xFF2E7D32),
                   ),
@@ -549,7 +599,8 @@ class _HomeTabState extends State<_HomeTab> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => CategoryProductsScreen(category: selectedCategory),
+                        builder: (context) =>
+                            CategoryProductsScreen(category: selectedCategory),
                       ),
                     );
                   },
@@ -659,7 +710,8 @@ class _HomeTabState extends State<_HomeTab> {
                     Navigator.push(
                       context,
                       MaterialPageRoute(
-                        builder: (context) => ProductDetailsScreen(product: product),
+                        builder: (context) =>
+                            ProductDetailsScreen(product: product),
                       ),
                     );
                   },
@@ -696,10 +748,14 @@ class _HomeTabState extends State<_HomeTab> {
     DemandProvider demandProvider,
     NumberFormat currencyFormat,
   ) {
-    final bids = demandProvider.bids.where((b) => b.productId == product.id).toList();
+    final bids = demandProvider.bids
+        .where((b) => b.productId == product.id)
+        .toList();
     double currentHighest = product.minimumPrice;
     if (bids.isNotEmpty) {
-      currentHighest = bids.map((b) => b.amount).reduce((a, b) => a > b ? a : b);
+      currentHighest = bids
+          .map((b) => b.amount)
+          .reduce((a, b) => a > b ? a : b);
     }
     final isBiddingThis = _biddingProductId == product.id;
 
@@ -708,7 +764,10 @@ class _HomeTabState extends State<_HomeTab> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: const Color(0xFF2E7D32).withValues(alpha: 0.35), width: 1.5),
+        border: Border.all(
+          color: const Color(0xFF2E7D32).withValues(alpha: 0.35),
+          width: 1.5,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withValues(alpha: 0.06),
@@ -736,7 +795,10 @@ class _HomeTabState extends State<_HomeTab> {
                 Row(
                   children: [
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
                         color: const Color(0xFF2E7D32),
                         borderRadius: BorderRadius.circular(6),
@@ -744,7 +806,11 @@ class _HomeTabState extends State<_HomeTab> {
                       child: const Row(
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Icon(Icons.gavel_rounded, color: Colors.white, size: 12),
+                          Icon(
+                            Icons.gavel_rounded,
+                            color: Colors.white,
+                            size: 12,
+                          ),
                           SizedBox(width: 4),
                           Text(
                             'LIVE AUCTION SUPPLY',
@@ -760,7 +826,10 @@ class _HomeTabState extends State<_HomeTab> {
                     ),
                     const SizedBox(width: 8),
                     Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 2,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.green.shade100,
                         borderRadius: BorderRadius.circular(4),
@@ -778,7 +847,11 @@ class _HomeTabState extends State<_HomeTab> {
                 ),
                 Row(
                   children: [
-                    Icon(Icons.timer_outlined, size: 13, color: Colors.orange.shade800),
+                    Icon(
+                      Icons.timer_outlined,
+                      size: 13,
+                      color: Colors.orange.shade800,
+                    ),
                     const SizedBox(width: 4),
                     Text(
                       'Ends in 2d 6h',
@@ -810,7 +883,8 @@ class _HomeTabState extends State<_HomeTab> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => ProductDetailsScreen(product: product),
+                              builder: (context) =>
+                                  ProductDetailsScreen(product: product),
                             ),
                           );
                         },
@@ -832,7 +906,8 @@ class _HomeTabState extends State<_HomeTab> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => ProductDetailsScreen(product: product),
+                                  builder: (context) =>
+                                      ProductDetailsScreen(product: product),
                                 ),
                               );
                             },
@@ -851,16 +926,23 @@ class _HomeTabState extends State<_HomeTab> {
                           // ID chip with copy functionality
                           GestureDetector(
                             onTap: () {
-                              Clipboard.setData(ClipboardData(text: product.id));
+                              Clipboard.setData(
+                                ClipboardData(text: product.id),
+                              );
                               ScaffoldMessenger.of(context).showSnackBar(
                                 const SnackBar(
-                                  content: Text('Copied Product ID to clipboard!'),
+                                  content: Text(
+                                    'Copied Product ID to clipboard!',
+                                  ),
                                   duration: Duration(seconds: 1),
                                 ),
                               );
                             },
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 7,
+                                vertical: 2,
+                              ),
                               decoration: BoxDecoration(
                                 color: Colors.grey.shade100,
                                 borderRadius: BorderRadius.circular(6),
@@ -869,7 +951,11 @@ class _HomeTabState extends State<_HomeTab> {
                               child: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Icon(Icons.copy_rounded, size: 10, color: Colors.grey.shade700),
+                                  Icon(
+                                    Icons.copy_rounded,
+                                    size: 10,
+                                    color: Colors.grey.shade700,
+                                  ),
                                   const SizedBox(width: 4),
                                   Text(
                                     'ID: ${product.id.length > 16 ? "${product.id.substring(0, 8)}...${product.id.substring(product.id.length - 6)}" : product.id}',
@@ -886,27 +972,47 @@ class _HomeTabState extends State<_HomeTab> {
                           const SizedBox(height: 8),
                           Row(
                             children: [
-                              Icon(Icons.person_pin_circle_outlined, size: 14, color: Colors.grey.shade700),
+                              Icon(
+                                Icons.person_pin_circle_outlined,
+                                size: 14,
+                                color: Colors.grey.shade700,
+                              ),
                               const SizedBox(width: 4),
                               Expanded(
                                 child: Text(
                                   'Farmer Abdul • Bogura',
-                                  style: TextStyle(fontSize: 11, color: Colors.grey.shade700),
+                                  style: TextStyle(
+                                    fontSize: 11,
+                                    color: Colors.grey.shade700,
+                                  ),
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 1),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 4,
+                                  vertical: 1,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.amber.shade100,
                                   borderRadius: BorderRadius.circular(4),
                                 ),
                                 child: const Row(
                                   children: [
-                                    Icon(Icons.star, size: 10, color: Colors.amber),
+                                    Icon(
+                                      Icons.star,
+                                      size: 10,
+                                      color: Colors.amber,
+                                    ),
                                     SizedBox(width: 2),
-                                    Text('4.8', style: TextStyle(fontSize: 10, fontWeight: FontWeight.bold)),
+                                    Text(
+                                      '4.8',
+                                      style: TextStyle(
+                                        fontSize: 10,
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
                                   ],
                                 ),
                               ),
@@ -915,11 +1021,19 @@ class _HomeTabState extends State<_HomeTab> {
                           const SizedBox(height: 4),
                           Row(
                             children: [
-                              Icon(Icons.inventory_2_outlined, size: 14, color: Colors.grey.shade700),
+                              Icon(
+                                Icons.inventory_2_outlined,
+                                size: 14,
+                                color: Colors.grey.shade700,
+                              ),
                               const SizedBox(width: 4),
                               Text(
                                 '${product.quantity.toInt()} ${product.unit} in stock',
-                                style: TextStyle(fontSize: 11, color: Colors.grey.shade700, fontWeight: FontWeight.w500),
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey.shade700,
+                                  fontWeight: FontWeight.w500,
+                                ),
                               ),
                             ],
                           ),
@@ -933,7 +1047,10 @@ class _HomeTabState extends State<_HomeTab> {
 
                 // Metrics / Pricing Card
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 14,
+                    vertical: 10,
+                  ),
                   decoration: BoxDecoration(
                     color: const Color(0xFFF7F9FA),
                     borderRadius: BorderRadius.circular(12),
@@ -945,7 +1062,13 @@ class _HomeTabState extends State<_HomeTab> {
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Base Price', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                          Text(
+                            'Base Price',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
                           const SizedBox(height: 2),
                           Text(
                             currencyFormat.format(product.minimumPrice),
@@ -957,11 +1080,21 @@ class _HomeTabState extends State<_HomeTab> {
                           ),
                         ],
                       ),
-                      Container(height: 28, width: 1, color: Colors.grey.shade300),
+                      Container(
+                        height: 28,
+                        width: 1,
+                        color: Colors.grey.shade300,
+                      ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          Text('Current Highest Bid', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                          Text(
+                            'Current Highest Bid',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
                           const SizedBox(height: 2),
                           Text(
                             currencyFormat.format(currentHighest),
@@ -973,11 +1106,21 @@ class _HomeTabState extends State<_HomeTab> {
                           ),
                         ],
                       ),
-                      Container(height: 28, width: 1, color: Colors.grey.shade300),
+                      Container(
+                        height: 28,
+                        width: 1,
+                        color: Colors.grey.shade300,
+                      ),
                       Column(
                         crossAxisAlignment: CrossAxisAlignment.end,
                         children: [
-                          Text('Total Bids', style: TextStyle(fontSize: 11, color: Colors.grey.shade600)),
+                          Text(
+                            'Total Bids',
+                            style: TextStyle(
+                              fontSize: 11,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
                           const SizedBox(height: 2),
                           Text(
                             '${bids.length} bids',
@@ -1003,24 +1146,36 @@ class _HomeTabState extends State<_HomeTab> {
                       child: ElevatedButton.icon(
                         onPressed: isBiddingThis
                             ? null
-                            : () => _handleQuickBid(context, product, amount: 55.0),
+                            : () => _handleQuickBid(
+                                context,
+                                product,
+                                amount: 55.0,
+                              ),
                         icon: isBiddingThis
                             ? const SizedBox(
                                 width: 16,
                                 height: 16,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                                child: CircularProgressIndicator(
+                                  color: Colors.white,
+                                  strokeWidth: 2,
+                                ),
                               )
                             : const Icon(Icons.flash_on_rounded, size: 16),
                         label: Text(
                           isBiddingThis ? 'Bidding...' : 'Quick Bid ৳55',
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                         style: ElevatedButton.styleFrom(
                           backgroundColor: const Color(0xFF2E7D32),
                           foregroundColor: Colors.white,
                           elevation: 1,
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
@@ -1032,13 +1187,21 @@ class _HomeTabState extends State<_HomeTab> {
                         icon: const Icon(Icons.gavel_rounded, size: 16),
                         label: const Text(
                           'Place Bid',
-                          style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                          style: TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                          ),
                         ),
                         style: OutlinedButton.styleFrom(
                           foregroundColor: const Color(0xFF2E7D32),
-                          side: const BorderSide(color: Color(0xFF2E7D32), width: 1.5),
+                          side: const BorderSide(
+                            color: Color(0xFF2E7D32),
+                            width: 1.5,
+                          ),
                           padding: const EdgeInsets.symmetric(vertical: 12),
-                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
                         ),
                       ),
                     ),
@@ -1085,7 +1248,9 @@ class _HomeTabState extends State<_HomeTab> {
               const Icon(Icons.check_circle, color: Colors.white, size: 20),
               const SizedBox(width: 8),
               Expanded(
-                child: Text('🎉 Bid of ৳${amount.toStringAsFixed(0)} placed on ${product.productName} via POST /api/v1/bids!'),
+                child: Text(
+                  '🎉 Bid of ৳${amount.toStringAsFixed(0)} placed on ${product.productName} via POST /api/v1/bids!',
+                ),
               ),
             ],
           ),
@@ -1109,15 +1274,23 @@ class _HomeTabState extends State<_HomeTab> {
 
   void _showBidModalSheet(BuildContext context, Product product) {
     final demandProvider = context.read<DemandProvider>();
-    final bids = demandProvider.bids.where((b) => b.productId == product.id).toList();
+    final bids = demandProvider.bids
+        .where((b) => b.productId == product.id)
+        .toList();
     double currentHighest = product.minimumPrice;
     if (bids.isNotEmpty) {
-      currentHighest = bids.map((b) => b.amount).reduce((a, b) => a > b ? a : b);
+      currentHighest = bids
+          .map((b) => b.amount)
+          .reduce((a, b) => a > b ? a : b);
     }
     final defaultAmount = product.id == 'ee9ac1a6-bb66-45d0-a6de-8e390702be0e'
         ? 55.0
-        : (currentHighest >= product.minimumPrice ? currentHighest + 2.0 : product.minimumPrice);
-    final controller = TextEditingController(text: defaultAmount.toStringAsFixed(0));
+        : (currentHighest >= product.minimumPrice
+              ? currentHighest + 2.0
+              : product.minimumPrice);
+    final controller = TextEditingController(
+      text: defaultAmount.toStringAsFixed(0),
+    );
     bool isSubmitting = false;
     String? localError;
 
@@ -1151,7 +1324,11 @@ class _HomeTabState extends State<_HomeTab> {
                             color: Colors.green.shade50,
                             borderRadius: BorderRadius.circular(10),
                           ),
-                          child: Icon(Icons.gavel_rounded, color: Colors.green.shade800, size: 22),
+                          child: Icon(
+                            Icons.gavel_rounded,
+                            color: Colors.green.shade800,
+                            size: 22,
+                          ),
                         ),
                         const SizedBox(width: 10),
                         Column(
@@ -1218,12 +1395,20 @@ class _HomeTabState extends State<_HomeTab> {
                             ),
                             Text(
                               'ID: ${product.id.length > 16 ? "${product.id.substring(0, 8)}...${product.id.substring(product.id.length - 6)}" : product.id}',
-                              style: TextStyle(fontSize: 11, color: Colors.grey.shade600, fontFamily: 'monospace'),
+                              style: TextStyle(
+                                fontSize: 11,
+                                color: Colors.grey.shade600,
+                                fontFamily: 'monospace',
+                              ),
                             ),
                             const SizedBox(height: 2),
                             Text(
                               'Base Price: ৳${product.minimumPrice.toStringAsFixed(0)} • Stock: ${product.quantity.toInt()} ${product.unit}',
-                              style: TextStyle(fontSize: 12, color: Theme.of(context).colorScheme.primary, fontWeight: FontWeight.w600),
+                              style: TextStyle(
+                                fontSize: 12,
+                                color: Theme.of(context).colorScheme.primary,
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ],
                         ),
@@ -1233,7 +1418,10 @@ class _HomeTabState extends State<_HomeTab> {
                 ),
                 const SizedBox(height: 14),
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 8,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.amber.shade50,
                     borderRadius: BorderRadius.circular(10),
@@ -1241,7 +1429,11 @@ class _HomeTabState extends State<_HomeTab> {
                   ),
                   child: Row(
                     children: [
-                      Icon(Icons.trending_up, size: 18, color: Colors.amber.shade900),
+                      Icon(
+                        Icons.trending_up,
+                        size: 18,
+                        color: Colors.amber.shade900,
+                      ),
                       const SizedBox(width: 8),
                       Text(
                         'Current highest bid: ৳${currentHighest.toStringAsFixed(2)}',
@@ -1264,11 +1456,15 @@ class _HomeTabState extends State<_HomeTab> {
                 const SizedBox(height: 16),
                 TextField(
                   controller: controller,
-                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   decoration: InputDecoration(
                     prefixText: '৳ ',
                     labelText: 'Your Bid Amount',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
                     helperText: 'Minimum increment: ৳2.00',
                   ),
                 ),
@@ -1285,22 +1481,31 @@ class _HomeTabState extends State<_HomeTab> {
                     ActionChip(
                       label: const Text('+৳2'),
                       onPressed: () {
-                        final val = double.tryParse(controller.text) ?? currentHighest;
-                        setSheetState(() => controller.text = (val + 2).toStringAsFixed(0));
+                        final val =
+                            double.tryParse(controller.text) ?? currentHighest;
+                        setSheetState(
+                          () => controller.text = (val + 2).toStringAsFixed(0),
+                        );
                       },
                     ),
                     ActionChip(
                       label: const Text('+৳5'),
                       onPressed: () {
-                        final val = double.tryParse(controller.text) ?? currentHighest;
-                        setSheetState(() => controller.text = (val + 5).toStringAsFixed(0));
+                        final val =
+                            double.tryParse(controller.text) ?? currentHighest;
+                        setSheetState(
+                          () => controller.text = (val + 5).toStringAsFixed(0),
+                        );
                       },
                     ),
                     ActionChip(
                       label: const Text('+৳10'),
                       onPressed: () {
-                        final val = double.tryParse(controller.text) ?? currentHighest;
-                        setSheetState(() => controller.text = (val + 10).toStringAsFixed(0));
+                        final val =
+                            double.tryParse(controller.text) ?? currentHighest;
+                        setSheetState(
+                          () => controller.text = (val + 10).toStringAsFixed(0),
+                        );
                       },
                     ),
                   ],
@@ -1313,9 +1518,14 @@ class _HomeTabState extends State<_HomeTab> {
                     onPressed: isSubmitting
                         ? null
                         : () async {
-                            final parsedAmount = double.tryParse(controller.text.trim());
+                            final parsedAmount = double.tryParse(
+                              controller.text.trim(),
+                            );
                             if (parsedAmount == null || parsedAmount <= 0) {
-                              setSheetState(() => localError = 'Please enter a valid bid amount.');
+                              setSheetState(
+                                () => localError =
+                                    'Please enter a valid bid amount.',
+                              );
                               return;
                             }
                             setSheetState(() {
@@ -1328,7 +1538,8 @@ class _HomeTabState extends State<_HomeTab> {
                               String? token = authProvider.token;
                               if (token == null || token.isEmpty) {
                                 try {
-                                  token = await StorageService().getAccessToken();
+                                  token = await StorageService()
+                                      .getAccessToken();
                                 } catch (_) {}
                               }
                               if (token == null || token.isEmpty) {
@@ -1346,7 +1557,9 @@ class _HomeTabState extends State<_HomeTab> {
                               Navigator.pop(bottomSheetContext);
                               ScaffoldMessenger.of(context).showSnackBar(
                                 SnackBar(
-                                  content: Text('🎉 Bid of ৳${parsedAmount.toStringAsFixed(0)} placed successfully!'),
+                                  content: Text(
+                                    '🎉 Bid of ৳${parsedAmount.toStringAsFixed(0)} placed successfully!',
+                                  ),
                                   backgroundColor: Colors.green.shade800,
                                 ),
                               );
@@ -1360,15 +1573,23 @@ class _HomeTabState extends State<_HomeTab> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: const Color(0xFF2E7D32),
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
                     ),
                     child: isSubmitting
                         ? const SizedBox(
                             width: 22,
                             height: 22,
-                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            child: CircularProgressIndicator(
+                              color: Colors.white,
+                              strokeWidth: 2,
+                            ),
                           )
-                        : const Text('Confirm Bid (POST /api/v1/bids)', style: TextStyle(fontWeight: FontWeight.bold)),
+                        : const Text(
+                            'Confirm Bid (POST /api/v1/bids)',
+                            style: TextStyle(fontWeight: FontWeight.bold),
+                          ),
                   ),
                 ),
               ],
@@ -1382,7 +1603,10 @@ class _HomeTabState extends State<_HomeTab> {
   Widget _buildGroupChip(BuildContext context, BuyingGroup group) {
     final progress = group.filledQuantity / group.targetQuantity;
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => GroupDetailScreen(groupId: group.id))),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => GroupDetailScreen(groupId: group.id)),
+      ),
       child: Container(
         width: 180,
         margin: const EdgeInsets.only(right: 12),
@@ -1393,15 +1617,34 @@ class _HomeTabState extends State<_HomeTab> {
         ),
         child: Column(
           children: [
-            Row(children: [
-              const Icon(Icons.groups, color: Colors.white, size: 16),
-              const SizedBox(width: 6),
-              Expanded(
-                child: Text(group.name, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12), maxLines: 1, overflow: TextOverflow.ellipsis),
-              ),
-            ]),
+            Row(
+              children: [
+                const Icon(Icons.groups, color: Colors.white, size: 16),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    group.name,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 12,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
             const SizedBox(height: 4),
-            Text(group.productName, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11), maxLines: 1, overflow: TextOverflow.ellipsis),
+            Text(
+              group.productName,
+              style: TextStyle(
+                color: Colors.white.withValues(alpha: 0.8),
+                fontSize: 11,
+              ),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
             const Spacer(),
             ClipRRect(
               borderRadius: BorderRadius.circular(4),
@@ -1413,7 +1656,10 @@ class _HomeTabState extends State<_HomeTab> {
               ),
             ),
             const SizedBox(height: 4),
-            Text('${(progress * 100).toInt()}% filled', style: const TextStyle(color: Colors.white70, fontSize: 10)),
+            Text(
+              '${(progress * 100).toInt()}% filled',
+              style: const TextStyle(color: Colors.white70, fontSize: 10),
+            ),
           ],
         ),
       ),
@@ -1422,7 +1668,10 @@ class _HomeTabState extends State<_HomeTab> {
 
   Widget _buildJoinGroupBanner(BuildContext context) {
     return GestureDetector(
-      onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const GroupsListScreen())),
+      onTap: () => Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const GroupsListScreen()),
+      ),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
@@ -1437,20 +1686,45 @@ class _HomeTabState extends State<_HomeTab> {
                 color: Theme.of(context).colorScheme.primary,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: Icon(Icons.groups_outlined, color: Theme.of(context).colorScheme.onPrimary, size: 28),
+              child: Icon(
+                Icons.groups_outlined,
+                color: Theme.of(context).colorScheme.onPrimary,
+                size: 28,
+              ),
             ),
             const SizedBox(width: 14),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text('Join a Buying Group', style: GoogleFonts.outfit(color: Theme.of(context).colorScheme.onSecondaryContainer, fontSize: 15, fontWeight: FontWeight.bold)),
+                  Text(
+                    'Join a Buying Group',
+                    style: GoogleFonts.outfit(
+                      color: Theme.of(context).colorScheme.onSecondaryContainer,
+                      fontSize: 15,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
                   const SizedBox(height: 2),
-                  Text('Pool with others to unlock bulk discounts from farmers!', style: TextStyle(color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.8), fontSize: 12)),
+                  Text(
+                    'Pool with others to unlock bulk discounts from farmers!',
+                    style: TextStyle(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.onSecondaryContainer.withValues(alpha: 0.8),
+                      fontSize: 12,
+                    ),
+                  ),
                 ],
               ),
             ),
-            Icon(Icons.arrow_forward_ios, color: Theme.of(context).colorScheme.onSecondaryContainer.withValues(alpha: 0.7), size: 16),
+            Icon(
+              Icons.arrow_forward_ios,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSecondaryContainer.withValues(alpha: 0.7),
+              size: 16,
+            ),
           ],
         ),
       ),
@@ -1477,19 +1751,32 @@ class _HomeTabState extends State<_HomeTab> {
               onPressed: () {
                 ScaffoldState? scaffold = Scaffold.maybeOf(context);
                 if (scaffold == null || !scaffold.hasDrawer) {
-                  scaffold = context.findRootAncestorStateOfType<ScaffoldState>();
+                  scaffold = context
+                      .findRootAncestorStateOfType<ScaffoldState>();
                 }
                 scaffold?.openDrawer();
               },
             ),
             Column(
               children: [
-                Text('Current City', style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 12)),
+                Text(
+                  'Current City',
+                  style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.8),
+                    fontSize: 12,
+                  ),
+                ),
                 const Row(
                   children: [
                     Icon(Icons.location_on, color: Colors.white, size: 14),
                     SizedBox(width: 4),
-                    Text('Dhaka, BD', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold)),
+                    Text(
+                      'Dhaka, BD',
+                      style: TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -1503,26 +1790,47 @@ class _HomeTabState extends State<_HomeTab> {
                   inactiveColor: Colors.white70,
                 ),
                 IconButton(
-                  icon: const Icon(Icons.handshake_outlined, color: Colors.white),
+                  icon: const Icon(
+                    Icons.handshake_outlined,
+                    color: Colors.white,
+                  ),
                   tooltip: 'My Negotiations',
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const NegotiationsListScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const NegotiationsListScreen(),
+                      ),
+                    );
                   },
                 ),
                 IconButton(
                   icon: const Icon(Icons.gavel_outlined, color: Colors.white),
                   tooltip: 'My Bids',
                   onPressed: () {
-                    Navigator.push(context, MaterialPageRoute(builder: (context) => const MyBidsScreen()));
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const MyBidsScreen(),
+                      ),
+                    );
                   },
                 ),
                 const SizedBox(width: 4),
                 Stack(
                   children: [
                     IconButton(
-                      icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+                      icon: const Icon(
+                        Icons.notifications_outlined,
+                        color: Colors.white,
+                      ),
                       onPressed: () {
-                        Navigator.push(context, MaterialPageRoute(builder: (context) => const NotificationScreen()));
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const NotificationScreen(),
+                          ),
+                        );
                       },
                     ),
                     Positioned(
@@ -1531,7 +1839,10 @@ class _HomeTabState extends State<_HomeTab> {
                       child: Container(
                         width: 8,
                         height: 8,
-                        decoration: const BoxDecoration(color: Colors.orange, shape: BoxShape.circle),
+                        decoration: const BoxDecoration(
+                          color: Colors.orange,
+                          shape: BoxShape.circle,
+                        ),
                       ),
                     ),
                   ],

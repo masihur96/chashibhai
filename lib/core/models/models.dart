@@ -585,6 +585,8 @@ class DemandPost {
   final String imageUrl;
   final String? buyerName;
   final String? buyerPhone;
+  final int? offersCount;
+  final DateTime? createdAt;
 
   DemandPost({
     required this.id,
@@ -599,6 +601,8 @@ class DemandPost {
     required this.imageUrl,
     this.buyerName,
     this.buyerPhone,
+    this.offersCount,
+    this.createdAt,
   });
 
   DemandPost copyWith({
@@ -614,6 +618,8 @@ class DemandPost {
     String? imageUrl,
     String? buyerName,
     String? buyerPhone,
+    int? offersCount,
+    DateTime? createdAt,
   }) {
     return DemandPost(
       id: id ?? this.id,
@@ -628,6 +634,8 @@ class DemandPost {
       imageUrl: imageUrl ?? this.imageUrl,
       buyerName: buyerName ?? this.buyerName,
       buyerPhone: buyerPhone ?? this.buyerPhone,
+      offersCount: offersCount ?? this.offersCount,
+      createdAt: createdAt ?? this.createdAt,
     );
   }
 
@@ -672,6 +680,12 @@ class DemandPost {
       imageUrl: (json['imageUrl'] ?? json['image_url'] ?? '').toString(),
       buyerName: buyerObj?['name']?.toString() ?? json['buyerName']?.toString() ?? json['buyer_name']?.toString(),
       buyerPhone: buyerObj?['phone']?.toString() ?? json['buyerPhone']?.toString() ?? json['buyer_phone']?.toString(),
+      offersCount: json['offersCount'] is num
+          ? (json['offersCount'] as num).toInt()
+          : int.tryParse(json['offersCount']?.toString() ?? ''),
+      createdAt: json['createdAt'] != null || json['created_at'] != null
+          ? parseDate(json['createdAt'] ?? json['created_at'], DateTime.now())
+          : null,
     );
   }
 
@@ -694,6 +708,54 @@ class DemandPost {
       'trade_type': tradeType.name,
       'imageUrl': imageUrl,
       'image_url': imageUrl,
+      if (offersCount != null) 'offersCount': offersCount,
+      if (createdAt != null) 'createdAt': createdAt!.toUtc().toIso8601String(),
+    };
+  }
+}
+
+class DemandOfferFarmer {
+  final String id;
+  final String name;
+  final String? phone;
+  final double rating;
+  final String? avatarUrl;
+  final String? district;
+
+  DemandOfferFarmer({
+    required this.id,
+    required this.name,
+    this.phone,
+    this.rating = 0.0,
+    this.avatarUrl,
+    this.district,
+  });
+
+  factory DemandOfferFarmer.fromJson(Map<String, dynamic> json) {
+    double parseDouble(dynamic val) {
+      if (val == null) return 0.0;
+      if (val is num) return val.toDouble();
+      return double.tryParse(val.toString()) ?? 0.0;
+    }
+
+    return DemandOfferFarmer(
+      id: (json['id'] ?? '').toString(),
+      name: (json['name'] ?? 'Farmer').toString(),
+      phone: json['phone']?.toString(),
+      rating: parseDouble(json['rating']),
+      avatarUrl: json['avatarUrl']?.toString() ?? json['avatar_url']?.toString(),
+      district: json['district']?.toString(),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'name': name,
+      if (phone != null) 'phone': phone,
+      'rating': rating,
+      if (avatarUrl != null) 'avatarUrl': avatarUrl,
+      if (district != null) 'district': district,
     };
   }
 }
@@ -705,6 +767,7 @@ class DemandOffer {
   final double offerPrice;
   final String? note;
   final DateTime createdAt;
+  final DemandOfferFarmer? farmer;
 
   DemandOffer({
     required this.id,
@@ -713,7 +776,28 @@ class DemandOffer {
     required this.offerPrice,
     this.note,
     required this.createdAt,
+    this.farmer,
   });
+
+  DemandOffer copyWith({
+    String? id,
+    String? demandId,
+    String? farmerId,
+    double? offerPrice,
+    String? note,
+    DateTime? createdAt,
+    DemandOfferFarmer? farmer,
+  }) {
+    return DemandOffer(
+      id: id ?? this.id,
+      demandId: demandId ?? this.demandId,
+      farmerId: farmerId ?? this.farmerId,
+      offerPrice: offerPrice ?? this.offerPrice,
+      note: note ?? this.note,
+      createdAt: createdAt ?? this.createdAt,
+      farmer: farmer ?? this.farmer,
+    );
+  }
 
   factory DemandOffer.fromJson(Map<String, dynamic> json) {
     double parseDouble(dynamic val) {
@@ -734,6 +818,9 @@ class DemandOffer {
                 '',
           ) ??
           DateTime.now(),
+      farmer: json['farmer'] is Map<String, dynamic>
+          ? DemandOfferFarmer.fromJson(json['farmer'] as Map<String, dynamic>)
+          : null,
     );
   }
 
@@ -748,6 +835,7 @@ class DemandOffer {
       'offer_price': offerPrice,
       if (note != null) 'note': note,
       'createdAt': createdAt.toUtc().toIso8601String(),
+      if (farmer != null) 'farmer': farmer!.toJson(),
     };
   }
 }

@@ -78,6 +78,16 @@ abstract class BuyerRemoteDataSource {
     required CreateDemandOfferRequestModel request,
     String? token,
   });
+
+  Future<List<DemandOffer>> getDemandOffers({
+    required String demandId,
+    String? token,
+  });
+
+  Future<DemandPost> getDemandById({
+    required String demandId,
+    String? token,
+  });
 }
 
 class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
@@ -86,7 +96,11 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
 
   /// Default fallback token from user curl specification
   static const String defaultFallbackToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTE2NDIxMiwiZXhwIjoxNzk1MTY1MTEyfQ.YQmIE4_tvYuZdMQonDMTJWXI6baALYW-Ee5kD5Fbl0E';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTIyODY4NSwiZXhwIjoxNzk1MjI5NTg1fQ.tOmmN802nMfarpXhPLyKzrG4lhDAlptRY_8m_yWpnfw';
+
+  /// Default demand offers token from curl specification
+  static const String defaultDemandOffersToken =
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTIyODY4NSwiZXhwIjoxNzk1MjI5NTg1fQ.tOmmN802nMfarpXhPLyKzrG4lhDAlptRY_8m_yWpnfw';
 
   /// Default farmer demands token from curl specification
   static const String defaultFarmerDemandsToken =
@@ -1603,6 +1617,301 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
       if (e is! Exception) {
         ApiLogger.logError(
           method: 'POST',
+          uri: uri,
+          duration: stopwatch.elapsed,
+          error: e,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Fetches offers submitted for a demand using GET /api/v1/demands/{demandId}/offers
+  @override
+  Future<List<DemandOffer>> getDemandOffers({
+    required String demandId,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.demandOffers(demandId);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    // Resolve bearer token: explicit param -> StorageService -> defaultDemandOffersToken -> defaultFallbackToken
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      try {
+        resolvedToken = await StorageService().getAccessToken();
+      } catch (_) {}
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultDemandOffersToken;
+    }
+
+    final headers = <String, String>{
+      'accept': '*/*',
+    };
+    if (resolvedToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $resolvedToken';
+    }
+
+    ApiLogger.logRequest(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+    );
+
+    try {
+      final httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        final List<DemandOffer> offers = [];
+        if (decodedJson is Map<String, dynamic>) {
+          final data = decodedJson['data'] ?? decodedJson['offers'] ?? decodedJson['result'];
+          if (data is List) {
+            for (final item in data) {
+              if (item is Map<String, dynamic>) {
+                offers.add(DemandOffer.fromJson(item));
+              }
+            }
+          }
+        } else if (decodedJson is List) {
+          for (final item in decodedJson) {
+            if (item is Map<String, dynamic>) {
+              offers.add(DemandOffer.fromJson(item));
+            }
+          }
+        }
+        return offers;
+      } else if (httpResponse.statusCode == 401) {
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await getDemandOffers(
+              demandId: demandId,
+              token: refreshedToken,
+            );
+          }
+        }
+
+        String errorMessage = 'Unauthorized or token expired';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      } else {
+        String errorMessage =
+            'Failed to fetch demand offers (Status code ${httpResponse.statusCode})';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['message']?.toString() ??
+              decodedJson['error']?.toString() ??
+              decodedJson['detail']?.toString() ??
+              errorMessage;
+        } else if (responseBody.isNotEmpty) {
+          errorMessage = responseBody;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      }
+    } on SocketException catch (e) {
+      stopwatch.stop();
+      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e)';
+      ApiLogger.logError(
+        method: 'GET',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: err,
+      );
+      throw Exception(err);
+    } catch (e) {
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          duration: stopwatch.elapsed,
+          error: e,
+        );
+      }
+      rethrow;
+    }
+  }
+
+  /// Fetches details for a single demand using GET /api/v1/demands/{demandId}
+  @override
+  Future<DemandPost> getDemandById({
+    required String demandId,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.demandById(demandId);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    // Resolve bearer token: explicit param -> StorageService -> defaultDemandOffersToken -> defaultFallbackToken
+    String? resolvedToken = token;
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      try {
+        resolvedToken = await StorageService().getAccessToken();
+      } catch (_) {}
+    }
+    if (resolvedToken == null || resolvedToken.isEmpty) {
+      resolvedToken = defaultDemandOffersToken;
+    }
+
+    final headers = <String, String>{
+      'accept': '*/*',
+    };
+    if (resolvedToken.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $resolvedToken';
+    }
+
+    ApiLogger.logRequest(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+    );
+
+    try {
+      final httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      final httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      final responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 200 || httpResponse.statusCode == 201) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        if (decodedJson is Map<String, dynamic>) {
+          final data = decodedJson['data'] is Map<String, dynamic>
+              ? decodedJson['data'] as Map<String, dynamic>
+              : (decodedJson['demand'] is Map<String, dynamic>
+                  ? decodedJson['demand'] as Map<String, dynamic>
+                  : decodedJson);
+          return DemandPost.fromJson(data);
+        }
+        throw Exception('Unexpected response format when fetching demand details');
+      } else if (httpResponse.statusCode == 401) {
+        final refreshToken = await StorageService().getRefreshToken();
+        if (refreshToken != null && refreshToken.isNotEmpty) {
+          final refreshedToken = await _attemptRefreshToken(refreshToken);
+          if (refreshedToken != null && refreshedToken.isNotEmpty) {
+            return await getDemandById(
+              demandId: demandId,
+              token: refreshedToken,
+            );
+          }
+        }
+
+        String errorMessage = 'Unauthorized or token expired';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['error']?.toString() ??
+              decodedJson['message']?.toString() ??
+              errorMessage;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      } else {
+        String errorMessage =
+            'Failed to fetch demand details (Status code ${httpResponse.statusCode})';
+        if (decodedJson is Map<String, dynamic>) {
+          errorMessage = decodedJson['message']?.toString() ??
+              decodedJson['error']?.toString() ??
+              decodedJson['detail']?.toString() ??
+              errorMessage;
+        } else if (responseBody.isNotEmpty) {
+          errorMessage = responseBody;
+        }
+
+        ApiLogger.logError(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMessage,
+          body: decodedJson ?? responseBody,
+        );
+
+        throw Exception(errorMessage);
+      }
+    } on SocketException catch (e) {
+      stopwatch.stop();
+      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e)';
+      ApiLogger.logError(
+        method: 'GET',
+        uri: uri,
+        duration: stopwatch.elapsed,
+        error: err,
+      );
+      throw Exception(err);
+    } catch (e) {
+      stopwatch.stop();
+      if (e is! Exception) {
+        ApiLogger.logError(
+          method: 'GET',
           uri: uri,
           duration: stopwatch.elapsed,
           error: e,

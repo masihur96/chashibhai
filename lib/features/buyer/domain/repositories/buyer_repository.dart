@@ -72,4 +72,14 @@ abstract class BuyerRepository {
     required CreateDemandOfferRequestModel request,
     String? token,
   });
+
+  Future<List<DemandOffer>> getDemandOffers({
+    required String demandId,
+    String? token,
+  });
+
+  Future<DemandPost> getDemandById({
+    required String demandId,
+    String? token,
+  });
 }

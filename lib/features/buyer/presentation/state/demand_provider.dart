@@ -13,6 +13,8 @@ import '../../domain/usecases/create_bid_usecase.dart';
 import '../../domain/usecases/get_product_bids_usecase.dart';
 import '../../domain/usecases/get_my_bids_usecase.dart';
 import '../../domain/usecases/submit_demand_offer_usecase.dart';
+import '../../domain/usecases/get_demand_offers_usecase.dart';
+import '../../domain/usecases/get_demand_by_id_usecase.dart';
 import '../../data/models/create_demand_offer_request_model.dart';
 
 class DemandProvider extends ChangeNotifier {
@@ -20,6 +22,8 @@ class DemandProvider extends ChangeNotifier {
   List<DemandPost> _myDemands = [];
   List<Bid> _bids = List<Bid>.from(MockData.demoBids);
   List<Bid> _myBids = [];
+  final Map<String, List<DemandOffer>> _demandOffersMap = {};
+  final Map<String, DemandPost> _demandDetailsMap = {};
   bool _isLoading = false;
   bool _isDemandsLoading = false;
   bool _isMyDemandsLoading = false;
@@ -27,6 +31,8 @@ class DemandProvider extends ChangeNotifier {
   bool _isProductBidsLoading = false;
   bool _isMyBidsLoading = false;
   bool _isSubmittingOffer = false;
+  bool _isOffersLoading = false;
+  bool _isDemandDetailsLoading = false;
   String? _errorMessage;
   String? _demandsError;
   String? _myDemandsError;
@@ -34,6 +40,8 @@ class DemandProvider extends ChangeNotifier {
   String? _productBidsError;
   String? _myBidsError;
   String? _submitOfferError;
+  String? _offersError;
+  String? _demandDetailsError;
   String? _lastLoadedProductId;
   DemandOffer? _lastSubmittedOffer;
   final List<DemandOffer> _myOffers = [];
@@ -45,6 +53,8 @@ class DemandProvider extends ChangeNotifier {
   final GetProductBidsUseCase _getProductBidsUseCase;
   final GetMyBidsUseCase _getMyBidsUseCase;
   final SubmitDemandOfferUseCase _submitDemandOfferUseCase;
+  final GetDemandOffersUseCase _getDemandOffersUseCase;
+  final GetDemandByIdUseCase _getDemandByIdUseCase;
   final BuyerRepository _buyerRepository;
 
   DemandProvider({
@@ -55,6 +65,8 @@ class DemandProvider extends ChangeNotifier {
     GetProductBidsUseCase? getProductBidsUseCase,
     GetMyBidsUseCase? getMyBidsUseCase,
     SubmitDemandOfferUseCase? submitDemandOfferUseCase,
+    GetDemandOffersUseCase? getDemandOffersUseCase,
+    GetDemandByIdUseCase? getDemandByIdUseCase,
     BuyerRepository? buyerRepository,
   })  : _buyerRepository = buyerRepository ?? BuyerRepositoryImpl(),
         _createDemandUseCase = createDemandUseCase ??
@@ -70,7 +82,11 @@ class DemandProvider extends ChangeNotifier {
         _getMyBidsUseCase = getMyBidsUseCase ??
             GetMyBidsUseCase(buyerRepository ?? BuyerRepositoryImpl()),
         _submitDemandOfferUseCase = submitDemandOfferUseCase ??
-            SubmitDemandOfferUseCase(buyerRepository ?? BuyerRepositoryImpl());
+            SubmitDemandOfferUseCase(buyerRepository ?? BuyerRepositoryImpl()),
+        _getDemandOffersUseCase = getDemandOffersUseCase ??
+            GetDemandOffersUseCase(buyerRepository ?? BuyerRepositoryImpl()),
+        _getDemandByIdUseCase = getDemandByIdUseCase ??
+            GetDemandByIdUseCase(buyerRepository ?? BuyerRepositoryImpl());
 
   List<DemandPost> get demands => _demands;
   List<DemandPost> get myDemands => _myDemands;
@@ -97,10 +113,19 @@ class DemandProvider extends ChangeNotifier {
   String? get myBidsError => _myBidsError;
   bool get isSubmittingOffer => _isSubmittingOffer;
   String? get submitOfferError => _submitOfferError;
+  bool get isOffersLoading => _isOffersLoading;
+  String? get offersError => _offersError;
+  bool get isDemandDetailsLoading => _isDemandDetailsLoading;
+  String? get demandDetailsError => _demandDetailsError;
   DemandOffer? get lastSubmittedOffer => _lastSubmittedOffer;
   List<DemandOffer> get myOffers => List.unmodifiable(_myOffers);
   String? get lastLoadedProductId => _lastLoadedProductId;
   BuyerRepository get buyerRepository => _buyerRepository;
+
+  List<DemandOffer> getOffersForDemand(String demandId) =>
+      _demandOffersMap[demandId] ?? [];
+
+  DemandPost? getDemandDetail(String demandId) => _demandDetailsMap[demandId];
 
   void setDemands(List<DemandPost> demands) {
     _demands = demands;
@@ -379,6 +404,69 @@ class DemandProvider extends ChangeNotifier {
     } catch (e) {
       _isSubmittingOffer = false;
       _submitOfferError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Fetches offers submitted for a demand using GET /api/v1/demands/{demandId}/offers
+  Future<List<DemandOffer>> fetchDemandOffers({
+    required String demandId,
+    String? token,
+  }) async {
+    _isOffersLoading = true;
+    _offersError = null;
+    notifyListeners();
+
+    try {
+      final offers = await _getDemandOffersUseCase(
+        demandId: demandId,
+        token: token,
+      );
+      // Sort offers lowest price first by default
+      offers.sort((a, b) => a.offerPrice.compareTo(b.offerPrice));
+      _demandOffersMap[demandId] = offers;
+      _isOffersLoading = false;
+      notifyListeners();
+      return offers;
+    } catch (e) {
+      _isOffersLoading = false;
+      _offersError = e.toString().replaceFirst('Exception: ', '');
+      notifyListeners();
+      rethrow;
+    }
+  }
+
+  /// Fetches single demand details using GET /api/v1/demands/{demandId}
+  Future<DemandPost> fetchDemandById({
+    required String demandId,
+    String? token,
+  }) async {
+    _isDemandDetailsLoading = true;
+    _demandDetailsError = null;
+    notifyListeners();
+
+    try {
+      final demand = await _getDemandByIdUseCase(
+        demandId: demandId,
+        token: token,
+      );
+      _demandDetailsMap[demandId] = demand;
+      // Also update in _demands or _myDemands if already exists
+      final idx = _myDemands.indexWhere((d) => d.id == demand.id);
+      if (idx != -1) {
+        _myDemands[idx] = demand;
+      }
+      final dIdx = _demands.indexWhere((d) => d.id == demand.id);
+      if (dIdx != -1) {
+        _demands[dIdx] = demand;
+      }
+      _isDemandDetailsLoading = false;
+      notifyListeners();
+      return demand;
+    } catch (e) {
+      _isDemandDetailsLoading = false;
+      _demandDetailsError = e.toString().replaceFirst('Exception: ', '');
       notifyListeners();
       rethrow;
     }

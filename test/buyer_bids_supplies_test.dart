@@ -224,6 +224,22 @@ class TestMockBuyerRepository implements BuyerRepository {
       ),
     ];
   }
+
+  @override
+  Future<List<DemandOffer>> getDemandOffers({
+    required String demandId,
+    String? token,
+  }) async {
+    return [];
+  }
+
+  @override
+  Future<DemandPost> getDemandById({
+    required String demandId,
+    String? token,
+  }) async {
+    throw UnimplementedError();
+  }
 }
 
 void main() {

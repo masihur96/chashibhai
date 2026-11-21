@@ -100,6 +100,18 @@ class TestNegotiationsMockRepository implements BuyerRepository {
 
   @override
   Future<List<String>> uploadImages({required List<UploadFileItem> files, String? token}) async => [];
+
+  @override
+  Future<List<DemandOffer>> getDemandOffers({
+    required String demandId,
+    String? token,
+  }) async => [];
+
+  @override
+  Future<DemandPost> getDemandById({
+    required String demandId,
+    String? token,
+  }) async => throw UnimplementedError();
 }
 
 void main() {

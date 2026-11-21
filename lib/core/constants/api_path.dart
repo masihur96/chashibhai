@@ -54,7 +54,9 @@ class ApiPath {
   // Demands
   static String get demands => '$baseUrl/demands';
   static String get myDemands => '$baseUrl/demands/my';
+  static String demandById(String id) => '$baseUrl/demands/$id';
   static String demandOffer(String demandId) => '$baseUrl/demands/$demandId/offer';
+  static String demandOffers(String demandId) => '$baseUrl/demands/$demandId/offers';
 
   // Bids
   static String get bids => '$baseUrl/bids';

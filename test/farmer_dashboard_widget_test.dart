@@ -122,6 +122,18 @@ class FakeBuyerRepository implements BuyerRepository {
       createdAt: DateTime.now(),
     );
   }
+
+  @override
+  Future<List<DemandOffer>> getDemandOffers({
+    required String demandId,
+    String? token,
+  }) async => [];
+
+  @override
+  Future<DemandPost> getDemandById({
+    required String demandId,
+    String? token,
+  }) async => throw UnimplementedError();
 }
 
 class FakeFarmerRepository implements FarmerRepository {
