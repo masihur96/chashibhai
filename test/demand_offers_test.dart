@@ -128,12 +128,21 @@ class _MockDemandOffersHttpClientRequest implements HttpClientRequest {
   void write(Object? obj) {}
 
   @override
+  void add(List<int> data) {}
+
+  @override
+  int contentLength = 0;
+
+  @override
+  Encoding encoding = utf8;
+
+  @override
   Future<HttpClientResponse> close() {
     return Future.value(_MockDemandOffersHttpClientResponse(responseBody));
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
 
 class _MockDemandOffersHttpHeaders implements HttpHeaders {

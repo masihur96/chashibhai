@@ -566,10 +566,12 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
 
     try {
       final httpRequest = await _client.openUrl('PATCH', uri);
+      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
-      final bodyString = jsonEncode(payload);
-      httpRequest.write(bodyString);
+      final bodyBytes = utf8.encode(jsonEncode(payload));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
 
       final httpResponse = await httpRequest.close();
       stopwatch.stop();
@@ -660,10 +662,12 @@ class AdminRemoteDataSourceImpl implements AdminRemoteDataSource {
 
     try {
       final httpRequest = await _client.openUrl('PATCH', uri);
+      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
-      final bodyString = jsonEncode(payload);
-      httpRequest.write(bodyString);
+      final bodyBytes = utf8.encode(jsonEncode(payload));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
 
       final httpResponse = await httpRequest.close();
       stopwatch.stop();

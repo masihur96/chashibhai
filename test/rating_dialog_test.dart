@@ -255,6 +255,28 @@ void main() {
           true);
     });
 
+    test('ReviewRemoteDataSource submits review with emojis and Bangla unicode successfully',
+        () async {
+      final mockClient = MockReviewHttpClient();
+      final dataSource = ReviewRemoteDataSourceImpl(client: mockClient);
+      final repo = ReviewRepositoryImpl(remoteDataSource: dataSource);
+
+      final result = await repo.createReview(
+        request: const CreateReviewRequestModel(
+          revieweeId: '395e2439-099f-41da-a739-019f5a08e504',
+          orderId: 'a1b2c3d4-e5f6-7a8b-9c0d-1e2f3a4b5c6d',
+          rating: 5.0,
+          comment:
+              'Fresh produce, arrived promptly as described. Highly recommended!, Fair Price 💰 ভালো দাম',
+        ),
+      );
+
+      expect(mockClient.lastMethod, 'POST');
+      expect(mockClient.lastUri.toString(), ApiPath.reviews);
+      expect(result.id, 'rev_test_curl_123');
+      expect(mockClient.lastBody, contains('Fair Price 💰 ভালো দাম'));
+    });
+
     test('ReviewProvider submitReview falls back gracefully on network error',
         () async {
       final provider = ReviewProvider();

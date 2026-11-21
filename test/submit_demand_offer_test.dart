@@ -66,6 +66,12 @@ class _MockDemandOfferHttpClientRequest implements HttpClientRequest {
   }
 
   @override
+  void add(List<int> data) {
+    _bodyBuffer.addAll(data);
+    parent.lastBody = utf8.decode(data, allowMalformed: true);
+  }
+
+  @override
   Future<HttpClientResponse> close() {
     return Future.value(_MockDemandOfferHttpClientResponse(
       parent.statusCodeToReturn,
@@ -74,7 +80,13 @@ class _MockDemandOfferHttpClientRequest implements HttpClientRequest {
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  int contentLength = 0;
+
+  @override
+  Encoding encoding = utf8;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
 
 class _MockDemandOfferHttpHeaders implements HttpHeaders {

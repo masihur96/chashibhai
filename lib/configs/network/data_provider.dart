@@ -86,8 +86,12 @@ class DefaultDataProvider implements DataProvider {
         request.headers.set(HttpHeaders.contentTypeHeader, 'application/json; charset=utf-8');
       }
 
+      request.encoding = utf8;
       if (body != null) {
-        request.write(body is String ? body : jsonEncode(body));
+        final bodyStr = body is String ? body : jsonEncode(body);
+        final bodyBytes = utf8.encode(bodyStr);
+        request.contentLength = bodyBytes.length;
+        request.add(bodyBytes);
       }
 
       final response = await request.close();
@@ -138,8 +142,12 @@ class DefaultDataProvider implements DataProvider {
       final request = await _client.putUrl(uri);
       headers?.forEach((key, value) => request.headers.set(key, value));
 
+      request.encoding = utf8;
       if (body != null) {
-        request.write(body is String ? body : jsonEncode(body));
+        final bodyStr = body is String ? body : jsonEncode(body);
+        final bodyBytes = utf8.encode(bodyStr);
+        request.contentLength = bodyBytes.length;
+        request.add(bodyBytes);
       }
 
       final response = await request.close();
