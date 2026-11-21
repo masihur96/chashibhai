@@ -15,6 +15,7 @@ import 'package:chashibhai/features/group/domain/usecases/get_groups_usecase.dar
 import 'package:chashibhai/features/group/domain/usecases/get_my_groups_usecase.dart';
 import 'package:chashibhai/features/group/domain/usecases/join_group_usecase.dart';
 import 'package:chashibhai/features/group/domain/usecases/leave_group_usecase.dart';
+import 'package:chashibhai/features/group/domain/usecases/post_demand_from_group_usecase.dart';
 import 'package:chashibhai/features/group/domain/usecases/send_group_message_usecase.dart';
 import 'package:chashibhai/features/group/presentation/state/group_provider.dart';
 import 'package:chashibhai/features/group/presentation/views/group_detail_screen.dart';
@@ -185,6 +186,38 @@ class MockGroupRepository implements GroupRepository {
     groupMessagesMap[groupId] = [...(groupMessagesMap[groupId] ?? []), newMsg];
     return newMsg;
   }
+
+  String? lastConvertedGroupId;
+  String? lastConvertedToken;
+
+  @override
+  Future<Map<String, dynamic>> postDemandFromGroup({
+    required String groupId,
+    String? token,
+  }) async {
+    lastConvertedGroupId = groupId;
+    lastConvertedToken = token;
+    final idx = openGroups.indexWhere((g) => g.id == groupId);
+    if (idx >= 0) {
+      openGroups[idx] = openGroups[idx].copyWith(
+        status: GroupBuyStatus.active,
+        linkedDemandId: 'demand_test_999',
+      );
+    }
+    final myIdx = myGroups.indexWhere((g) => g.id == groupId);
+    if (myIdx >= 0) {
+      myGroups[myIdx] = myGroups[myIdx].copyWith(
+        status: GroupBuyStatus.active,
+        linkedDemandId: 'demand_test_999',
+      );
+    }
+    return {
+      'success': true,
+      'message': 'Group converted to demand post',
+      'demandId': 'demand_test_999',
+      'groupId': groupId,
+    };
+  }
 }
 
 void main() {
@@ -285,6 +318,7 @@ void main() {
         leaveGroupUseCase: LeaveGroupUseCase(mockRepo),
         getGroupMessagesUseCase: GetGroupMessagesUseCase(mockRepo),
         sendGroupMessageUseCase: SendGroupMessageUseCase(mockRepo),
+        postDemandFromGroupUseCase: PostDemandFromGroupUseCase(mockRepo),
       );
     });
 
@@ -400,6 +434,37 @@ void main() {
       expect(mockRepo.lastLeftGroupId, '66d1f893-cf97-4e66-97fa-54d2bcc69fac');
       expect(provider.myGroups.any((g) => g.id == '66d1f893-cf97-4e66-97fa-54d2bcc69fac'), false);
     });
+
+    test('convertGroupToDemand calls repository and updates group status and linked demand id', () async {
+      final sampleGroup = BuyingGroup(
+        id: '66d1f893-cf97-4e66-97fa-54d2bcc69fac',
+        name: 'Dhaka Potato Bulk Buy',
+        productName: 'Potatoes (Diamant)',
+        category: 'vegetables',
+        targetQuantity: 1000,
+        filledQuantity: 250,
+        pricePerKg: 25,
+        deliveryLocation: 'Mirpur-10, Dhaka',
+        createdBy: 'creator_1',
+        members: [
+          GroupMember(userId: 'creator_1', name: 'Creator', contributionQuantity: 100),
+        ],
+        messages: [],
+        expiryDate: DateTime.now().add(const Duration(days: 5)),
+      );
+      mockRepo.openGroups = [sampleGroup];
+      mockRepo.myGroups = [sampleGroup];
+      provider.setGroups([sampleGroup]);
+
+      final result = await provider.convertGroupToDemand('66d1f893-cf97-4e66-97fa-54d2bcc69fac');
+
+      expect(mockRepo.lastConvertedGroupId, '66d1f893-cf97-4e66-97fa-54d2bcc69fac');
+      expect(result['success'], true);
+      expect(result['demandId'], 'demand_test_999');
+      final updated = provider.getGroupById('66d1f893-cf97-4e66-97fa-54d2bcc69fac');
+      expect(updated?.linkedDemandId, 'demand_test_999');
+      expect(updated?.status, GroupBuyStatus.active);
+    });
   });
 
   group('GroupsListScreen & GroupDetailScreen Widget Tests', () {
@@ -420,6 +485,7 @@ void main() {
         leaveGroupUseCase: LeaveGroupUseCase(mockRepo),
         getGroupMessagesUseCase: GetGroupMessagesUseCase(mockRepo),
         sendGroupMessageUseCase: SendGroupMessageUseCase(mockRepo),
+        postDemandFromGroupUseCase: PostDemandFromGroupUseCase(mockRepo),
       );
       authProvider = AuthProvider();
       appStateProvider = AppStateProvider();
@@ -696,6 +762,76 @@ void main() {
       // Verify message was sent
       expect(mockRepo.lastSentMessageGroupId, '66d1f893-cf97-4e66-97fa-54d2bcc69fac');
       expect(mockRepo.lastSentMessageText, 'Hello everyone! When are we finalizing our bulk order?');
+    });
+
+    testWidgets('GroupDetailScreen shows convert to demand card, opens confirm dialog and converts', (tester) async {
+      tester.view.physicalSize = const Size(1200, 2400);
+      tester.view.devicePixelRatio = 1.0;
+      addTearDown(tester.view.resetPhysicalSize);
+      addTearDown(tester.view.resetDevicePixelRatio);
+
+      final sampleGroup = BuyingGroup(
+        id: '66d1f893-cf97-4e66-97fa-54d2bcc69fac',
+        name: 'Dhaka Potato Bulk Buy',
+        productName: 'Potatoes (Diamant)',
+        category: 'vegetables',
+        targetQuantity: 1000,
+        filledQuantity: 250,
+        pricePerKg: 25,
+        deliveryLocation: 'Mirpur-10, Dhaka',
+        createdBy: 'u_test_user',
+        members: [
+          GroupMember(userId: 'u_test_user', name: 'Leader', contributionQuantity: 250),
+        ],
+        messages: [],
+        expiryDate: DateTime.now().add(const Duration(days: 7)),
+      );
+      mockRepo.openGroups = [sampleGroup];
+      mockRepo.myGroups = [sampleGroup];
+
+      authProvider.setCurrentUser(
+        AppUser(
+          id: 'u_test_user',
+          name: 'Test User',
+          phone: '01407070311',
+          role: UserRole.buyer,
+          isVerified: true,
+        ),
+      );
+
+      await tester.pumpWidget(
+        MultiProvider(
+          providers: [
+            ChangeNotifierProvider.value(value: groupProvider),
+            ChangeNotifierProvider.value(value: authProvider),
+            ChangeNotifierProvider.value(value: appStateProvider),
+          ],
+          child: const MaterialApp(
+            home: GroupDetailScreen(groupId: '66d1f893-cf97-4e66-97fa-54d2bcc69fac'),
+          ),
+        ),
+      );
+
+      await tester.pumpAndSettle();
+
+      // Check conversion card and cURL pill
+      expect(find.text('Convert Group as Demand Post'), findsOneWidget);
+      expect(find.textContaining('POST /api/v1/groups/66d1f893-cf97-4e66-97fa-54d2bcc69fac/post-demand'), findsOneWidget);
+      expect(find.text('Convert to Demand Post (cURL POST)'), findsOneWidget);
+
+      // Tap Convert to Demand Post button
+      await tester.tap(find.text('Convert to Demand Post (cURL POST)'));
+      await tester.pumpAndSettle();
+
+      // Check Dialog
+      expect(find.text('Post as Demand'), findsOneWidget);
+      expect(find.text('Confirm Convert (cURL POST)'), findsOneWidget);
+
+      // Tap Confirm
+      await tester.tap(find.text('Confirm Convert (cURL POST)'));
+      await tester.pumpAndSettle();
+
+      expect(mockRepo.lastConvertedGroupId, '66d1f893-cf97-4e66-97fa-54d2bcc69fac');
     });
   });
 }

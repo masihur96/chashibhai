@@ -92,4 +92,15 @@ class GroupRepositoryImpl implements GroupRepository {
       token: token,
     );
   }
+
+  @override
+  Future<Map<String, dynamic>> postDemandFromGroup({
+    required String groupId,
+    String? token,
+  }) {
+    return _remoteDataSource.postDemandFromGroup(
+      groupId: groupId,
+      token: token,
+    );
+  }
 }

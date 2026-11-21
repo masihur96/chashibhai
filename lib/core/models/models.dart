@@ -1183,7 +1183,10 @@ class BuyingGroup {
       messages: messagesList,
       expiryDate: parseDate(json['expiryDate'] ?? json['expiry_date'], DateTime.now().add(const Duration(days: 7))),
       status: parseStatus(json['status']),
-      linkedDemandId: json['linkedDemandId']?.toString() ?? json['linked_demand_id']?.toString(),
+      linkedDemandId: json['linkedDemandId']?.toString() ??
+          json['linked_demand_id']?.toString() ??
+          json['demandId']?.toString() ??
+          json['demand_id']?.toString(),
       initialContribution: initContrib,
       createdAt: json['createdAt'] != null || json['created_at'] != null
           ? parseDate(json['createdAt'] ?? json['created_at'], DateTime.now())

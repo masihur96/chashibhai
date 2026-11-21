@@ -46,4 +46,9 @@ abstract class GroupRepository {
     required String message,
     String? token,
   });
+
+  Future<Map<String, dynamic>> postDemandFromGroup({
+    required String groupId,
+    String? token,
+  });
 }

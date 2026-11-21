@@ -1389,7 +1389,25 @@ class _GroupCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        if (isCreator) ...[
+                        if (group.linkedDemandId != null && group.linkedDemandId!.isNotEmpty) ...[
+                          const SizedBox(height: 4),
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: const Color(0xFF2E7D32).withValues(alpha: 0.12),
+                              borderRadius: BorderRadius.circular(4),
+                              border: Border.all(color: const Color(0xFF2E7D32).withValues(alpha: 0.3)),
+                            ),
+                            child: const Text(
+                              '📢 Demand Active',
+                              style: TextStyle(
+                                fontSize: 9,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1B5E20),
+                              ),
+                            ),
+                          ),
+                        ] else if (isCreator) ...[
                           const SizedBox(height: 4),
                           Container(
                             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),

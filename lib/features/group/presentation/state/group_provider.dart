@@ -13,6 +13,7 @@ import '../../domain/usecases/get_groups_usecase.dart';
 import '../../domain/usecases/get_my_groups_usecase.dart';
 import '../../domain/usecases/join_group_usecase.dart';
 import '../../domain/usecases/leave_group_usecase.dart';
+import '../../domain/usecases/post_demand_from_group_usecase.dart';
 import '../../domain/usecases/send_group_message_usecase.dart';
 
 class GroupProvider extends ChangeNotifier {
@@ -25,6 +26,7 @@ class GroupProvider extends ChangeNotifier {
   final LeaveGroupUseCase _leaveGroupUseCase;
   final GetGroupMessagesUseCase _getGroupMessagesUseCase;
   final SendGroupMessageUseCase _sendGroupMessageUseCase;
+  final PostDemandFromGroupUseCase _postDemandFromGroupUseCase;
 
   /// Default cURL bearer token for group operations
   static const String defaultGroupCurlToken =
@@ -59,6 +61,10 @@ class GroupProvider extends ChangeNotifier {
   bool _isSendingMessage = false;
   String? _sendMessageError;
 
+  bool _isConvertingToDemand = false;
+  String? _convertDemandError;
+  Map<String, dynamic>? _lastConvertedDemandData;
+
   GroupProvider({
     GroupRepository? groupRepository,
     CreateGroupUseCase? createGroupUseCase,
@@ -69,6 +75,7 @@ class GroupProvider extends ChangeNotifier {
     LeaveGroupUseCase? leaveGroupUseCase,
     GetGroupMessagesUseCase? getGroupMessagesUseCase,
     SendGroupMessageUseCase? sendGroupMessageUseCase,
+    PostDemandFromGroupUseCase? postDemandFromGroupUseCase,
   })  : _groupRepository = groupRepository ?? GroupRepositoryImpl(),
         _createGroupUseCase = createGroupUseCase ??
             CreateGroupUseCase(groupRepository ?? GroupRepositoryImpl()),
@@ -85,7 +92,9 @@ class GroupProvider extends ChangeNotifier {
         _getGroupMessagesUseCase = getGroupMessagesUseCase ??
             GetGroupMessagesUseCase(groupRepository ?? GroupRepositoryImpl()),
         _sendGroupMessageUseCase = sendGroupMessageUseCase ??
-            SendGroupMessageUseCase(groupRepository ?? GroupRepositoryImpl());
+            SendGroupMessageUseCase(groupRepository ?? GroupRepositoryImpl()),
+        _postDemandFromGroupUseCase = postDemandFromGroupUseCase ??
+            PostDemandFromGroupUseCase(groupRepository ?? GroupRepositoryImpl());
 
   // Getters
   GroupRepository get groupRepository => _groupRepository;
@@ -116,6 +125,10 @@ class GroupProvider extends ChangeNotifier {
 
   bool get isSendingMessage => _isSendingMessage;
   String? get sendMessageError => _sendMessageError;
+
+  bool get isConvertingToDemand => _isConvertingToDemand;
+  String? get convertDemandError => _convertDemandError;
+  Map<String, dynamic>? get lastConvertedDemandData => _lastConvertedDemandData;
 
   List<GroupMessage> getMessagesForGroup(String groupId) {
     if (_groupMessages.containsKey(groupId)) {
@@ -471,6 +484,66 @@ class GroupProvider extends ChangeNotifier {
       rethrow;
     } finally {
       _isSendingMessage = false;
+      notifyListeners();
+    }
+  }
+
+  /// Converts the buying group into a market Demand Post
+  /// using POST /api/v1/groups/:id/post-demand
+  Future<Map<String, dynamic>> convertGroupToDemand(
+    String groupId, {
+    String? token,
+  }) async {
+    _isConvertingToDemand = true;
+    _convertDemandError = null;
+    notifyListeners();
+
+    try {
+      final result = await _postDemandFromGroupUseCase(
+        groupId: groupId,
+        token: token ?? defaultGroupCurlToken,
+      );
+      _lastConvertedDemandData = result;
+
+      // Extract generated demand ID if available
+      final linkedDemandId = result['demandId']?.toString() ??
+          result['demand_id']?.toString() ??
+          result['data']?['id']?.toString() ??
+          result['data']?['demandId']?.toString() ??
+          result['data']?['demand_id']?.toString() ??
+          result['id']?.toString();
+
+      // Locally update the group status and linked demand id
+      final grp = getGroupById(groupId);
+      if (grp != null) {
+        final updatedGrp = grp.copyWith(
+          status: GroupBuyStatus.active,
+          linkedDemandId: linkedDemandId ?? grp.linkedDemandId,
+        );
+        final gIdx = _groups.indexWhere((g) => g.id == groupId);
+        if (gIdx >= 0) _groups[gIdx] = updatedGrp;
+        final mgIdx = _myGroups.indexWhere((g) => g.id == groupId);
+        if (mgIdx >= 0) _myGroups[mgIdx] = updatedGrp;
+        if (_currentGroupDetails?.id == groupId) _currentGroupDetails = updatedGrp;
+      }
+      notifyListeners();
+
+      // Refresh group details from server
+      try {
+        await fetchGroupDetails(groupId, token: token ?? defaultGroupCurlToken);
+      } catch (_) {}
+
+      // Refresh my groups list as well
+      try {
+        await fetchMyGroups(token: token ?? defaultGroupCurlToken);
+      } catch (_) {}
+
+      return result;
+    } catch (e) {
+      _convertDemandError = e.toString().replaceFirst('Exception: ', '');
+      rethrow;
+    } finally {
+      _isConvertingToDemand = false;
       notifyListeners();
     }
   }

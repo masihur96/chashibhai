@@ -53,6 +53,11 @@ abstract class GroupRemoteDataSource {
     required String message,
     String? token,
   });
+
+  Future<Map<String, dynamic>> postDemandFromGroup({
+    required String groupId,
+    String? token,
+  });
 }
 
 class GroupRemoteDataSourceImpl implements GroupRemoteDataSource {
@@ -60,7 +65,7 @@ class GroupRemoteDataSourceImpl implements GroupRemoteDataSource {
 
   /// Default fallback token from user cURL specification
   static const String defaultFallbackToken =
-      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTI1MzA1MSwiZXhwIjoxNzk1MjUzOTUxfQ.XolaWZN5vZ48eqfnBKR2Lp_GCx_QPaMj8dJrn__G7Zw';
+      'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIzOTVlMjQzOS0wOTlmLTQxZGEtYTczOS0wMTlmNWEwOGU1MDQiLCJwaG9uZSI6Ijg4MDE0MDcwNzAzMTEiLCJlbWFpbCI6IiIsInJvbGUiOiJidXllciIsImlhdCI6MTc5NTI2MzQwMiwiZXhwIjoxNzk1MjY0MzAyfQ.bBzXkK-A8EKBmCnQytF6bCoDBKdcIGIHrtU5Pey6Yqw';
 
   GroupRemoteDataSourceImpl({HttpClient? client})
       : _client = client ?? HttpClient() {
@@ -928,6 +933,109 @@ class GroupRemoteDataSourceImpl implements GroupRemoteDataSource {
             : decodedJson is Map && decodedJson['message'] != null
                 ? decodedJson['message'].toString()
                 : 'Failed to send message (Status: ${httpResponse.statusCode})';
+
+        ApiLogger.logError(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          error: errorMsg,
+          body: responseBody,
+        );
+        throw Exception(errorMsg);
+      }
+    } catch (e) {
+      if (stopwatch.isRunning) stopwatch.stop();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<Map<String, dynamic>> postDemandFromGroup({
+    required String groupId,
+    String? token,
+  }) async {
+    final endpoint = ApiPath.postDemandFromGroup(groupId);
+    final uri = Uri.parse(endpoint);
+    final stopwatch = Stopwatch()..start();
+
+    String resolvedToken = await _resolveToken(token);
+    final headers = {
+      'accept': '*/*',
+      'Authorization': 'Bearer $resolvedToken',
+      'Content-Type': 'application/json',
+    };
+
+    ApiLogger.logRequest(
+      method: 'POST',
+      uri: uri,
+      headers: headers,
+      body: '',
+    );
+
+    try {
+      var httpRequest = await _client.postUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+      httpRequest.write('');
+
+      var httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      var responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 401) {
+        final newToken = await _attemptRefreshToken();
+        if (newToken != null && newToken.isNotEmpty) {
+          resolvedToken = newToken;
+          headers['Authorization'] = 'Bearer $resolvedToken';
+          stopwatch.reset();
+          stopwatch.start();
+
+          httpRequest = await _client.postUrl(uri);
+          headers.forEach((key, value) => httpRequest.headers.set(key, value));
+          httpRequest.write('');
+
+          httpResponse = await httpRequest.close();
+          stopwatch.stop();
+          responseBody = await httpResponse.transform(utf8.decoder).join();
+          try {
+            decodedJson = jsonDecode(responseBody);
+          } catch (_) {
+            decodedJson = null;
+          }
+        }
+      }
+
+      if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
+        ApiLogger.logResponse(
+          method: 'POST',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        if (decodedJson is Map<String, dynamic>) {
+          return decodedJson;
+        }
+
+        return {
+          'success': true,
+          'message': 'Group successfully converted to demand post',
+          'groupId': groupId,
+        };
+      } else {
+        final errorMsg = decodedJson is Map && decodedJson['error'] != null
+            ? decodedJson['error'].toString()
+            : decodedJson is Map && decodedJson['message'] != null
+                ? decodedJson['message'].toString()
+                : 'Failed to convert group to demand post (Status: ${httpResponse.statusCode})';
 
         ApiLogger.logError(
           method: 'POST',

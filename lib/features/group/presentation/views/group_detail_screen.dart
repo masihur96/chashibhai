@@ -7,6 +7,7 @@ import '../../../../core/models/models.dart';
 import '../../../../core/theme/app_colors.dart';
 import '../../../account/presentation/state/app_state_provider.dart';
 import '../../../auth/presentation/state/auth_provider.dart';
+import '../../../buyer/presentation/state/demand_provider.dart';
 import '../../data/models/join_group_request_model.dart';
 import '../state/group_provider.dart';
 
@@ -345,6 +346,194 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
     );
   }
 
+  void _showConfirmDemandPostDialog(BuildContext context, BuyingGroup group) {
+    showDialog(
+      context: context,
+      builder: (dialogCtx) {
+        return StatefulBuilder(
+          builder: (ctx, setDialogState) {
+            final provider = context.watch<GroupProvider>();
+            final isConverting = provider.isConvertingToDemand;
+
+            return AlertDialog(
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2E7D32).withValues(alpha: 0.1),
+                      shape: BoxShape.circle,
+                    ),
+                    child: const Icon(Icons.campaign_rounded, color: Color(0xFF2E7D32), size: 24),
+                  ),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Post as Demand',
+                          style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                        Text(
+                          'Convert Group to Market Demand',
+                          style: TextStyle(fontSize: 11, color: Colors.grey.shade600),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // cURL Endpoint pill
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2E7D32).withValues(alpha: 0.06),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFF2E7D32).withValues(alpha: 0.2)),
+                      ),
+                      child: Row(
+                        children: [
+                          const Icon(Icons.terminal_rounded, size: 14, color: Color(0xFF2E7D32)),
+                          const SizedBox(width: 6),
+                          Expanded(
+                            child: Text(
+                              'POST /api/v1/groups/${group.id}/post-demand',
+                              style: GoogleFonts.jetBrainsMono(
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                color: const Color(0xFF1B5E20),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    Text(
+                      'This action will bundle your buying group of ${group.members.length} member(s) into an active bulk demand post on ChashiBhai marketplace.',
+                      style: const TextStyle(fontSize: 13, height: 1.4),
+                    ),
+                    const SizedBox(height: 12),
+
+                    // Key Specs
+                    Container(
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade50,
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.grey.shade200),
+                      ),
+                      child: Column(
+                        children: [
+                          _dialogRow('Product', group.productName),
+                          const Divider(height: 12),
+                          _dialogRow('Total Pool', '${group.filledQuantity.toInt()} / ${group.targetQuantity.toInt()} KG'),
+                          const Divider(height: 12),
+                          _dialogRow('Offered Price', '৳${group.pricePerKg.toInt()} / KG'),
+                          const Divider(height: 12),
+                          _dialogRow('Estimated Total', '৳${(group.targetQuantity * group.pricePerKg).toInt()}'),
+                          const Divider(height: 12),
+                          _dialogRow('Delivery To', group.deliveryLocation),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.amber.shade50,
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: Colors.amber.shade200),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(Icons.info_outline, size: 16, color: Colors.amber.shade800),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              'Farmers across Bangladesh will be able to submit competitive supply offers to fulfill this order.',
+                              style: TextStyle(fontSize: 11, color: Colors.amber.shade900),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: isConverting ? null : () => Navigator.pop(dialogCtx),
+                  child: const Text('Cancel', style: TextStyle(color: Colors.grey)),
+                ),
+                ElevatedButton.icon(
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF2E7D32),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  ),
+                  icon: isConverting
+                      ? const SizedBox(
+                          width: 14,
+                          height: 14,
+                          child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                        )
+                      : const Icon(Icons.rocket_launch_rounded, size: 16),
+                  label: Text(isConverting ? 'Posting Demand...' : 'Confirm Convert (cURL POST)'),
+                  onPressed: isConverting
+                      ? null
+                      : () async {
+                          final messenger = ScaffoldMessenger.of(context);
+                          final groupProvider = context.read<GroupProvider>();
+                          DemandProvider? demandProvider;
+                          try {
+                            demandProvider = context.read<DemandProvider>();
+                          } catch (_) {}
+                          try {
+                            final res = await groupProvider.convertGroupToDemand(group.id);
+                            if (dialogCtx.mounted) Navigator.pop(dialogCtx);
+                            try {
+                              demandProvider?.fetchMyDemands();
+                            } catch (_) {}
+                            final demandId = res['demandId'] ?? res['demand_id'] ?? res['data']?['id'] ?? '';
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text(
+                                  '🎉 Group successfully posted as Demand! ${demandId.toString().isNotEmpty ? 'ID: #$demandId' : ''}',
+                                ),
+                                backgroundColor: const Color(0xFF2E7D32),
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          } catch (e) {
+                            messenger.showSnackBar(
+                              SnackBar(
+                                content: Text('⚠️ Conversion failed: $e'),
+                                backgroundColor: AppColors.error,
+                                behavior: SnackBarBehavior.floating,
+                              ),
+                            );
+                          }
+                        },
+                ),
+              ],
+            );
+          },
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final groupProvider = context.watch<GroupProvider>();
@@ -430,6 +619,11 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
             backgroundColor: const Color(0xFF2E7D32),
             foregroundColor: Colors.white,
             actions: [
+              IconButton(
+                tooltip: 'Convert Group as Demand Post (cURL POST)',
+                icon: const Icon(Icons.campaign_outlined),
+                onPressed: () => _showConfirmDemandPostDialog(context, group),
+              ),
               IconButton(
                 tooltip: 'Refresh Group Details',
                 icon: const Icon(Icons.refresh_rounded),
@@ -618,6 +812,9 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
           ),
         ),
         const SizedBox(height: 16),
+
+        // Demand Post Conversion Card
+        _buildDemandConversionCard(group, user, isBangla),
 
         // Members List Header
         Row(
@@ -1100,4 +1297,171 @@ class _GroupDetailScreenState extends State<GroupDetailScreen>
       );
 
   Widget _divider() => Container(width: 1, height: 26, color: Colors.grey.shade200);
+
+  Widget _dialogRow(String label, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(label, style: TextStyle(color: Colors.grey.shade600, fontSize: 12)),
+        Text(value, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 12)),
+      ],
+    );
+  }
+
+  Widget _buildDemandConversionCard(BuyingGroup group, AppUser? user, bool isBangla) {
+    final groupProvider = context.watch<GroupProvider>();
+    final isConverting = groupProvider.isConvertingToDemand;
+    final hasLinkedDemand = group.linkedDemandId != null && group.linkedDemandId!.isNotEmpty;
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: hasLinkedDemand
+              ? const Color(0xFF2E7D32).withValues(alpha: 0.3)
+              : Colors.amber.shade300,
+          width: 1.2,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.04),
+            blurRadius: 10,
+            offset: const Offset(0, 3),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: hasLinkedDemand
+                      ? const Color(0xFF2E7D32).withValues(alpha: 0.1)
+                      : Colors.amber.shade100,
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(
+                  hasLinkedDemand ? Icons.verified_rounded : Icons.campaign_rounded,
+                  color: hasLinkedDemand ? const Color(0xFF2E7D32) : Colors.amber.shade900,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      hasLinkedDemand
+                          ? 'Marketplace Demand Active'
+                          : 'Convert Group as Demand Post',
+                      style: GoogleFonts.outfit(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 15,
+                        color: hasLinkedDemand ? const Color(0xFF1B5E20) : Colors.black87,
+                      ),
+                    ),
+                    Text(
+                      hasLinkedDemand
+                          ? 'Demand ID: #${group.linkedDemandId} • Farmers can now place bids'
+                          : 'Publish pool demand to marketplace for wholesale farmer bids',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.grey.shade600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+
+          // cURL Endpoint pill
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2E7D32).withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF2E7D32).withValues(alpha: 0.2)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.send_and_archive_rounded, size: 14, color: Color(0xFF2E7D32)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'POST /api/v1/groups/${group.id}/post-demand',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1B5E20),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          if (hasLinkedDemand)
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+              decoration: BoxDecoration(
+                color: const Color(0xFF2E7D32).withValues(alpha: 0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.check_circle_rounded, color: Color(0xFF2E7D32), size: 16),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Published as Demand Post #${group.linkedDemandId}. Track farmer offers in Demand Marketplace.',
+                      style: const TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF2E7D32),
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            )
+          else
+            SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: ElevatedButton.icon(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFF2E7D32),
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                  elevation: 1,
+                ),
+                icon: isConverting
+                    ? const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white),
+                      )
+                    : const Icon(Icons.rocket_launch_rounded, size: 18),
+                label: Text(
+                  isConverting ? 'Converting to Demand...' : 'Convert to Demand Post (cURL POST)',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 13),
+                ),
+                onPressed: isConverting ? null : () => _showConfirmDemandPostDialog(context, group),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
 }
