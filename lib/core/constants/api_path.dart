@@ -79,6 +79,12 @@ class ApiPath {
   static String groupMessages(String id) => '$baseUrl/groups/$id/messages';
   static String postDemandFromGroup(String id) => '$baseUrl/groups/$id/post-demand';
 
+  // Notifications
+  static String get notifications => '$baseUrl/notifications';
+  static String notificationById(String id) => '$baseUrl/notifications/$id';
+  static String markNotificationRead(String id) => '$baseUrl/notifications/$id/read';
+  static String get markAllNotificationsRead => '$baseUrl/notifications/read-all';
+
   // Reviews
   static String get reviews => '$baseUrl/reviews';
   static String get myReviews => '$baseUrl/reviews/my';

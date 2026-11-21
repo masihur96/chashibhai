@@ -927,7 +927,7 @@ class Transaction {
 
 enum GroupBuyStatus { open, active, fulfilled, cancelled }
 
-enum NotificationType { order, payment, alert, promo }
+enum NotificationType { order, payment, alert, promo, bid, demand, group, system }
 
 class AppNotification {
   final String id;
@@ -936,6 +936,8 @@ class AppNotification {
   final DateTime createdAt;
   final NotificationType type;
   final bool isRead;
+  final String? typeString;
+  final Map<String, dynamic>? data;
 
   AppNotification({
     required this.id,
@@ -944,7 +946,95 @@ class AppNotification {
     required this.createdAt,
     required this.type,
     this.isRead = false,
+    this.typeString,
+    this.data,
   });
+
+  AppNotification copyWith({
+    String? id,
+    String? title,
+    String? message,
+    DateTime? createdAt,
+    NotificationType? type,
+    bool? isRead,
+    String? typeString,
+    Map<String, dynamic>? data,
+  }) {
+    return AppNotification(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      message: message ?? this.message,
+      createdAt: createdAt ?? this.createdAt,
+      type: type ?? this.type,
+      isRead: isRead ?? this.isRead,
+      typeString: typeString ?? this.typeString,
+      data: data ?? this.data,
+    );
+  }
+
+  factory AppNotification.fromJson(Map<String, dynamic> json) {
+    NotificationType parseType(dynamic val) {
+      final str = val?.toString().toLowerCase() ?? '';
+      if (str.contains('order')) return NotificationType.order;
+      if (str.contains('pay') || str.contains('wallet')) return NotificationType.payment;
+      if (str.contains('bid') || str.contains('offer')) return NotificationType.bid;
+      if (str.contains('demand')) return NotificationType.demand;
+      if (str.contains('group')) return NotificationType.group;
+      if (str.contains('alert') || str.contains('warn')) return NotificationType.alert;
+      if (str.contains('promo')) return NotificationType.promo;
+      if (str.contains('system')) return NotificationType.system;
+      return NotificationType.alert;
+    }
+
+    DateTime parseDate(dynamic val) {
+      if (val == null) return DateTime.now();
+      try {
+        return DateTime.parse(val.toString());
+      } catch (_) {
+        return DateTime.now();
+      }
+    }
+
+    final rawType = json['type']?.toString();
+    final isReadVal = json['isRead'] == true ||
+        json['is_read'] == true ||
+        json['read'] == true ||
+        json['status'] == 'read';
+
+    final text = json['message']?.toString() ??
+        json['body']?.toString() ??
+        json['content']?.toString() ??
+        json['description']?.toString() ??
+        '';
+
+    final title = json['title']?.toString() ??
+        json['subject']?.toString() ??
+        (text.isNotEmpty ? (text.length > 30 ? text.substring(0, 30) : text) : 'Notification');
+
+    return AppNotification(
+      id: json['id']?.toString() ??
+          json['_id']?.toString() ??
+          'notif_${DateTime.now().millisecondsSinceEpoch}',
+      title: title,
+      message: text,
+      createdAt: parseDate(json['createdAt'] ?? json['created_at'] ?? json['timestamp']),
+      type: parseType(rawType),
+      isRead: isReadVal,
+      typeString: rawType,
+      data: json['data'] is Map<String, dynamic> ? json['data'] as Map<String, dynamic> : null,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'title': title,
+    'message': message,
+    'createdAt': createdAt.toIso8601String(),
+    'type': type.name,
+    'isRead': isRead,
+    if (typeString != null) 'typeString': typeString,
+    if (data != null) 'data': data,
+  };
 }
 
 class GroupMessage {

@@ -30,6 +30,7 @@ import './core/utils/localization.dart';
 import './core/widgets/language_toggle_button.dart';
 import './features/admin/presentation/views/admin_shell.dart';
 import './features/buyer/presentation/state/negotiation_provider.dart';
+import './features/notification/presentation/state/notification_provider.dart';
 
 import './core/utils/storage_service.dart';
 import './features/splash/presentation/views/splash_screen.dart';
@@ -48,6 +49,7 @@ void main() async {
         ChangeNotifierProvider(create: (_) => AppStateProvider()),
         ChangeNotifierProvider(create: (_) => ReviewProvider()),
         ChangeNotifierProvider(create: (_) => NegotiationProvider()),
+        ChangeNotifierProvider(create: (_) => NotificationProvider()),
         ChangeNotifierProvider(create: (_) => AdminDashboardProvider()),
         ChangeNotifierProvider(create: (_) => AdminUserProvider()),
       ],
