@@ -173,10 +173,12 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
+      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
-      final bodyString = jsonEncode(requestPayload);
-      httpRequest.write(bodyString);
+      final bodyBytes = utf8.encode(jsonEncode(requestPayload));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
 
       final httpResponse = await httpRequest.close();
       stopwatch.stop();
@@ -721,10 +723,12 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
+      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
-      final bodyString = jsonEncode(requestPayload);
-      httpRequest.write(bodyString);
+      final bodyBytes = utf8.encode(jsonEncode(requestPayload));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
 
       final httpResponse = await httpRequest.close();
       stopwatch.stop();
@@ -1489,11 +1493,14 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
+      httpRequest.encoding = utf8;
       headers.forEach((key, value) {
         httpRequest.headers.set(key, value);
       });
 
-      httpRequest.write(jsonEncode(requestBody));
+      final bodyBytes = utf8.encode(jsonEncode(requestBody));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
       final httpResponse = await httpRequest.close();
       final responseBody = await httpResponse.transform(utf8.decoder).join();
       stopwatch.stop();
@@ -1526,10 +1533,12 @@ class BuyerRemoteDataSourceImpl implements BuyerRemoteDataSource {
             );
 
             final retryRequest = await _client.postUrl(uri);
+            retryRequest.encoding = utf8;
             retryHeaders.forEach((key, value) {
               retryRequest.headers.set(key, value);
             });
-            retryRequest.write(jsonEncode(requestBody));
+            retryRequest.contentLength = bodyBytes.length;
+            retryRequest.add(bodyBytes);
 
             final retryResponse = await retryRequest.close();
             final retryBody =

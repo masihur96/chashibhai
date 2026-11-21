@@ -110,10 +110,12 @@ class FarmerRemoteDataSourceImpl implements FarmerRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
+      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
-      final bodyString = jsonEncode(requestPayload);
-      httpRequest.write(bodyString);
+      final bodyBytes = utf8.encode(jsonEncode(requestPayload));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
 
       final httpResponse = await httpRequest.close();
       stopwatch.stop();
@@ -612,10 +614,12 @@ class FarmerRemoteDataSourceImpl implements FarmerRemoteDataSource {
 
     try {
       final httpRequest = await _client.openUrl('PATCH', uri);
+      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
-      final bodyString = jsonEncode(requestPayload);
-      httpRequest.write(bodyString);
+      final bodyBytes = utf8.encode(jsonEncode(requestPayload));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
 
       final httpResponse = await httpRequest.close();
       stopwatch.stop();

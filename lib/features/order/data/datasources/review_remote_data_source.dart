@@ -102,8 +102,12 @@ class ReviewRemoteDataSourceImpl implements ReviewRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
+      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
-      httpRequest.write(jsonEncode(requestPayload));
+
+      final bodyBytes = utf8.encode(jsonEncode(requestPayload));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
 
       final httpResponse = await httpRequest.close();
       stopwatch.stop();

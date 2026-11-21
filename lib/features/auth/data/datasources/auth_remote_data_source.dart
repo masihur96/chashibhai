@@ -55,10 +55,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
+      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
-      final bodyString = jsonEncode(request.toJson());
-      httpRequest.write(bodyString);
+      final bodyBytes = utf8.encode(jsonEncode(request.toJson()));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
 
       final httpResponse = await httpRequest.close();
       stopwatch.stop();
@@ -147,10 +149,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
+      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
-      final bodyString = jsonEncode(request.toJson());
-      httpRequest.write(bodyString);
+      final bodyBytes = utf8.encode(jsonEncode(request.toJson()));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
 
       final httpResponse = await httpRequest.close();
       stopwatch.stop();
@@ -333,10 +337,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     try {
       final httpRequest = await _client.postUrl(uri);
+      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
-      final bodyString = jsonEncode(request.toJson());
-      httpRequest.write(bodyString);
+      final bodyBytes = utf8.encode(jsonEncode(request.toJson()));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
 
       final httpResponse = await httpRequest.close();
       stopwatch.stop();
@@ -488,10 +494,12 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
 
     try {
       final httpRequest = await _client.patchUrl(uri);
+      httpRequest.encoding = utf8;
       headers.forEach((key, value) => httpRequest.headers.set(key, value));
 
-      final bodyString = jsonEncode(data);
-      httpRequest.write(bodyString);
+      final bodyBytes = utf8.encode(jsonEncode(data));
+      httpRequest.contentLength = bodyBytes.length;
+      httpRequest.add(bodyBytes);
 
       final httpResponse = await httpRequest.close();
       stopwatch.stop();

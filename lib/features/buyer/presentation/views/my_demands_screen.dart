@@ -104,7 +104,8 @@ class _MyDemandsScreenState extends State<MyDemandsScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (_) => DemandOffersScreen(demand: demand),
+                              builder: (_) =>
+                                  DemandOffersScreen(demand: demand),
                             ),
                           );
                         },

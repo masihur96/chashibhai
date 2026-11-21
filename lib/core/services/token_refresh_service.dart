@@ -64,9 +64,13 @@ class TokenRefreshManager {
 
       final effectiveClient = customClient ?? _client;
       final req = await effectiveClient.postUrl(refreshUri);
+      req.encoding = utf8;
       req.headers.set('Content-Type', 'application/json; charset=utf-8');
       req.headers.set('accept', '*/*');
-      req.write(jsonEncode({'refreshToken': refreshToken}));
+
+      final bodyBytes = utf8.encode(jsonEncode({'refreshToken': refreshToken}));
+      req.contentLength = bodyBytes.length;
+      req.add(bodyBytes);
 
       final res = await req.close();
       final body = await res.transform(utf8.decoder).join();
