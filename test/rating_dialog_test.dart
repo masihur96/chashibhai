@@ -75,6 +75,12 @@ class _MockReviewHttpClientRequest implements HttpClientRequest {
   }
 
   @override
+  void add(List<int> data) {
+    _bodyBuffer.addAll(data);
+    parent.lastBody = utf8.decode(data, allowMalformed: true);
+  }
+
+  @override
   Future<HttpClientResponse> close() {
     return Future.value(_MockReviewHttpClientResponse(
       parent.statusCodeToReturn,
@@ -83,7 +89,13 @@ class _MockReviewHttpClientRequest implements HttpClientRequest {
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  int contentLength = 0;
+
+  @override
+  Encoding encoding = utf8;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
 
 class _MockReviewHttpHeaders implements HttpHeaders {
@@ -96,7 +108,13 @@ class _MockReviewHttpHeaders implements HttpHeaders {
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  int contentLength = 0;
+
+  @override
+  Encoding encoding = utf8;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
 
 class _MockReviewHttpClientResponse extends Stream<List<int>>
@@ -123,7 +141,13 @@ class _MockReviewHttpClientResponse extends Stream<List<int>>
   }
 
   @override
-  dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+  int contentLength = 0;
+
+  @override
+  Encoding encoding = utf8;
+
+  @override
+  dynamic noSuchMethod(Invocation invocation) => null;
 }
 
 void main() {
