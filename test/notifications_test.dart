@@ -6,6 +6,8 @@ import 'package:chashibhai/core/models/models.dart';
 import 'package:chashibhai/features/account/presentation/state/app_state_provider.dart';
 import 'package:chashibhai/features/auth/presentation/state/auth_provider.dart';
 import 'package:chashibhai/features/notification/domain/repositories/notification_repository.dart';
+import 'package:chashibhai/features/notification/domain/usecases/delete_notification_usecase.dart';
+import 'package:chashibhai/features/notification/domain/usecases/get_notifications_unread_count_usecase.dart';
 import 'package:chashibhai/features/notification/domain/usecases/get_notifications_usecase.dart';
 import 'package:chashibhai/features/notification/domain/usecases/mark_all_notifications_as_read_usecase.dart';
 import 'package:chashibhai/features/notification/domain/usecases/mark_notification_as_read_usecase.dart';
@@ -14,12 +16,14 @@ import 'package:chashibhai/features/notification/presentation/views/notification
 
 class MockNotificationRepository implements NotificationRepository {
   List<AppNotification> notifications = [];
+  int mockUnreadCount = 0;
   int? lastFetchedPage;
   int? lastFetchedLimit;
   bool? lastFetchedIsRead;
   String? lastFetchedType;
   String? lastFetchedToken;
   String? lastMarkedReadId;
+  String? lastDeletedId;
   bool didMarkAllRead = false;
 
   @override
@@ -47,6 +51,13 @@ class MockNotificationRepository implements NotificationRepository {
   }
 
   @override
+  Future<int> getUnreadCount({String? token}) async {
+    return mockUnreadCount > 0
+        ? mockUnreadCount
+        : notifications.where((n) => !n.isRead).length;
+  }
+
+  @override
   Future<bool> markAsRead({
     required String notificationId,
     String? token,
@@ -63,6 +74,16 @@ class MockNotificationRepository implements NotificationRepository {
   Future<bool> markAllAsRead({String? token}) async {
     didMarkAllRead = true;
     notifications = notifications.map((n) => n.copyWith(isRead: true)).toList();
+    return true;
+  }
+
+  @override
+  Future<bool> deleteNotification({
+    required String notificationId,
+    String? token,
+  }) async {
+    lastDeletedId = notificationId;
+    notifications.removeWhere((n) => n.id == notificationId);
     return true;
   }
 }
@@ -118,8 +139,10 @@ void main() {
       provider = NotificationProvider(
         repository: mockRepo,
         getNotificationsUseCase: GetNotificationsUseCase(mockRepo),
+        getNotificationsUnreadCountUseCase: GetNotificationsUnreadCountUseCase(mockRepo),
         markNotificationAsReadUseCase: MarkNotificationAsReadUseCase(mockRepo),
         markAllNotificationsAsReadUseCase: MarkAllNotificationsAsReadUseCase(mockRepo),
+        deleteNotificationUseCase: DeleteNotificationUseCase(mockRepo),
       );
     });
 
@@ -155,6 +178,15 @@ void main() {
       expect(result.first.id, 'n1');
     });
 
+    test('fetchUnreadCount fetches count from GET /notifications/unread-count', () async {
+      mockRepo.mockUnreadCount = 7;
+
+      final count = await provider.fetchUnreadCount();
+
+      expect(count, 7);
+      expect(provider.unreadCount, 7);
+    });
+
     test('Filter changes update query string and trigger fetch', () async {
       provider.setFilterIsRead(false);
       expect(provider.filterIsRead, false);
@@ -183,7 +215,7 @@ void main() {
 
     test('markAsRead updates item state locally and notifies repository', () async {
       final sample = AppNotification(
-        id: 'n_unread',
+        id: '45e84ab2-b509-4290-a317-1c17cc229db7',
         title: 'New Group Pool Created',
         message: 'Dhaka Potato Bulk Buy is open.',
         createdAt: DateTime.now(),
@@ -195,9 +227,9 @@ void main() {
 
       expect(provider.unreadCount, 1);
 
-      await provider.markAsRead('n_unread');
+      await provider.markAsRead('45e84ab2-b509-4290-a317-1c17cc229db7');
 
-      expect(mockRepo.lastMarkedReadId, 'n_unread');
+      expect(mockRepo.lastMarkedReadId, '45e84ab2-b509-4290-a317-1c17cc229db7');
       expect(provider.notifications.first.isRead, true);
       expect(provider.unreadCount, 0);
     });
@@ -230,6 +262,27 @@ void main() {
       expect(provider.notifications.every((n) => n.isRead), true);
       expect(provider.unreadCount, 0);
     });
+
+    test('deleteNotification removes notification and calls DELETE API', () async {
+      final sample = AppNotification(
+        id: '45e84ab2-b509-4290-a317-1c17cc229db7',
+        title: 'To Delete',
+        message: 'Will be removed.',
+        createdAt: DateTime.now(),
+        type: NotificationType.alert,
+        isRead: false,
+      );
+      mockRepo.notifications = [sample];
+      provider.setNotifications([sample]);
+      expect(provider.unreadCount, 1);
+
+      final success = await provider.deleteNotification('45e84ab2-b509-4290-a317-1c17cc229db7');
+
+      expect(success, true);
+      expect(mockRepo.lastDeletedId, '45e84ab2-b509-4290-a317-1c17cc229db7');
+      expect(provider.notifications.isEmpty, true);
+      expect(provider.unreadCount, 0);
+    });
   });
 
   group('NotificationScreen Widget Tests', () {
@@ -243,8 +296,10 @@ void main() {
       notificationProvider = NotificationProvider(
         repository: mockRepo,
         getNotificationsUseCase: GetNotificationsUseCase(mockRepo),
+        getNotificationsUnreadCountUseCase: GetNotificationsUnreadCountUseCase(mockRepo),
         markNotificationAsReadUseCase: MarkNotificationAsReadUseCase(mockRepo),
         markAllNotificationsAsReadUseCase: MarkAllNotificationsAsReadUseCase(mockRepo),
+        deleteNotificationUseCase: DeleteNotificationUseCase(mockRepo),
       );
       authProvider = AuthProvider();
       appStateProvider = AppStateProvider();
@@ -269,9 +324,10 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Notifications'), findsOneWidget);
-      expect(find.textContaining('GET http://localhost:3000/api/v1/notifications'), findsOneWidget);
+      expect(find.textContaining('GET http://localhost:3000/api/v1/notifications'), findsWidgets);
+      expect(find.textContaining('/unread-count'), findsOneWidget);
       expect(find.text('Read (cURL)'), findsOneWidget);
-      expect(find.text('Unread'), findsOneWidget);
+      expect(find.textContaining('Unread'), findsWidgets);
       expect(find.text('All Statuses'), findsOneWidget);
       expect(find.text('No Notifications Found'), findsOneWidget);
       expect(find.text('Reset Filters (cURL Default)'), findsOneWidget);
@@ -293,7 +349,7 @@ void main() {
       );
 
       final nUnread = AppNotification(
-        id: 'n_unread',
+        id: '45e84ab2-b509-4290-a317-1c17cc229db7',
         title: 'New Demand Order Created',
         message: 'Pool order #DEM-888 has reached 1000 KG.',
         createdAt: DateTime.now().subtract(const Duration(hours: 1)),
@@ -323,7 +379,7 @@ void main() {
       expect(find.text('READ'), findsOneWidget);
 
       // Switch to Unread tab
-      await tester.tap(find.text('Unread'));
+      await tester.tap(find.text('Unread (1)'));
       await tester.pumpAndSettle();
 
       expect(find.text('New Demand Order Created'), findsOneWidget);
@@ -333,9 +389,15 @@ void main() {
       await tester.tap(find.text('New Demand Order Created'));
       await tester.pumpAndSettle();
 
+      expect(find.text('Mark Read (cURL)'), findsOneWidget);
+      expect(find.text('Delete (cURL)'), findsOneWidget);
       expect(find.text('Close'), findsOneWidget);
-      await tester.tap(find.text('Close'));
+
+      // Tap Mark Read
+      await tester.tap(find.text('Mark Read (cURL)'));
       await tester.pumpAndSettle();
+
+      expect(mockRepo.lastMarkedReadId, '45e84ab2-b509-4290-a317-1c17cc229db7');
     });
   });
 }

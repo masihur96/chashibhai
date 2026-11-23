@@ -26,6 +26,11 @@ class NotificationRepositoryImpl implements NotificationRepository {
   }
 
   @override
+  Future<int> getUnreadCount({String? token}) {
+    return _remoteDataSource.getUnreadCount(token: token);
+  }
+
+  @override
   Future<bool> markAsRead({
     required String notificationId,
     String? token,
@@ -41,6 +46,17 @@ class NotificationRepositoryImpl implements NotificationRepository {
     String? token,
   }) {
     return _remoteDataSource.markAllAsRead(
+      token: token,
+    );
+  }
+
+  @override
+  Future<bool> deleteNotification({
+    required String notificationId,
+    String? token,
+  }) {
+    return _remoteDataSource.deleteNotification(
+      notificationId: notificationId,
       token: token,
     );
   }

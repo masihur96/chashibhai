@@ -81,9 +81,11 @@ class ApiPath {
 
   // Notifications
   static String get notifications => '$baseUrl/notifications';
+  static String get notificationsUnreadCount => '$baseUrl/notifications/unread-count';
   static String notificationById(String id) => '$baseUrl/notifications/$id';
   static String markNotificationRead(String id) => '$baseUrl/notifications/$id/read';
   static String get markAllNotificationsRead => '$baseUrl/notifications/read-all';
+  static String deleteNotification(String id) => '$baseUrl/notifications/$id';
 
   // Reviews
   static String get reviews => '$baseUrl/reviews';

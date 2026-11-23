@@ -9,12 +9,21 @@ abstract class NotificationRepository {
     String? token,
   });
 
+  Future<int> getUnreadCount({
+    String? token,
+  });
+
   Future<bool> markAsRead({
     required String notificationId,
     String? token,
   });
 
   Future<bool> markAllAsRead({
+    String? token,
+  });
+
+  Future<bool> deleteNotification({
+    required String notificationId,
     String? token,
   });
 }

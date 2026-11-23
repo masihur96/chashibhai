@@ -16,12 +16,21 @@ abstract class NotificationRemoteDataSource {
     String? token,
   });
 
+  Future<int> getUnreadCount({
+    String? token,
+  });
+
   Future<bool> markAsRead({
     required String notificationId,
     String? token,
   });
 
   Future<bool> markAllAsRead({
+    String? token,
+  });
+
+  Future<bool> deleteNotification({
+    required String notificationId,
     String? token,
   });
 }
@@ -165,6 +174,95 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
   }
 
   @override
+  Future<int> getUnreadCount({String? token}) async {
+    final uri = Uri.parse(ApiPath.notificationsUnreadCount);
+    final stopwatch = Stopwatch()..start();
+
+    String resolvedToken = await _resolveToken(token);
+    final headers = {
+      'accept': 'application/json',
+      'Authorization': 'Bearer $resolvedToken',
+    };
+
+    ApiLogger.logRequest(
+      method: 'GET',
+      uri: uri,
+      headers: headers,
+    );
+
+    try {
+      var httpRequest = await _client.getUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      var httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      var responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 401) {
+        final newToken = await _attemptRefreshToken();
+        if (newToken != null && newToken.isNotEmpty) {
+          resolvedToken = newToken;
+          headers['Authorization'] = 'Bearer $resolvedToken';
+          stopwatch.reset();
+          stopwatch.start();
+
+          httpRequest = await _client.getUrl(uri);
+          headers.forEach((key, value) => httpRequest.headers.set(key, value));
+          httpResponse = await httpRequest.close();
+          stopwatch.stop();
+          responseBody = await httpResponse.transform(utf8.decoder).join();
+          try {
+            decodedJson = jsonDecode(responseBody);
+          } catch (_) {
+            decodedJson = null;
+          }
+        }
+      }
+
+      if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
+        ApiLogger.logResponse(
+          method: 'GET',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+
+        if (decodedJson is int) return decodedJson;
+        if (decodedJson is num) return decodedJson.toInt();
+        if (decodedJson is Map<String, dynamic>) {
+          final countVal = decodedJson['unreadCount'] ??
+              decodedJson['unread_count'] ??
+              decodedJson['count'] ??
+              decodedJson['total'] ??
+              decodedJson['data']?['unreadCount'] ??
+              decodedJson['data']?['unread_count'] ??
+              decodedJson['data']?['count'] ??
+              decodedJson['data'];
+          if (countVal is num) return countVal.toInt();
+          if (countVal != null) {
+            final parsed = int.tryParse(countVal.toString());
+            if (parsed != null) return parsed;
+          }
+        }
+        return 0;
+      } else {
+        return 0;
+      }
+    } catch (e) {
+      if (stopwatch.isRunning) stopwatch.stop();
+      return 0;
+    }
+  }
+
+  @override
   Future<bool> markAsRead({
     required String notificationId,
     String? token,
@@ -174,9 +272,8 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
 
     String resolvedToken = await _resolveToken(token);
     final headers = {
-      'accept': 'application/json',
+      'accept': '*/*',
       'Authorization': 'Bearer $resolvedToken',
-      'Content-Type': 'application/json',
     };
 
     ApiLogger.logRequest(
@@ -198,6 +295,27 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
         decodedJson = jsonDecode(responseBody);
       } catch (_) {
         decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 401) {
+        final newToken = await _attemptRefreshToken();
+        if (newToken != null && newToken.isNotEmpty) {
+          resolvedToken = newToken;
+          headers['Authorization'] = 'Bearer $resolvedToken';
+          stopwatch.reset();
+          stopwatch.start();
+
+          httpRequest = await _client.patchUrl(uri);
+          headers.forEach((key, value) => httpRequest.headers.set(key, value));
+          httpResponse = await httpRequest.close();
+          stopwatch.stop();
+          responseBody = await httpResponse.transform(utf8.decoder).join();
+          try {
+            decodedJson = jsonDecode(responseBody);
+          } catch (_) {
+            decodedJson = null;
+          }
+        }
       }
 
       if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
@@ -226,9 +344,8 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
 
     String resolvedToken = await _resolveToken(token);
     final headers = {
-      'accept': 'application/json',
+      'accept': '*/*',
       'Authorization': 'Bearer $resolvedToken',
-      'Content-Type': 'application/json',
     };
 
     ApiLogger.logRequest(
@@ -252,9 +369,103 @@ class NotificationRemoteDataSourceImpl implements NotificationRemoteDataSource {
         decodedJson = null;
       }
 
+      if (httpResponse.statusCode == 401) {
+        final newToken = await _attemptRefreshToken();
+        if (newToken != null && newToken.isNotEmpty) {
+          resolvedToken = newToken;
+          headers['Authorization'] = 'Bearer $resolvedToken';
+          stopwatch.reset();
+          stopwatch.start();
+
+          httpRequest = await _client.patchUrl(uri);
+          headers.forEach((key, value) => httpRequest.headers.set(key, value));
+          httpResponse = await httpRequest.close();
+          stopwatch.stop();
+          responseBody = await httpResponse.transform(utf8.decoder).join();
+          try {
+            decodedJson = jsonDecode(responseBody);
+          } catch (_) {
+            decodedJson = null;
+          }
+        }
+      }
+
       if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
         ApiLogger.logResponse(
           method: 'PATCH',
+          uri: uri,
+          statusCode: httpResponse.statusCode,
+          duration: stopwatch.elapsed,
+          body: decodedJson ?? responseBody,
+        );
+        return true;
+      }
+      return false;
+    } catch (_) {
+      if (stopwatch.isRunning) stopwatch.stop();
+      return false;
+    }
+  }
+
+  @override
+  Future<bool> deleteNotification({
+    required String notificationId,
+    String? token,
+  }) async {
+    final uri = Uri.parse(ApiPath.deleteNotification(notificationId));
+    final stopwatch = Stopwatch()..start();
+
+    String resolvedToken = await _resolveToken(token);
+    final headers = {
+      'accept': '*/*',
+      'Authorization': 'Bearer $resolvedToken',
+    };
+
+    ApiLogger.logRequest(
+      method: 'DELETE',
+      uri: uri,
+      headers: headers,
+    );
+
+    try {
+      var httpRequest = await _client.deleteUrl(uri);
+      headers.forEach((key, value) => httpRequest.headers.set(key, value));
+
+      var httpResponse = await httpRequest.close();
+      stopwatch.stop();
+
+      var responseBody = await httpResponse.transform(utf8.decoder).join();
+      dynamic decodedJson;
+      try {
+        decodedJson = jsonDecode(responseBody);
+      } catch (_) {
+        decodedJson = null;
+      }
+
+      if (httpResponse.statusCode == 401) {
+        final newToken = await _attemptRefreshToken();
+        if (newToken != null && newToken.isNotEmpty) {
+          resolvedToken = newToken;
+          headers['Authorization'] = 'Bearer $resolvedToken';
+          stopwatch.reset();
+          stopwatch.start();
+
+          httpRequest = await _client.deleteUrl(uri);
+          headers.forEach((key, value) => httpRequest.headers.set(key, value));
+          httpResponse = await httpRequest.close();
+          stopwatch.stop();
+          responseBody = await httpResponse.transform(utf8.decoder).join();
+          try {
+            decodedJson = jsonDecode(responseBody);
+          } catch (_) {
+            decodedJson = null;
+          }
+        }
+      }
+
+      if (httpResponse.statusCode >= 200 && httpResponse.statusCode < 300) {
+        ApiLogger.logResponse(
+          method: 'DELETE',
           uri: uri,
           statusCode: httpResponse.statusCode,
           duration: stopwatch.elapsed,

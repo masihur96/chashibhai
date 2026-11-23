@@ -1,4 +1,5 @@
 import 'package:chashibhai/features/notification/presentation/views/notification_screen.dart';
+import 'package:chashibhai/features/notification/presentation/state/notification_provider.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
@@ -1741,33 +1742,50 @@ class _IconBtn extends StatelessWidget {
 
 class _NotifBell extends StatelessWidget {
   @override
-  Widget build(BuildContext context) => Stack(
-    alignment: Alignment.center,
-    children: [
-      IconButton(
-        icon: const Icon(Icons.notifications_outlined, color: Colors.white),
-        tooltip: 'Notifications',
-        onPressed: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(builder: (context) => const NotificationScreen()),
-          );
-        },
-      ),
-      Positioned(
-        top: 10,
-        right: 10,
-        child: Container(
-          width: 8,
-          height: 8,
-          decoration: const BoxDecoration(
-            color: Color(0xFFFF6B35),
-            shape: BoxShape.circle,
-          ),
+  Widget build(BuildContext context) {
+    final count = context.watch<NotificationProvider>().unreadCount;
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        IconButton(
+          icon: const Icon(Icons.notifications_outlined, color: Colors.white),
+          tooltip: 'Notifications',
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const NotificationScreen()),
+            ).then((_) {
+              if (context.mounted) {
+                context.read<NotificationProvider>().fetchUnreadCount();
+              }
+            });
+          },
         ),
-      ),
-    ],
-  );
+        if (count > 0)
+          Positioned(
+            top: 8,
+            right: 8,
+            child: Container(
+              padding: const EdgeInsets.all(3),
+              decoration: const BoxDecoration(
+                color: Color(0xFFFF6B35),
+                shape: BoxShape.circle,
+              ),
+              constraints: const BoxConstraints(minWidth: 16, minHeight: 16),
+              child: Text(
+                count > 99 ? '99+' : '$count',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+      ],
+    );
+  }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────

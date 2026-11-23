@@ -48,9 +48,31 @@ class _NotificationScreenState extends State<NotificationScreen> {
         title: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text(
-              isBangla ? 'বিজ্ঞপ্তি' : 'Notifications',
-              style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+            Row(
+              children: [
+                Text(
+                  isBangla ? 'বিজ্ঞপ্তি' : 'Notifications',
+                  style: GoogleFonts.outfit(fontWeight: FontWeight.bold, fontSize: 18),
+                ),
+                if (provider.unreadCount > 0) ...[
+                  const SizedBox(width: 8),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: Colors.redAccent,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      '${provider.unreadCount}',
+                      style: const TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                  ),
+                ],
+              ],
             ),
             Text(
               provider.unreadCount > 0
@@ -75,6 +97,13 @@ class _NotificationScreenState extends State<NotificationScreen> {
                               .read<AppStateProvider>()
                               .setNotifications(provider.notifications);
                         } catch (_) {}
+                        ScaffoldMessenger.of(context).showSnackBar(
+                          const SnackBar(
+                            content: Text('All notifications marked as read (cURL PATCH /read-all)'),
+                            backgroundColor: Color(0xFF2E7D32),
+                            behavior: SnackBarBehavior.floating,
+                          ),
+                        );
                       }
                     },
               icon: provider.isMarkingRead
@@ -100,9 +129,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
       ),
       body: Column(
         children: [
-          // ─── Live cURL Endpoint Indicator Banner ──────────────────────────
+          // ─── Live cURL Query & Unread Count Banners ───────────────────────
           Container(
-            margin: const EdgeInsets.fromLTRB(16, 12, 16, 8),
+            margin: const EdgeInsets.fromLTRB(16, 12, 16, 4),
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
             decoration: BoxDecoration(
               color: Colors.white,
@@ -142,6 +171,38 @@ class _NotificationScreenState extends State<NotificationScreen> {
             ),
           ),
 
+          // ─── Unread Count Live Indicator ──────────────────────────────────
+          Container(
+            margin: const EdgeInsets.fromLTRB(16, 2, 16, 8),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2E7D32).withValues(alpha: 0.06),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: const Color(0xFF2E7D32).withValues(alpha: 0.15)),
+            ),
+            child: Row(
+              children: [
+                const Icon(Icons.mark_email_unread_rounded, size: 14, color: Color(0xFF2E7D32)),
+                const SizedBox(width: 6),
+                Expanded(
+                  child: Text(
+                    'GET ${ApiPath.serverOrigin}/api/v1/notifications/unread-count  •  Unread: ${provider.unreadCount}',
+                    style: GoogleFonts.jetBrainsMono(
+                      fontSize: 10,
+                      fontWeight: FontWeight.bold,
+                      color: const Color(0xFF1B5E20),
+                    ),
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                ),
+                InkWell(
+                  onTap: () => provider.fetchUnreadCount(),
+                  child: const Icon(Icons.refresh_rounded, size: 14, color: Color(0xFF2E7D32)),
+                ),
+              ],
+            ),
+          ),
+
           // ─── Read Status Tabs (Matching cURL isRead=true) ──────────────────
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
@@ -154,7 +215,9 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 ),
                 const SizedBox(width: 8),
                 _buildStatusTab(
-                  label: isBangla ? 'অপঠিত' : 'Unread',
+                  label: isBangla
+                      ? 'অপঠিত (${provider.unreadCount})'
+                      : 'Unread (${provider.unreadCount})',
                   isSelected: provider.filterIsRead == false,
                   onTap: () => provider.setFilterIsRead(false),
                 ),
@@ -321,158 +384,215 @@ class _NotificationScreenState extends State<NotificationScreen> {
     final icon = _getNotificationIcon(notification.type);
     final isRead = notification.isRead;
 
-    return InkWell(
-      onTap: () {
-        if (!isRead) {
-          provider.markAsRead(notification.id);
-        }
-        _showNotificationDetailSheet(notification);
-      },
-      borderRadius: BorderRadius.circular(14),
-      child: Container(
-        padding: const EdgeInsets.all(12),
+    return Dismissible(
+      key: Key(notification.id),
+      direction: DismissDirection.endToStart,
+      background: Container(
+        padding: const EdgeInsets.only(right: 20),
+        alignment: Alignment.centerRight,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: Colors.red.shade600,
           borderRadius: BorderRadius.circular(14),
-          border: Border.all(
-            color: isRead ? Colors.grey.shade200 : const Color(0xFF2E7D32).withValues(alpha: 0.4),
-            width: isRead ? 1 : 1.4,
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: isRead ? 0.02 : 0.05),
-              blurRadius: 6,
-              offset: const Offset(0, 2),
-            ),
+        ),
+        child: const Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.delete_outline_rounded, color: Colors.white),
+            SizedBox(width: 6),
+            Text('DELETE (cURL)', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
           ],
         ),
-        child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Icon container
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withValues(alpha: 0.1),
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Icon(icon, color: color, size: 22),
+      ),
+      onDismissed: (_) async {
+        final messenger = ScaffoldMessenger.of(context);
+        final success = await provider.deleteNotification(notification.id);
+        if (success) {
+          messenger.showSnackBar(
+            const SnackBar(
+              content: Text('Notification deleted (cURL DELETE)'),
+              backgroundColor: Colors.black87,
+              behavior: SnackBarBehavior.floating,
             ),
-            const SizedBox(width: 12),
+          );
+        }
+      },
+      child: InkWell(
+        onTap: () {
+          if (!isRead) {
+            provider.markAsRead(notification.id);
+          }
+          _showNotificationDetailSheet(notification, provider);
+        },
+        borderRadius: BorderRadius.circular(14),
+        child: Container(
+          padding: const EdgeInsets.all(12),
+          decoration: BoxDecoration(
+            color: Colors.white,
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(
+              color: isRead ? Colors.grey.shade200 : const Color(0xFF2E7D32).withValues(alpha: 0.4),
+              width: isRead ? 1 : 1.4,
+            ),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: isRead ? 0.02 : 0.05),
+                blurRadius: 6,
+                offset: const Offset(0, 2),
+              ),
+            ],
+          ),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Icon container
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: color.withValues(alpha: 0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(icon, color: color, size: 22),
+              ),
+              const SizedBox(width: 12),
 
-            // Content
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          notification.title,
-                          style: GoogleFonts.outfit(
-                            fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
-                            fontSize: 14,
-                            color: isRead ? Colors.black87 : const Color(0xFF1B5E20),
+              // Content
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Expanded(
+                          child: Text(
+                            notification.title,
+                            style: GoogleFonts.outfit(
+                              fontWeight: isRead ? FontWeight.w600 : FontWeight.bold,
+                              fontSize: 14,
+                              color: isRead ? Colors.black87 : const Color(0xFF1B5E20),
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
                           ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _formatTime(notification.createdAt),
-                        style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    notification.message,
-                    style: TextStyle(
-                      color: isRead ? Colors.grey.shade700 : Colors.black87,
-                      fontSize: 12.5,
-                      height: 1.35,
+                        const SizedBox(width: 8),
+                        Text(
+                          _formatTime(notification.createdAt),
+                          style: TextStyle(color: Colors.grey.shade500, fontSize: 11),
+                        ),
+                      ],
                     ),
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                  const SizedBox(height: 8),
-
-                  // Bottom Tags Row
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: color.withValues(alpha: 0.1),
-                          borderRadius: BorderRadius.circular(4),
-                        ),
-                        child: Text(
-                          notification.type.name.toUpperCase(),
-                          style: TextStyle(
-                            fontSize: 9,
-                            fontWeight: FontWeight.bold,
-                            color: color,
-                            letterSpacing: 0.4,
-                          ),
-                        ),
+                    const SizedBox(height: 4),
+                    Text(
+                      notification.message,
+                      style: TextStyle(
+                        color: isRead ? Colors.grey.shade700 : Colors.black87,
+                        fontSize: 12.5,
+                        height: 1.35,
                       ),
-                      const Spacer(),
-                      if (!isRead)
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    const SizedBox(height: 8),
+
+                    // Bottom Tags Row
+                    Row(
+                      children: [
                         Container(
                           padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                           decoration: BoxDecoration(
-                            color: const Color(0xFF2E7D32).withValues(alpha: 0.12),
+                            color: color.withValues(alpha: 0.1),
                             borderRadius: BorderRadius.circular(4),
                           ),
-                          child: const Row(
+                          child: Text(
+                            notification.type.name.toUpperCase(),
+                            style: TextStyle(
+                              fontSize: 9,
+                              fontWeight: FontWeight.bold,
+                              color: color,
+                              letterSpacing: 0.4,
+                            ),
+                          ),
+                        ),
+                        const Spacer(),
+                        if (!isRead)
+                          InkWell(
+                            onTap: () => provider.markAsRead(notification.id),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                              decoration: BoxDecoration(
+                                color: const Color(0xFF2E7D32).withValues(alpha: 0.12),
+                                borderRadius: BorderRadius.circular(4),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(Icons.circle, size: 6, color: Color(0xFF2E7D32)),
+                                  SizedBox(width: 4),
+                                  Text(
+                                    'UNREAD',
+                                    style: TextStyle(
+                                      fontSize: 8.5,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFF2E7D32),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          )
+                        else
+                          Row(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              Icon(Icons.circle, size: 6, color: Color(0xFF2E7D32)),
-                              SizedBox(width: 4),
+                              Icon(Icons.done_rounded, size: 13, color: Colors.grey.shade400),
+                              const SizedBox(width: 2),
                               Text(
-                                'UNREAD',
+                                'READ',
                                 style: TextStyle(
-                                  fontSize: 8.5,
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF2E7D32),
+                                  fontSize: 9,
+                                  color: Colors.grey.shade500,
+                                  fontWeight: FontWeight.w600,
                                 ),
                               ),
                             ],
                           ),
-                        )
-                      else
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(Icons.done_rounded, size: 13, color: Colors.grey.shade400),
-                            const SizedBox(width: 2),
-                            Text(
-                              'READ',
-                              style: TextStyle(
-                                fontSize: 9,
-                                color: Colors.grey.shade500,
-                                fontWeight: FontWeight.w600,
-                              ),
-                            ),
-                          ],
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: () async {
+                            final messenger = ScaffoldMessenger.of(context);
+                            final success = await provider.deleteNotification(notification.id);
+                            if (success) {
+                              messenger.showSnackBar(
+                                const SnackBar(
+                                  content: Text('Notification deleted (cURL DELETE)'),
+                                  backgroundColor: Colors.black87,
+                                  behavior: SnackBarBehavior.floating,
+                                ),
+                              );
+                            }
+                          },
+                          child: Padding(
+                            padding: const EdgeInsets.all(2.0),
+                            child: Icon(Icons.delete_outline_rounded, size: 16, color: Colors.grey.shade400),
+                          ),
                         ),
-                    ],
-                  ),
-                ],
+                      ],
+                    ),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  void _showNotificationDetailSheet(AppNotification notification) {
+  void _showNotificationDetailSheet(AppNotification notification, NotificationProvider provider) {
     final color = _getNotificationColor(notification.type);
     final icon = _getNotificationIcon(notification.type);
+    final isRead = notification.isRead;
 
     showModalBottomSheet(
       context: context,
@@ -525,7 +645,33 @@ class _NotificationScreenState extends State<NotificationScreen> {
                   ),
                 ],
               ),
-              const SizedBox(height: 16),
+              const SizedBox(height: 14),
+
+              // cURL Endpoint Action Badges
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.grey.shade100,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(color: Colors.grey.shade300),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'PATCH /api/v1/notifications/${notification.id}/read',
+                      style: GoogleFonts.jetBrainsMono(fontSize: 9.5, color: const Color(0xFF1B5E20), fontWeight: FontWeight.w600),
+                    ),
+                    const SizedBox(height: 2),
+                    Text(
+                      'DELETE /api/v1/notifications/${notification.id}',
+                      style: GoogleFonts.jetBrainsMono(fontSize: 9.5, color: Colors.red.shade800, fontWeight: FontWeight.w600),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 14),
+
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
@@ -540,18 +686,63 @@ class _NotificationScreenState extends State<NotificationScreen> {
                 ),
               ),
               const SizedBox(height: 20),
-              SizedBox(
-                width: double.infinity,
-                height: 44,
-                child: ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2E7D32),
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+
+              Row(
+                children: [
+                  if (!isRead) ...[
+                    Expanded(
+                      child: OutlinedButton.icon(
+                        style: OutlinedButton.styleFrom(
+                          foregroundColor: const Color(0xFF2E7D32),
+                          side: const BorderSide(color: Color(0xFF2E7D32)),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                        icon: const Icon(Icons.check_circle_outline_rounded, size: 16),
+                        label: const Text('Mark Read (cURL)'),
+                        onPressed: () {
+                          provider.markAsRead(notification.id);
+                          Navigator.pop(ctx);
+                        },
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                  ],
+                  Expanded(
+                    child: OutlinedButton.icon(
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: Colors.red.shade700,
+                        side: BorderSide(color: Colors.red.shade400),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      icon: const Icon(Icons.delete_outline_rounded, size: 16),
+                      label: const Text('Delete (cURL)'),
+                      onPressed: () async {
+                        Navigator.pop(ctx);
+                        final messenger = ScaffoldMessenger.of(context);
+                        final success = await provider.deleteNotification(notification.id);
+                        if (success) {
+                          messenger.showSnackBar(
+                            const SnackBar(
+                              content: Text('Notification deleted (cURL DELETE)'),
+                              backgroundColor: Colors.black87,
+                              behavior: SnackBarBehavior.floating,
+                            ),
+                          );
+                        }
+                      },
+                    ),
                   ),
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text('Close'),
-                ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: const Color(0xFF2E7D32),
+                      foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => Navigator.pop(ctx),
+                    child: const Text('Close'),
+                  ),
+                ],
               ),
             ],
           ),
