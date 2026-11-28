@@ -174,7 +174,7 @@ void main() {
       expect(mockClient.lastMethod, 'POST');
       expect(
         mockClient.lastUri.toString(),
-        'http://localhost:3000/api/v1/demands/$testDemandId/offer',
+        'https://chashibhai-backend-production.up.railway.app/api/v1/demands/$testDemandId/offer',
       );
       expect(mockClient.lastHeaders['authorization'],
           contains(BuyerRemoteDataSourceImpl.defaultDemandOfferToken));

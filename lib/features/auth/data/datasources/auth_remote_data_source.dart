@@ -116,7 +116,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     } on SocketException catch (e) {
       stopwatch.stop();
-      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running on localhost:3000.';
+      final err = 'Cannot connect to server at ${uri.host}${uri.hasPort ? ':${uri.port}' : ''} ($e). Please check your internet connection and try again.';
       ApiLogger.logError(method: 'POST', uri: uri, duration: stopwatch.elapsed, error: err);
       throw Exception(err);
     } catch (e) {
@@ -209,7 +209,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     } on SocketException catch (e) {
       stopwatch.stop();
-      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running on localhost:3000.';
+      final err = 'Cannot connect to server at ${uri.host}${uri.hasPort ? ':${uri.port}' : ''} ($e). Please check your internet connection and try again.';
       ApiLogger.logError(method: 'POST', uri: uri, duration: stopwatch.elapsed, error: err);
       throw Exception(err);
     } catch (e) {
@@ -303,7 +303,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     } on SocketException catch (e) {
       stopwatch.stop();
-      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running on localhost:3000.';
+      final err = 'Cannot connect to server at ${uri.host}${uri.hasPort ? ':${uri.port}' : ''} ($e). Please check your internet connection and try again.';
       ApiLogger.logError(method: 'GET', uri: uri, duration: stopwatch.elapsed, error: err);
       throw Exception(err);
     } catch (e) {
@@ -392,7 +392,7 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
       }
     } on SocketException catch (e) {
       stopwatch.stop();
-      final err = 'Cannot connect to server at ${uri.host}:${uri.port} ($e). Please check if backend is running on localhost:3000.';
+      final err = 'Cannot connect to server at ${uri.host}${uri.hasPort ? ':${uri.port}' : ''} ($e). Please check your internet connection and try again.';
       ApiLogger.logError(method: 'POST', uri: uri, duration: stopwatch.elapsed, error: err);
       throw Exception(err);
     } catch (e) {

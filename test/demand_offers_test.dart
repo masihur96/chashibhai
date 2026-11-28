@@ -264,7 +264,7 @@ void main() {
       expect(mockClient.lastMethod, 'POST');
       expect(
         mockClient.lastUri.toString(),
-        'http://localhost:3000/api/v1/demands/b93b37c9-64b8-4844-a3a0-95390974aeab/offers/dfb71d92-a406-447c-8208-67c6bd6c73b3/accept',
+        'https://chashibhai-backend-production.up.railway.app/api/v1/demands/b93b37c9-64b8-4844-a3a0-95390974aeab/offers/dfb71d92-a406-447c-8208-67c6bd6c73b3/accept',
       );
     });
 

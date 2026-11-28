@@ -324,7 +324,7 @@ void main() {
       await tester.pumpAndSettle();
 
       expect(find.text('Notifications'), findsOneWidget);
-      expect(find.textContaining('GET http://localhost:3000/api/v1/notifications'), findsWidgets);
+      expect(find.textContaining('GET https://chashibhai-backend-production.up.railway.app/api/v1/notifications'), findsWidgets);
       expect(find.textContaining('/unread-count'), findsOneWidget);
       expect(find.text('Read (cURL)'), findsOneWidget);
       expect(find.textContaining('Unread'), findsWidgets);

@@ -417,7 +417,7 @@ class _GroupsListScreenState extends State<GroupsListScreen>
                 Text(
                   _lastSyncedTime != null
                       ? '${isBangla ? "সর্বশেষ সিঙ্ক" : "Last synced"}: ${DateFormat("hh:mm:ss a").format(_lastSyncedTime!)}'
-                      : (isBangla ? 'সার্ভারের সাথে সংযুক্ত' : 'Connected to localhost:3000'),
+                      : (isBangla ? 'সার্ভারের সাথে সংযুক্ত' : 'Connected to server'),
                   style: TextStyle(
                     fontSize: 10,
                     color: Colors.grey.shade600,

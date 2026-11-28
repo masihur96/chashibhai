@@ -1,26 +1,18 @@
-import 'dart:io' show Platform;
-import 'package:flutter/foundation.dart' show kIsWeb;
-
 class ApiPath {
   ApiPath._();
 
   /// Allow overriding base URL dynamically at runtime if needed
   static String? customBaseUrl;
 
-  /// Returns the appropriate base URL:
-  /// - On Android emulator, 'http://10.0.2.2:3000/api/v1' (points to host localhost:3000)
-  /// - On iOS simulator / macOS / Web, 'http://localhost:3000/api/v1'
+  /// Returns the API base URL.
   static String get baseUrl {
     if (customBaseUrl != null && customBaseUrl!.isNotEmpty) {
       return customBaseUrl!;
     }
-    if (!kIsWeb && Platform.isAndroid) {
-      return 'http://10.0.2.2:3000/api/v1';
-    }
-    return 'http://localhost:3000/api/v1';
+    return 'https://chashibhai-backend-production.up.railway.app/api/v1';
   }
 
-  /// Returns origin (e.g. 'http://localhost:3000' or 'http://10.0.2.2:3000')
+  /// Returns origin (e.g. 'https://chashibhai-backend-production.up.railway.app')
   static String get serverOrigin {
     final uri = Uri.parse(baseUrl);
     return '${uri.scheme}://${uri.host}${uri.hasPort ? ':${uri.port}' : ''}';
